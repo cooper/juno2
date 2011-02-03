@@ -121,7 +121,7 @@ sub conf {
 sub oper {
   my ($key,$val) = @_;
   return $oper{$key}{$val} if exists $oper{$key}{$val};
-  return undef;
+  return 0;
 }
 sub confparse {
   my $file = shift;
@@ -157,9 +157,9 @@ sub confparse {
 }
 sub validnick {
   my ($str,$limit,$i) = @_;
-  return undef if(length($str)<1 || length($str)>$limit);
-  return undef if($str=~m/^\d/ && !$i);
-  return undef if $str=~m/[^A-Za-z-0-9-\[\]\\\`\^\|\{\}\_]/;
+  return 0 if(length($str)<1 || length($str)>$limit);
+  return 0 if($str=~m/^\d/ && !$i);
+  return 0 if $str=~m/[^A-Za-z-0-9-\[\]\\\`\^\|\{\}\_]/;
   return 1;
 }
 sub hostmatch {

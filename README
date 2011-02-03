@@ -1,0 +1,67 @@
+<insert ASCII art here>
+
+as you know, I attempted to fork pIRCd while learning perl. that failed very badly. now I'm starting over from scratch because I have nothing better to do.
+
+setting up: edit ircd.conf and read the comments.
+	perl juno.pl
+
+support: irc.flsnet.co.cc #chat, probably. maybe not.
+
+requirements:
+IO::Select
+IO::Socket::INET
+IO::Socket::SSL if you want SSL support
+IO::Socket::INET6 if you want IPv6 support
+Net::DNS
+Net::IP
+Socket
+
+
+Plans - things I plan to do
+-----
+I'm not going to put anything here until I run out of useful things to do.
+
+TODO - things I NEED to do
+----
+this and linked server objects
+fix SSL listening
+CAP
+max number of users in LUSERS
+only accept hosts if the resolution matches the client address
+show modes alphabetical, capitals first.
+
+Done - things I've done already
+----
+configuration parser
+client listening (non-ssl)
+ping system
+IPv6 support
+pre-registration commands (nick,user)
+host resolving
+MOTD command
+nick change
+LUSERS command
+ping/pong
+WHOIS command
+hostname cloaking
+PRIVMSG to users
+AWAY command
+OPER and everything related
+KILL command and oper:kill flag
+basic channel structure
+JOIN command
+NAMES command
+WHO command (channels only)
+MODE command (partially)
+
+
+user modes
+----------
+i invisible
+x cloaking enabled
+
+oper flags
+----------
+kline - local kill line
+akill - global kill line
+rehash - rehash config

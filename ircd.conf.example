@@ -1,0 +1,59 @@
+# sample configuration
+# you may comment any feature you wish to disable
+# setup in the following layout:
+#
+# sec <section> # set the section
+#	  <key> <value> [...] # set a value
+# inc <file> # include a file
+# die <reason> [...] # execute perl die
+# oper <name>
+#   password <password>
+#   hosts <host> [<host>] [...]
+#   <priv> <value> [...] # set a privilege
+sec main
+  timeout 1
+  dns 8.8.8.8 8.8.4.4
+
+sec listen4
+	addr 0.0.0.0
+	port 6667
+
+sec listen6
+	addr 2002:45a4:dd71::1
+	port 6667
+
+sec server
+	id 0
+	name cooper.on.fgtb.us
+	network coopernet
+	motd motd.conf
+	desc lol
+
+sec ping
+	freq 30
+	timeout 120
+	msg Ping timeout
+
+sec limit
+	nick 32
+	topic 1000
+	ident 15
+
+sec cloak
+  enabled 1
+  salt secret
+
+sec user
+  # do not prepend the modes with +
+  # do not use nonexistent modes; they are not ignored.
+  # do not use x if cloaking is disabled.
+  automodes ix
+  maxchans 50
+
+oper cooper
+  password seIDIAoMCMcTc
+  host *@*
+  salt sea
+  kill 1
+  kline 1
+  akill 1

@@ -15,7 +15,7 @@ use handle;
 use channel;
 $SIG{'INT'} = \&sigexit;
 &POSIX::setsid;
-our (%config,%oper,%outbuffer,%inbuffer);
+our (%config,%oper,%outbuffer,%inbuffer,%timer);
 confparse('ircd.conf');
 require IO::Socket::INET6 if conf('listen6','addr');
 our $id = conf('server','id');
@@ -43,20 +43,35 @@ push(@sel,$socket6) if conf('listen6','addr');
 push(@sel,$socket4) if conf('listen4','addr');
 die 'not listening' if !$socket4 and !$socket6;
 our $select = new IO::Select(@sel);
-for(;;) { # main loop.
+for(;;) {
+  my $time;
   foreach my $peer ($select->can_read(conf('main','timeout'))) {
+    $timer{$peer} = 0 unless $timer{$peer};
     if ($peer == $socket4) {
       user::new($socket4->accept);
     } elsif ($peer == $socket6) {
       user::new($socket6->accept);
     } else {
       my $data;
+      $time = time;
+      $timer{$peer} = $time if $timer{$peer} < $time;
       my $got = $peer->sysread($data,POSIX::BUFSIZ);
       if ($got) {
-        handle::new($peer,$data);
+        #handle::new($peer,$data);
+        $inbuffer{$peer} .= $data;
       } else {
         user::lookup($peer)->quit('Read error',1);
       }
+    } my ($theline,$therest);
+    next unless defined $inbuffer{$peer};
+    while(($timer{$peer}-conf('flood','lines') <= $time) && (($theline,$therest) = $inbuffer{$peer} =~ m/([^\n]*)\n(.*)/s)) {
+      $inbuffer{$peer} = $therest;
+      $theline=~s/\r$//;
+      handle::new($peer,$theline);
+      $timer{$peer}++;
+    }
+    if(length $inbuffer{$peer} > conf('flood','bytes')) {
+      user::lookup($peer)->quit(conf('flood','msg'));
     }
   }
   foreach my $client ($select->can_write(0)) {

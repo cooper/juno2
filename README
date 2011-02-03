@@ -53,6 +53,7 @@ JOIN command
 NAMES command
 WHO command (channels only)
 MODE command (partially)
+PART command
 
 
 user modes

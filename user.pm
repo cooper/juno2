@@ -156,6 +156,7 @@ sub quit {
   my %sent;
   delete $::inbuffer{$user->obj};
   delete $::outbuffer{$user->obj};
+  delete $::timer{$user->obj};
   foreach (values %channel::channels) {
     if ($user->ison($_)) {
       $_->remove($user);

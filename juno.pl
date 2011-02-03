@@ -125,9 +125,9 @@ sub oper {
 }
 sub confparse {
   my $file = shift;
-  open(CONF,'<',$file) or die 'can not open configuration file '.$file;
+  open(my $CONF,'<',$file) or die 'can not open configuration file '.$file;
   my ($section,$opersection);
-  while (<CONF>) {
+  while (<$CONF>) {
     my $line = $_;
     $line =~ s/\t//g;
     $line =~ s/^\s+//;
@@ -153,7 +153,7 @@ sub confparse {
       } else { die 'no section set in configuration'; }
     }
   }
-  close CONF;
+  close $CONF;
 }
 sub validnick {
   my ($str,$limit,$i) = @_;

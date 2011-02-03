@@ -314,18 +314,18 @@ sub handle_nick {
 }
 sub handle_whois {
   my $user = shift;
-  my $nick = (split(' ',shift,2))[1];
+  my $nick = (split(' ',shift))[1];
   my $modes = '';
-  $modes .= $_ foreach (keys %{$user->{'mode'}});
   if ($nick) {
     my $target = nickexists($nick);
     if ($target) {
+      $modes .= $_ foreach (keys %{$target->{'mode'}});
       $user->sendserv('311 '.$user->nick.' '.$target->nick.' '.$target->{'ident'}.' '.$target->{'cloak'}.' * :'.$target->{'gecos'});
       #>> :server 319 nick targetnick :~#chat @#halp
       $user->sendserv('312 '.$user->nick.' '.$target->nick.' '.::conf('server','name').' :'.::conf('server','desc')); # only until linking
       #>> :server 671 nick targetnick :is using a secure connection
       $user->sendserv('301 '.$user->nick.' '.$target->nick.' :'.$target->{'away'}) if defined $target->{'away'};
-      $user->sendserv('313 '.$user->nick.' '.$target->nick.' :is an IRC operator') if defined $target->{'oper'};
+      $user->sendserv('313 '.$user->nick.' '.$target->nick.' :is an IRC operator') if $target->ismode('o');
       $user->sendserv('379 '.$user->nick.' '.$target->nick.' :is using modes +'.$modes);
       $user->sendserv('378 '.$user->nick.' '.$target->nick.' :is connecting from *@'.$user->{'host'}.' '.$user->{'ip'}) unless $user->{'mode'}->{'x'}; 
       $user->sendserv('317 '.$user->nick.' '.$target->nick.' '.(time-$target->{'idle'}).' '.$target->{'time'}.' :seconds idle, signon time');

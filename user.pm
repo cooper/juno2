@@ -23,7 +23,8 @@ my %commands = (
   WHO => \&handle_who,
   NAMES => \&handle_names,
   QUIT => \&handle_quit,
-  PART => \&handle_part
+  PART => \&handle_part,
+  REHASH => \&handle_rehash,
 );
 sub new {
 #user::new($peer)
@@ -148,8 +149,12 @@ sub send {
 }
 sub can {
   my $user = shift;
+  my $priv = shift;
   return 0 unless defined $user->{'oper'};
-  return ::oper($user->{'oper'},shift);
+  foreach (split(' ',::oper($user->{'oper'},'privs'))) {
+    return 1 if $_ eq $priv;
+  }
+  return 0;
 }
 sub quit {
   my ($user,$r,$no) = @_;
@@ -167,6 +172,7 @@ sub quit {
       }
     }
   }
+  ::snotice('client exiting: '.$user->fullhost.' ['.$user->{'ip'}.'] ('.$r.')');
   $user->send('ERROR :Closing Link: ['.$r.']') unless $no;
   delete $connection{$user->obj};
   $::select->remove($user->obj);
@@ -203,7 +209,7 @@ sub mode {
 sub fullhost {
 #$obj->fullhost
   my $user = shift;
-  if ($user->{'ready'}) {
+  if (defined $user->{'ready'}) {
     return $user->{'nick'}.'!'.$user->{'ident'}.'@'.$user->{'host'};
   } else { return '*'; }
 }
@@ -216,6 +222,7 @@ sub nick {
 }
 sub start {
   my $user = shift;
+  return if $user->checkkline;
   $user->sendnum('001',':Welcome to the '.::conf('server','network').' Internet Relay Chat Network '.$user->nick);
   $user->sendnum('002',':Your host is '.::conf('server','name').', running version junodev-0.0.1');
   $user->sendnum('003',':This server was created '.$::TIME); # this should actually have a date
@@ -225,6 +232,7 @@ sub start {
   $user->handle_lusers;
   $user->handle_motd;
   $user->setmode(::conf('user','automodes'));
+  ::snotice('client connectting: '.$user->fullhost.' ['.$user->{'ip'}.']');
 }
 sub newid {
   $cid++;
@@ -260,6 +268,16 @@ sub ison {
   my ($user,$channel) = @_;
   return 1 if exists $channel->{'users'}->{$user->{'id'}};
   return undef;
+}
+sub checkkline {
+  my $user = shift;
+  foreach (keys %::kline) {
+    if (::hostmatch($user->fullhost,$_)) {
+      $user->quit($::kline{$_}{'msg'});
+      return 1;
+    }
+  }
+  return 0;
 }
 # HANDLERS
 sub handle_lusers {
@@ -396,6 +414,8 @@ sub handle_oper {
     if ($oper) {
       $user->{'oper'} = $oper;
       $user->setmode('o');
+      ::snotice($user->fullhost.' is now an IRC operator using name '.$oper);
+      ::snotice('user '.$user->nick.' now has oper privs: '.::oper($oper,'privs'));
     } else { $user->sendserv('491 '.$user->nick.' :Invalid oper credentials'); }
   } else { $user->sendserv('461 '.$user->nick.' OPER :Not enough parameters.'); }
 }
@@ -448,7 +468,6 @@ sub handle_names {
   }
 }
 sub handle_part {
-#:jarvis.thinstack.net 442 mitchell #thinstack :You're not on that channel
   my ($user,$data) = @_;
   my @s = split(' ',$data);
   my $reason = (split(' ',$data,3))[2];
@@ -472,5 +491,15 @@ sub handle_quit {
   my ($user,$reason) = (shift,(split(' ',shift,2))[1]);
   $reason =~ s/://;
   $user->quit('Quit: '.$reason);
+}
+sub handle_rehash {
+  my $user = shift;
+  if ($user->can('rehash')) {
+    (%::config,%::oper,%::kline) = ((),(),());
+    ::confparse('ircd.conf');
+    ::snotice($user->nick.' is rehash server configuration file');
+  } else {
+    $user->sendserv('481 '.$user->nick.' :Permission Denied');
+  }
 }
 1

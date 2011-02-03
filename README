@@ -55,7 +55,9 @@ WHO command (channels only)
 MODE command (partially)
 PART command
 flood protection
-
+REHASH command
+IRC operator server notices
+KLINE
 
 user modes
 ----------

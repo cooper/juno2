@@ -22,6 +22,7 @@ sub new {
   bless $this;
   $channels{lc($name)} = $this;
   $this->dojoin($user);
+  ::snotice('channel '.$name.' created by '.$user->fullhost);
   return $this;
 }
 sub dojoin {
@@ -64,6 +65,7 @@ sub check {
   my $i = 0;
   $i++ foreach (keys %{$channel->{'users'}});
   delete $channels{lc($channel->name)} if $i == 0;
+  ::snotice('dead channel: '.$channel->name) if $i == 0;
 }
 sub names {
   my ($channel,$user) = @_;

@@ -15,7 +15,7 @@ $0 = 'juno';
 our $TIME = time;
 $SIG{'INT'} = \&sigexit;
 &POSIX::setsid;
-our (%config,%oper,%outbuffer,%inbuffer,%timer);
+our (%config,%oper,%kline,%outbuffer,%inbuffer,%timer);
 confparse('ircd.conf');
 require IO::Socket::INET6 if conf('listen6','addr');
 our $id = conf('server','id');
@@ -57,21 +57,22 @@ for(;;) {
       $timer{$peer} = $time if $timer{$peer} < $time;
       my $got = $peer->sysread($data,POSIX::BUFSIZ);
       if ($got) {
-        #handle::new($peer,$data);
         $inbuffer{$peer} .= $data;
       } else {
         user::lookup($peer)->quit('Read error',1);
+        next;
       }
     } my ($theline,$therest);
-    next unless defined $inbuffer{$peer};
-    while(($timer{$peer}-conf('flood','lines') <= $time) && (($theline,$therest) = $inbuffer{$peer} =~ m/([^\n]*)\n(.*)/s)) {
-      $inbuffer{$peer} = $therest;
-      $theline=~s/\r$//;
-      handle::new($peer,$theline);
-      $timer{$peer}++;
-    }
-    if(length $inbuffer{$peer} > conf('flood','bytes')) {
-      user::lookup($peer)->quit(conf('flood','msg'));
+    if($inbuffer{$peer}) {
+      while(($timer{$peer}-conf('flood','lines') <= $time) && (($theline,$therest) = $inbuffer{$peer} =~ m/([^\n]*)\n(.*)/s)) {
+        $inbuffer{$peer} = $therest;
+        $theline=~s/\r$//;
+        handle::new($peer,$theline);
+        $timer{$peer}++;
+      }
+      if(length $inbuffer{$peer} > conf('flood','bytes')) {
+        user::lookup($peer)->quit(conf('flood','msg'));
+      }
     }
   }
   foreach my $client ($select->can_write(0)) {
@@ -126,7 +127,7 @@ sub oper {
 sub confparse {
   my $file = shift;
   open(my $CONF,'<',$file) or die 'can not open configuration file '.$file;
-  my ($section,$opersection);
+  my ($section,$opersection,$klinesection);
   while (<$CONF>) {
     my $line = $_;
     $line =~ s/\t//g;
@@ -137,12 +138,22 @@ sub confparse {
     my @s = split(' ',$line,2);
     if ($s[0] eq 'sec') {
       $section = $s[1];
+      $opersection = 0;
+      $klinesection = 0;
       next;
     } elsif ($s[0] eq 'inc') {
+      $opersection = 0;
+      $klinesection = 0;
+      $section = 0;
       confparse($s[1]);
     } elsif ($s[0] eq 'oper') {
       $section = 0;
+      $klinesection = 0;
       $opersection = $s[1];
+    } elsif ($s[0] eq 'kline') {
+      $section = 0;
+      $opersection = 0;
+      $klinesection = $s[1];
     } elsif ($s[0] eq 'die') {
       die $s[1];
     } else {
@@ -150,9 +161,12 @@ sub confparse {
         $config{$section}{$s[0]} = $s[1];
       } elsif ($opersection) {
         $oper{$opersection}{$s[0]} = $s[1];
+      } elsif ($klinesection) {
+        $kline{$klinesection}{$s[0]} = $s[1];
       } else { die 'no section set in configuration'; }
     }
   }
+  $_->checkkline foreach values %user::connection;
   close $CONF;
 }
 sub validnick {
@@ -177,4 +191,10 @@ sub hostmatch {
     return 1;
   }
   return 0;
+}
+sub snotice {
+  my $msg = shift;
+  foreach (values %user::connection) {
+    $_->sendserv('NOTICE '.$_->nick.' :*** Server notice: '.$msg) if (defined $_->{'oper'} && oper($_->{'oper'},'snotice'));
+  }
 }

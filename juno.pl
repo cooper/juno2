@@ -1,6 +1,4 @@
 #!/usr/bin/perl -w
-$0 = 'juno';
-our $TIME = time;
 use warnings;
 use strict;
 use less;
@@ -13,6 +11,8 @@ use IO::Socket;
 use user;
 use handle;
 use channel;
+$0 = 'juno';
+our $TIME = time;
 $SIG{'INT'} = \&sigexit;
 &POSIX::setsid;
 our (%config,%oper,%outbuffer,%inbuffer,%timer);

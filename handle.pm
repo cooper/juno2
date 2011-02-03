@@ -12,7 +12,7 @@ sub new {
     return if $data eq '';
     ($user->{'ping'},$user->{'last'}) = (time,time);
     my @s = split(' ',$data);
-    $user->{'idle'} = time unless uc($s[0]) eq 'PONG';
+    $user->{'idle'} = time unless $s[0] =~ m/^(PONG|PING)$/i;
     if ($user->{'ready'}) {
       $user->handle($s[0],$data);
     } else {

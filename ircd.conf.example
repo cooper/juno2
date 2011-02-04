@@ -10,8 +10,12 @@
 #   password <password>
 #   hosts <host> [<host>] [...]
 #   <priv> <value> [...] # set a privilege
+# kline <mask>
+#   reason <reason>
+#   msg <quit message>
+
 sec main
-  timeout 1
+  timeout .1
   dns 8.8.8.8 8.8.4.4
 
 sec listen4
@@ -19,7 +23,7 @@ sec listen4
 	port 6667
 
 sec listen6
-	addr 2002:45a4:dd71::1
+	addr 2607:f128:46:0:216:3eff:fe85:d64a
 	port 6667
 
 sec server
@@ -50,10 +54,18 @@ sec user
   automodes ix
   maxchans 50
 
+sec flood
+  msg Excess flood
+  lines 50
+  bytes 1
+
 oper cooper
   password seIDIAoMCMcTc
   host *@*
   salt sea
-  kill 1
-  kline 1
-  akill 1
+  privs rehash kill
+  snotice 1
+
+kline *@*.mx
+  reason Mexico
+  msg K-Lined

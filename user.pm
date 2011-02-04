@@ -178,7 +178,7 @@ sub quit {
       }
     }
   }
-  ::snotice('client exiting: '.$user->fullhost.' ['.$user->{'ip'}.'] ('.$r.')');
+  ::snotice('client exiting: '.$user->fullhost.' ['.$user->{'ip'}.'] ('.$r.')') if $user->{'ready'};
   $user->send('ERROR :Closing Link: ['.$r.']') unless $no;
   delete $connection{$user->obj};
   $::select->remove($user->obj);
@@ -507,5 +507,8 @@ sub handle_rehash {
   } else {
     $user->sendserv('481 '.$user->nick.' :Permission Denied');
   }
+}
+sub handle_globops {
+  my ($user,$data) = @_;
 }
 1

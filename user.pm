@@ -102,11 +102,15 @@ sub hmodes {
   foreach (split(//,$modes)) {
     if ($_ eq '+') { $state = 1; next; }
     elsif ($_ eq '-') { $state = 0; next; }
-    if ($_ =~ m/(i|x)/) {
+    if ($_ =~ m/(i|x)/) { # normal modes
       if ($state == 0) {
-        $user->unsetmode($_);
-      } elsif ($state == 1) {
-        $user->setmode($_);
+        $user->unsetmode($_) if $state == 0;
+        $user->setmode($_) if $state == 1;
+      }
+    } elsif ($_ =~ m/o|S/) { # oper-only modes
+      if ($user->ismode('o')) {
+        $user->unsetmode($_) if $state == 0;
+        $user->setmode($_) if $state == 1;
       }
     } else {
       $user->sendserv('501 '.$user->nick.' '.$_.' :no such mode');
@@ -413,7 +417,7 @@ sub handle_oper {
     my $oper = $user->canoper($s[1],$s[2]);
     if ($oper) {
       $user->{'oper'} = $oper;
-      $user->setmode('o');
+      $user->setmode('o'.(::oper($oper,'snotice')?'S':''));
       ::snotice($user->fullhost.' is now an IRC operator using name '.$oper);
       ::snotice('user '.$user->nick.' now has oper privs: '.::oper($oper,'privs'));
     } else { $user->sendserv('491 '.$user->nick.' :Invalid oper credentials'); }

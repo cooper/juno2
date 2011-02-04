@@ -88,9 +88,11 @@ sub unsetmode {
   $user->send(':'.$user->nick.' MODE '.$user->nick.' :-'.$modes) unless $a;
   foreach (split(//,$modes)) {
     delete $user->{'mode'}->{$_};
-    next if $_ =~ m/i/;
+    next if $_ =~ m/iS/;
     if ($_ eq 'x' && ::conf('cloak','enabled')) {
       $user->{'cloak'} = $user->unsetcloak;
+    } elsif ($_ eq 'o') {
+      $user->unsetmode('S') if $user->ismode('S');
     }
   }
 }

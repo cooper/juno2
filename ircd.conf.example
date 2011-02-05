@@ -12,7 +12,6 @@
 #   <priv> <value> [...] # set a privilege
 # kline <mask>
 #   reason <reason>
-#   msg <quit message>
 
 sec main
   timeout .1
@@ -67,5 +66,4 @@ oper cooper
   snotice 1
 
 kline *@*.mx
-  reason Mexico
-  msg K-Lined
+  reason Mexico is prohibited

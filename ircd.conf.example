@@ -62,7 +62,7 @@ oper cooper
   password seIDIAoMCMcTc
   host *@*
   salt sea
-  privs rehash kill
+  privs rehash kill globops
   snotice 1
 
 kline *@*.mx

@@ -70,3 +70,4 @@ oper flags
 kline - local kill line
 akill - global kill line
 rehash - rehash config
+globops - send globops to all opers

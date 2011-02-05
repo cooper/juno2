@@ -7,12 +7,12 @@ my $cid = 0;
 our %connection;
 our @users; # obsolete
 my %commands = (
-	PONG => sub{},
-	LUSERS => \&handle_lusers,
-	MOTD => \&handle_motd,
-	NICK => \&handle_nick,
-	PING => \&handle_ping,
-	WHOIS => \&handle_whois,
+  PONG => sub{},
+  LUSERS => \&handle_lusers,
+  MOTD => \&handle_motd,
+  NICK => \&handle_nick,
+  PING => \&handle_ping,
+  WHOIS => \&handle_whois,
   MODE => \&handle_mode,
   PRIVMSG => \&handle_privmsgnotice,
   NOTICE => \&handle_privmsgnotice,
@@ -25,6 +25,7 @@ my %commands = (
   QUIT => \&handle_quit,
   PART => \&handle_part,
   REHASH => \&handle_rehash,
+  GLOBOPS => \&handle_globops
 );
 sub new {
 #user::new($peer)
@@ -92,6 +93,7 @@ sub unsetmode {
     if ($_ eq 'x' && ::conf('cloak','enabled')) {
       $user->{'cloak'} = $user->unsetcloak;
     } elsif ($_ eq 'o') {
+      delete $user->{'oper'};
       $user->unsetmode('S') if $user->ismode('S');
     }
   }
@@ -510,5 +512,11 @@ sub handle_rehash {
 }
 sub handle_globops {
   my ($user,$data) = @_;
+  if ($user->can('globops')) {
+    my @s = split(' ',$data,2);
+    if (defined $s[1]) {
+      ::snotice('GLOBOPS from '.$user->nick.': '.$s[1]);
+    } else { $user->sendserv('461 '.$user->nick.' GLOBOPS :Not enough parameters.'); }
+  } else { $user->sendserv('481 '.$user->nick.' :Permission Denied'); }
 }
 1

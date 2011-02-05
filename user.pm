@@ -165,9 +165,6 @@ sub can {
 sub quit {
   my ($user,$r,$no) = @_;
   my %sent;
-  delete $::inbuffer{$user->obj};
-  delete $::outbuffer{$user->obj};
-  delete $::timer{$user->obj};
   foreach (values %channel::channels) {
     if ($user->ison($_)) {
       $_->remove($user);
@@ -179,9 +176,12 @@ sub quit {
     }
   }
   ::snotice('client exiting: '.$user->fullhost.' ['.$user->{'ip'}.'] ('.$r.')') if $user->{'ready'};
-  $user->send('ERROR :Closing Link: ['.$r.']') unless $no;
+  $user->obj->syswrite('ERROR :Closing Link: ['.$r.']'."\r\n",POSIX::BUFSIZ) unless $no;
   delete $connection{$user->obj};
   $::select->remove($user->obj);
+  delete $::inbuffer{$user->obj};
+  delete $::outbuffer{$user->obj};
+  delete $::timer{$user->obj};
   $user->obj->close;
   undef $user;
 }

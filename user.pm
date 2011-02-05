@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use warnings;
 use strict;
-use less;
+use less 'mem';
 package user;
 my $cid = 0;
 our %connection;
@@ -163,14 +163,14 @@ sub can {
   return 0;
 }
 sub quit {
-  my ($user,$r,$no) = @_;
+  my ($user,$r,$no,$display) = @_;
   my %sent;
   foreach (values %channel::channels) {
     if ($user->ison($_)) {
       $_->remove($user);
       $_->check;
       foreach (keys %{$_->{'users'}}) {
-        lookupbyid($_)->send(':'.$user->fullcloak.' QUIT :'.$r) unless $sent{$_};
+        lookupbyid($_)->send(':'.$user->fullcloak.' QUIT :'.($display?$display:$r)) unless $sent{$_};
         $sent{$_} = 1;
       }
     }
@@ -279,7 +279,7 @@ sub checkkline {
   my $user = shift;
   foreach (keys %::kline) {
     if (::hostmatch($user->fullhost,$_)) {
-      $user->quit($::kline{$_}{'msg'});
+      $user->quit('K-Lined: '.$::kline{$_}{'reason'},undef,'K-Lined'.(::conf('main','showkline')?': '.$::kline{$_}{'reason'}:''));
       return 1;
     }
   }
@@ -397,7 +397,7 @@ sub handle_privmsgnotice {
     } else { $user->sendserv('461 '.$user->nick.' '.($n?'NOTICE':'PRIVMSG').' :Not enough parameters.'); }
   } elsif ($channel) {
     $channel->allsend(':'.$user->fullcloak.' '.($n?'NOTICE':'PRIVMSG').' '.$channel->name.' :'.$msg,$user);
-  } else { # elsif channel exists
+  } else {
     $user->sendserv('401 '.$user->nick.' '.$s[1].' :No suck nick/channel');
   }
 }

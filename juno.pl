@@ -1,11 +1,8 @@
 #!/usr/bin/perl -w
 use warnings;
 use strict;
-use less;
+use less 'mem';
 use POSIX;
-#use Socket;
-#use Net::DNS;
-#use Net::IP;
 use IO::Select;
 use IO::Socket;
 use user;

@@ -351,7 +351,7 @@ sub handle_whois {
       $user->sendserv('301 '.$user->nick.' '.$target->nick.' :'.$target->{'away'}) if defined $target->{'away'};
       $user->sendserv('313 '.$user->nick.' '.$target->nick.' :is an IRC operator') if $target->ismode('o');
       $user->sendserv('379 '.$user->nick.' '.$target->nick.' :is using modes +'.$modes);
-      $user->sendserv('378 '.$user->nick.' '.$target->nick.' :is connecting from *@'.$user->{'host'}.' '.$user->{'ip'}) unless $user->{'mode'}->{'x'}; 
+      $user->sendserv('378 '.$user->nick.' '.$target->nick.' :is connecting from *@'.$target->{'host'}.' '.$target->{'ip'}) if (!$user->{'mode'}->{'x'} || $user->ismode('o')); 
       $user->sendserv('317 '.$user->nick.' '.$target->nick.' '.(time-$target->{'idle'}).' '.$target->{'time'}.' :seconds idle, signon time');
 
     } else {

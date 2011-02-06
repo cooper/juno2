@@ -35,17 +35,8 @@ sub new {
   ::sendpeer($peer,':'.::conf('server','name').' NOTICE * :*** Looking up your hostname...');
   my $ip = $peer->peerhost;
   if ($ip =~ m/:/) { $ipv = 6; } else { $ipv = 4; }
-#  my ($ipobj,$res) = (new Net::IP($ip),new Net::DNS::Resolver);
-#  $res->nameservers(split(' ',::conf('main','dns')));
-#  my $pkt = $res->query($ipobj->reverse_ip,'PTR');
-#  unless ($pkt) {
-    $success = 0;
-    $host = $ip;
-#  } else {
-#    $success = 1;
-#    my $ans = $pkt->string;
-#    $host = $pkt->{'answer'}[0]->{'ptrdname'};
-#  }
+  $success = 0;
+  $host = $ip;
   my $this = {
     'server' => $::id,
     'id' => $::id.&newid,
@@ -302,16 +293,16 @@ sub handle_lusers {
 }
 sub handle_motd {
   my $user = shift;
-  open(MOTD,::conf('server','motd')) or $user->sendnum(376,':MOTD file missing.');
+  open(my $MOTD,::conf('server','motd')) or $user->sendnum(376,':MOTD file missing.');
   $user->sendnum(375,':'.::conf('server','name').' message of the day');
-  while (<MOTD>) {
+  while (<$MOTD>) {
     my $line = $_;
     $line =~ s/^\s+//;
     $line =~ s/\s+$//;
     $user->sendnum(372,':- '.$line);
   }
   $user->sendnum(376,':End of message of the day.');
-  close MOTD;
+  close $MOTD;
 }
 sub handle_nick {
   my $user = shift;

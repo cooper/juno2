@@ -77,11 +77,11 @@ sub names {
     my $u = user::lookupbyid($_);
     next if ($u->ismode('i') and !$user->ison($channel));
     $names .=
-    (defined $channel->{'owners'}->{$_}?'~':'').
-    (defined $channel->{'admins'}->{$_}?'&':'').
-    (defined $channel->{'ops'}->{$_}?'@':'').
-    (defined $channel->{'halfops'}->{$_}?'%':'').
-    (defined $channel->{'voices'}->{$_}?'+':'').
+    (defined $channel->{'owners'}->{$_}?'~':
+    (defined $channel->{'admins'}->{$_}?'&':
+    (defined $channel->{'ops'}->{$_}?'@':
+    (defined $channel->{'halfops'}->{$_}?'%':
+    (defined $channel->{'voices'}->{$_}?'+':''))))).
     $u->nick.' ';
   }
   $user->sendserv('353 '.$user->nick.' = '.$channel->name.' :'.$names) if $names ne '';
@@ -117,6 +117,10 @@ sub handlemode {
     $user->sendserv(join(' ',324,$user->nick,$channel->name,'+'.$all,$params));
     $user->sendserv(join(' ',329,$user->nick,$channel->name,$channel->{'first'}));
   } else {
+    if (!$channel->has($user,'owner') && !$channel->has($user,'admin') && !$channel->has($user,'op') && !$channel->has($user,'halfop')) {
+      $user->sendserv('482 '.$user->nick.' '.$channel->name.' :You\'re not a channel operator');
+      return;
+    }
     my $state = 1;
     my $cstate = 1;
     my (@args,@par,@final);

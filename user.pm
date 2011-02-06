@@ -158,11 +158,11 @@ sub send {
 sub can {
   my $user = shift;
   my $priv = shift;
-  return 0 unless defined $user->{'oper'};
+  return unless defined $user->{'oper'};
   foreach (split(' ',::oper($user->{'oper'},'privs'))) {
     return 1 if $_ eq $priv;
   }
-  return 0;
+  return;
 }
 sub quit {
   my ($user,$r,$no,$display) = @_;
@@ -255,22 +255,22 @@ sub nickexists {
   foreach (values %connection) {
     return $_ if lc($_->{'nick'}) eq lc($nick);
   }
-  return 0;  
+  return;  
 }
 sub lookupbyid {
   my $id = shift;
   foreach (values %connection) {
     return $_ if $_->{'id'} == $id;
   }
-  return 0;  
+  return;  
 }
 sub canoper {
   my ($user,$oper,$password) = @_;
-  return 0 unless exists $::oper{$oper};
+  return unless exists $::oper{$oper};
   if (::oper($oper,'password') eq crypt($password,::oper($oper,'salt'))) {
         return $oper if ::hostmatch($user->fullhost,split(' ',::oper($oper,'host')));
   }
-  return 0;
+  return;
 }
 sub ison {
   my ($user,$channel) = @_;
@@ -285,7 +285,7 @@ sub checkkline {
       return 1;
     }
   }
-  return 0;
+  return;
 }
 # HANDLERS
 sub handle_lusers {

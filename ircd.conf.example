@@ -21,9 +21,13 @@ sec listen4
 	addr 0.0.0.0
 	port 6667
 
-sec listen6
-	addr 2607:f128:46:0:216:3eff:fe85:d64a
-	port 6667
+listen 0.0.0.0
+  port 6667 6668
+  ipv 4
+
+listen 2607:f128:46:0:216:3eff:fe85:d64a
+  port 7000 7001 7002
+  ipv 6
 
 sec server
 	id 0

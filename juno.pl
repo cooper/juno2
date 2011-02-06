@@ -12,42 +12,19 @@ $0 = 'juno';
 our $TIME = time;
 $SIG{'INT'} = \&sigexit;
 &POSIX::setsid;
-our (%config,%oper,%kline,%outbuffer,%inbuffer,%timer);
+our (%config,%oper,%kline,%listen,%outbuffer,%inbuffer,%timer);
+my (%listensockets,@sel,$ipv6);
 confparse('ircd.conf');
-require IO::Socket::INET6 if conf('listen6','addr');
+&createsockets;
 our $id = conf('server','id');
-my ($socket4,$socket6);
-if (conf('listen6','addr')) {
-  $socket6 = IO::Socket::INET6->new(
-    Proto => 'tcp',
-    Listen => 1,
-    ReuseAddr => 1,
-    LocalPort => conf('listen6','port'),
-    LocalAddr => conf('listen6','addr')
-  );
-} else { $socket6 = 0; }
-if (conf('listen4','addr')) {
-  $socket4 = IO::Socket::INET->new(
-    Proto => 'tcp',
-    Listen => 1,
-    ReuseAddr => 1,
-    LocalPort => conf('listen4','port'),
-    LocalAddr => conf('listen4','addr')
-  );
-} else { $socket4 = 0; }
-my @sel = ();
-push(@sel,$socket6) if conf('listen6','addr');
-push(@sel,$socket4) if conf('listen4','addr');
-die 'not listening' if !$socket4 and !$socket6;
+die 'not listening' if $#sel < 0;
 our $select = new IO::Select(@sel);
 for(;;) {
   my $time;
   foreach my $peer ($select->can_read(conf('main','timeout'))) {
     $timer{$peer} = 0 unless $timer{$peer};
-    if ($peer == $socket4) {
-      user::new($socket4->accept);
-    } elsif ($peer == $socket6) {
-      user::new($socket6->accept);
+    if ($listensockets{$peer}) {
+      user::new($peer->accept);
     } else {
       my $data;
       $time = time;
@@ -119,12 +96,12 @@ sub conf {
 sub oper {
   my ($key,$val) = @_;
   return $oper{$key}{$val} if exists $oper{$key}{$val};
-  return 0;
+  return;
 }
 sub confparse {
   my $file = shift;
   open(my $CONF,'<',$file) or die 'can not open configuration file '.$file;
-  my ($section,$opersection,$klinesection);
+  my ($section,$opersection,$klinesection,$listensection);
   while (<$CONF>) {
     my $line = $_;
     $line =~ s/\t//g;
@@ -137,25 +114,36 @@ sub confparse {
       $section = $s[1];
       $opersection = 0;
       $klinesection = 0;
+      $listensection = 0;
       next;
     } elsif ($s[0] eq 'inc') {
       $opersection = 0;
       $klinesection = 0;
       $section = 0;
+      $listensection = 0;
       confparse($s[1]);
     } elsif ($s[0] eq 'oper') {
       $section = 0;
       $klinesection = 0;
       $opersection = $s[1];
+      $listensection = 0;
     } elsif ($s[0] eq 'kline') {
       $section = 0;
       $opersection = 0;
       $klinesection = $s[1];
+      $listensection = 0;
+    } elsif ($s[0] eq 'listen') {
+      $section = 0;
+      $opersection = 0;
+      $klinesection = 0;
+      $listensection = $s[1];
     } elsif ($s[0] eq 'die') {
       die $s[1];
     } else {
       if ($section) {
         $config{$section}{$s[0]} = $s[1];
+      } elsif ($listensection) {
+        $listen{$listensection}{$s[0]} = $s[1];
       } elsif ($opersection) {
         $oper{$opersection}{$s[0]} = $s[1];
       } elsif ($klinesection) {
@@ -168,9 +156,9 @@ sub confparse {
 }
 sub validnick {
   my ($str,$limit,$i) = @_;
-  return 0 if(length($str)<1 || length($str)>$limit);
-  return 0 if($str=~m/^\d/ && !$i);
-  return 0 if $str=~m/[^A-Za-z-0-9-\[\]\\\`\^\|\{\}\_]/;
+  return if(length($str)<1 || length($str)>$limit);
+  return if($str=~m/^\d/ && !$i);
+  return if $str=~m/[^A-Za-z-0-9-\[\]\\\`\^\|\{\}\_]/;
   return 1;
 }
 sub hostmatch {
@@ -187,11 +175,39 @@ sub hostmatch {
   if(grep {$mask =~ /$_/} @aregexps) {
     return 1;
   }
-  return 0;
+  return;
 }
 sub snotice {
   my $msg = shift;
   foreach (values %user::connection) {
     $_->sendserv('NOTICE '.$_->nick.' :*** Server notice: '.$msg) if ($_->ismode('o') && $_->ismode('S'));
+  }
+}
+sub createsockets {
+  foreach my $name (keys %listen) {
+    my $socket;
+    foreach my $port (split(' ',$listen{$name}{'port'})) {
+      if ($listen{$name}{'ipv'} == 6) {
+        $socket = IO::Socket::INET6->new(
+          Listen => 1,
+          ReuseAddr => 1,
+          LocalPort => $port,
+          LocalAddr => $name
+        ) or die 'could not listen: block '.$name;
+        unless ($ipv6) {
+          require IO::Socket::INET;
+          $ipv6 = 1;
+        }
+      } elsif ($listen{$name}{'ipv'} == 4) {
+        $socket = IO::Socket::INET->new(
+          Listen => 1,
+          ReuseAddr => 1,
+          LocalPort => $port,
+          LocalAddr => $name
+        ) or die 'could not listen: block '.$name;
+      } else { die 'unknown IP version? block '.$name; }
+      push(@sel,$socket) if $socket;
+      $listensockets{$socket} = $listen{$name}{'port'};
+    }
   }
 }

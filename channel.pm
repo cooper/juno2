@@ -62,10 +62,9 @@ sub who {
 }
 sub check {
   my $channel = shift;
-  my $i = 0;
-  $i++ foreach (keys %{$channel->{'users'}});
-  delete $channels{lc($channel->name)} if $i == 0;
-  ::snotice('dead channel: '.$channel->name) if $i == 0;
+  my @c = keys %{$channel->{'users'}};
+  delete $channels{lc($channel->name)} if $#c < 0;
+  ::snotice('dead channel: '.$channel->name) if $#c < 0;
 }
 sub names {
   my ($channel,$user) = @_;

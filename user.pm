@@ -73,7 +73,7 @@ sub setmode {
 sub ismode {
   my ($user,$mode) = @_;
   return $user->{'mode'}->{$mode} if exists $user->{'mode'}->{$mode};
-  return undef;
+  return;
 }
 sub unsetmode {
   my ($user,$modes,$a) = @_;
@@ -141,7 +141,7 @@ sub unsetcloak {
 sub lookup {
   my $peer = shift;
   return $connection{$peer} if exists $connection{$peer};
-  return undef;
+  return;
 }
 sub send {
   ::sendpeer(shift->obj,@_);
@@ -266,7 +266,7 @@ sub canoper {
 sub ison {
   my ($user,$channel) = @_;
   return 1 if exists $channel->{'users'}->{$user->{'id'}};
-  return undef;
+  return;
 }
 sub checkkline {
   my $user = shift;

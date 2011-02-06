@@ -195,7 +195,7 @@ sub createsockets {
           LocalAddr => $name
         ) or die 'could not listen: block '.$name;
         unless ($ipv6) {
-          require IO::Socket::INET;
+          require IO::Socket::INET6;
           $ipv6 = 1;
         }
       } elsif ($listen{$name}{'ipv'} == 4) {

@@ -27,6 +27,8 @@ CAP
 max number of users in LUSERS
 only accept hosts if the resolution matches the client address
 show modes alphabetical, capitals first.
+TOPIC command
+KICK command
 
 Done - things I've done already
 ----

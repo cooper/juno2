@@ -50,13 +50,14 @@ basic channel structure
 JOIN command
 NAMES command
 WHO command (channels only)
-MODE command (partially)
+MODE command
 PART command
 flood protection
 REHASH command
 IRC operator server notices
 KLINE
 GLOBOPS command
+channel/user mode parser
 
 user modes
 ----------

@@ -17,10 +17,6 @@ sec main
   timeout .1
   dns 8.8.8.8 8.8.4.4
 
-sec listen4
-	addr 0.0.0.0
-	port 6667
-
 listen 0.0.0.0
   port 6667 6668
   ipv 4

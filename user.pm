@@ -388,7 +388,7 @@ sub handle_privmsgnotice {
       } else { $user->sendserv('412 '.$user->nick.' :No text to send'); }
     } else { $user->sendserv('461 '.$user->nick.' '.($n?'NOTICE':'PRIVMSG').' :Not enough parameters.'); }
   } elsif ($channel) {
-    $channel->allsend(':'.$user->fullcloak.' '.($n?'NOTICE':'PRIVMSG').' '.$channel->name.' :'.$msg,$user);
+    $channel->privmsgnotice($user,($n?'NOTICE':'PRIVMSG'),$msg);
   } else {
     $user->sendserv('401 '.$user->nick.' '.$s[1].' :No suck nick/channel');
   }

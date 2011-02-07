@@ -136,7 +136,7 @@ sub handlemode {
     foreach (split(//,$s[0])) {
       if ($_ eq '+') { $state = 1; }
       elsif ($_ eq '-') { $state = 0; }
-      elsif ($_ =~ m/(n|t)/) {
+      elsif ($_ =~ m/(n|t|m)/) {
         $channel->setmode($_) if $state;
         $channel->unsetmode($_) unless $state;
         if ($cstate == $state) {
@@ -295,5 +295,15 @@ sub settopic {
     };
     $channel->allsend(':'.$user->fullcloak.' TOPIC '.$channel->name.' :'.$topic);
   } else { $user->sendserv('482 '.$user->nick.' '.$channel->name.' :You\'re not a channel operator'); }
+}
+sub privmsgnotice {
+  my ($channel,$user,$type,$msg) = @_;
+  if (($channel->ismode('n') && !$user->ison($channel)) ||
+  ($channel->ismode('m') && !$channel->has($user,'owner') && !$channel->has($user,'admin') && !$channel->has($user,'op') && !$channel->has($user,'halfop') && !$channel->has($user,'voice'))
+  ) {
+    $user->sendserv(join(' ',404,$user->nick,$channel->name,':Cannot send to channel'));
+    return;
+  }
+  $channel->allsend(':'.$user->fullcloak.' '.join(' ',$type,$channel->name,':'.$msg),$user);
 }
 1

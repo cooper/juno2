@@ -76,6 +76,7 @@ a protected status
 o operator status
 h half-operator status
 v voiced status
+m only users with voice or higher status can speak
 
 oper flags
 ----------

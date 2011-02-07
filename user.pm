@@ -228,7 +228,7 @@ sub start {
   $user->sendnum('003',':This server was created '.$::TIME); # this should actually have a date
   # modes
   $user->sendnum('004',::conf('server','name').' junodev-0.0.1 ix o bei');
-  $user->sendnum('005','CHANTYPES=# EXCEPTS INVEX CHANMODES=,,,mnt PREFIX=(qaohv)~&@%+ NETWORK='.::conf('server','network').' STATUSMSG=@+ MODES='.::conf('limit','chanmodes').' NICKLEN='.::conf('limit','nick').' :are support by this server');
+  $user->sendnum('005','CHANTYPES=# EXCEPTS INVEX CHANMODES=,,,mnt PREFIX=(qaohv)~&@%+ NETWORK='.::conf('server','network').' STATUSMSG=@+ MODES='.::conf('limit','chanmodes').' NICKLEN='.::conf('limit','nick').' TOPICLEN='.::conf('limit','topic').' :are support by this server');
   $user->handle_lusers;
   $user->handle_motd;
   $user->setmode(::conf('user','automodes'));
@@ -512,6 +512,7 @@ sub handle_topic {
     my $channel = channel::chanexists($s[1]);
     if ($channel) {
       if (defined $s[2]) {
+        $s[2] = substr($s[2],0,-(length($s[2])-(::conf('limit','topic')+1))) if (length $s[2] > ::conf('limit','topic'));
         $channel->settopic($user,::col($s[2]));
       } else {
         $channel->showtopic($user);

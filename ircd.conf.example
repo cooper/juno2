@@ -44,7 +44,7 @@ sec ping
 
 sec limit
 	nick 32
-	topic 1000
+	topic 500
 	ident 15
   chanmodes 5
 

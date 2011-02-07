@@ -31,9 +31,7 @@ sub new {
       } elsif (uc($s[0]) eq 'USER') { 
         if (exists $s[4]) {
           if (::validnick($s[1],::conf('limit','ident'),1)) {
-            my $real = (split(' ',$data,5))[4];
-            $real =~ s/://;
-            $user->{'gecos'} = $real;
+            $user->{'gecos'} = ::col((split(' ',$data,5))[4]);
             $user->{'ident'} = '~'.$s[1];
             if (exists $user->{'nick'}) {
               $user->{'ready'} = 1;

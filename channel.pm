@@ -29,6 +29,7 @@ sub dojoin {
   my ($channel,$user) = @_;
   $channel->{'users'}->{$user->{'id'}} = time;
   $channel->allsend(':'.$user->fullcloak.' JOIN :'.$channel->name,undef);
+  $channel->showtopic($user,1);
   $channel->names($user);
 }
 sub allsend {
@@ -263,6 +264,15 @@ sub handlestatus {
       $user->sendserv('482 '.$user->nick.' '.$channel->name.' :You\'re not a channel operator');
       return;
     }
+  }
+}
+sub showtopic {
+  my ($channel,$user,$halt) = @_;
+  if ($channel->{'topic'}) {
+    $user->sendserv('332 '.$user->nick.' '.$channel->name.' :'.$channel->{'topic'}->{'topic'});
+    $user->sendserv('333 '.$user->nick.' '.$channel->name.' '.$channel->{'topic'}->{'setby'}.' '.$channel->{'topic'}->{'time'});
+  } else {
+    $user->sendserv('331 '.$user->nick.' '.$channel->name.' :No topic is set.') unless $halt;
   }
 }
 1

@@ -25,7 +25,8 @@ my %commands = (
   QUIT => \&handle_quit,
   PART => \&handle_part,
   REHASH => \&handle_rehash,
-  GLOBOPS => \&handle_globops
+  GLOBOPS => \&handle_globops,
+  TOPIC => \&handle_topic
 );
 sub new {
 #user::new($peer)
@@ -311,7 +312,6 @@ sub handle_nick {
     return if $s[1] eq $user->nick;
     if (::validnick($s[1],::conf('limit','nick'),undef)) {
       unless(user::nickexists($s[1])) {
-        $s[1] =~ s/://;
         my %sent = ();
         foreach (values %channel::channels) {
           if ($user->ison($_)) {
@@ -380,8 +380,7 @@ sub handle_privmsgnotice {
   if (uc $s[0] eq 'NOTICE') { $n = 1; }
   my $target = nickexists($s[1]);
   my $channel = channel::chanexists($s[1]);
-  my $msg = (split(' ',$data,3))[2];
-  $msg =~ s/://;
+  my $msg = ::col((split(' ',$data,3))[2]);
   if ($target) {
     if (defined $s[2]) {
       if ($msg ne '') { 
@@ -401,8 +400,7 @@ sub handle_away {
     $user->sendserv('305 '.$user->nick.' :You are no longer marked as being away');
     return;
   }
-  $reason =~ s/://;
-  $user->{'away'} = $reason;
+  $user->{'away'} = ::col($reason);
   $user->sendserv('306 '.$user->nick.' :You have been marked as being away');
 }
 sub handle_oper {
@@ -425,8 +423,7 @@ sub handle_kill {
     if ($user->can('kill')) {
       my $target = nickexists($s[1]);
       if ($target) {
-        my $reason = (split(' ',$data,3))[2];
-        $reason =~ s/://;
+        my $reason = ::col((split(' ',$data,3))[2]);
         $target->quit('Killed ('.$user->nick.' ('.$reason.'))');
       } else { $user->sendserv('401 '.$user->nick.' nightly :No such nick/channel'); }
     } else { $user->sendserv('481 '.$user->nick.' :Permission Denied'); }
@@ -469,8 +466,7 @@ sub handle_names {
 sub handle_part {
   my ($user,$data) = @_;
   my @s = split(' ',$data);
-  my $reason = (split(' ',$data,3))[2];
-  $reason =~ s/:// if defined $reason;
+  my $reason = ::col((split(' ',$data,3))[2]);
   if ($s[1]) {
     foreach (split(',',$s[1])) {
       my $channel = channel::chanexists($_);
@@ -487,8 +483,7 @@ sub handle_part {
   } else { $user->sendserv('461 '.$user->nick.' JOIN :Not enough parameters.'); }
 }
 sub handle_quit {
-  my ($user,$reason) = (shift,(split(' ',shift,2))[1]);
-  $reason =~ s/://;
+  my ($user,$reason) = (shift,::col((split(' ',shift,2))[1]));
   $user->quit('Quit: '.$reason);
 }
 sub handle_rehash {
@@ -509,5 +504,9 @@ sub handle_globops {
       ::snotice('GLOBOPS from '.$user->nick.': '.$s[1]);
     } else { $user->sendserv('461 '.$user->nick.' GLOBOPS :Not enough parameters.'); }
   } else { $user->sendserv('481 '.$user->nick.' :Permission Denied'); }
+}
+sub handle_topic {
+  my ($user,$data) = @_;
+  
 }
 1

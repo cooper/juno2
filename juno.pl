@@ -211,3 +211,9 @@ sub createsockets {
     }
   }
 }
+sub col {
+  my $str = shift;
+  return unless $str =~ m/^:/;
+  $str =~ s/://;
+  return $str;
+}

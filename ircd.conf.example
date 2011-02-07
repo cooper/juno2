@@ -21,6 +21,7 @@ sec main
   dns 8.8.8.8 8.8.4.4
   showkline 0
   fullmasktopic 0
+  maxmodes 5
 
 listen 0.0.0.0
   port 6667 6668

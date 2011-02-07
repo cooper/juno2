@@ -128,12 +128,13 @@ sub handlemode {
       $user->sendserv('482 '.$user->nick.' '.$channel->name.' :You\'re not a channel operator');
       return;
     }
-    my $state = 1;
-    my $cstate = 1;
+    my ($state,$cstate,$i) = (1,1,1);
     my (@args,@par,@final);
     my @s = (split(' ',$str,2));
     @args = split(' ',$s[1]) if defined $s[1];
     foreach (split(//,$s[0])) {
+      last if $i > ::conf('main','maxmodes');
+      $i++ if $_ !~ m/(\+|-)/; 
       if ($_ eq '+') { $state = 1; }
       elsif ($_ eq '-') { $state = 0; }
       elsif ($_ =~ m/(n|t|m)/) {

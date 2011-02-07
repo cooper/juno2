@@ -133,7 +133,7 @@ sub handlemode {
     my @s = (split(' ',$str,2));
     @args = split(' ',$s[1]) if defined $s[1];
     foreach (split(//,$s[0])) {
-      last if $i > ::conf('main','maxmodes');
+      last if $i > ::conf('limit','chanmodes');
       $i++ if $_ !~ m/(\+|-)/; 
       if ($_ eq '+') { $state = 1; }
       elsif ($_ eq '-') { $state = 0; }

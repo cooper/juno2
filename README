@@ -61,12 +61,22 @@ IRC operator server notices
 KLINE
 GLOBOPS command
 channel/user mode parser
+channel topics/TOPIC command
 
 user modes
 ----------
 i invisible
 x cloaking enabled
 S oper snotices enabled
+
+channel modes
+-------------
+t only operators can set the topic
+q owner status
+a protected status
+o operator status
+h half-operator status
+v voiced status
 
 oper flags
 ----------

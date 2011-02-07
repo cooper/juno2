@@ -100,6 +100,12 @@ sub setmode {
   $channel->{'mode'}->{$mode}{'time'} = time;
   $channel->{'mode'}->{$mode}{'params'} = (defined $par?$par:undef);
 }
+sub ismode {
+  my $channel = shift;
+  my $mode = shift;
+  return $channel->{'mode'}->{$mode} if exists $channel->{'mode'}->{$mode};
+  return;
+}
 sub unsetmode {
   my $channel = shift;
   foreach (split(//,shift)) {
@@ -274,5 +280,20 @@ sub showtopic {
   } else {
     $user->sendserv('331 '.$user->nick.' '.$channel->name.' :No topic is set.') unless $halt;
   }
+}
+sub settopic {
+  my ($channel,$user,$topic) = @_;
+  my $success = 0;
+  if ($channel->ismode('t')) {
+    $success = 1 if ($channel->has($user,'owner') || $channel->has($user,'admin') || $channel->has($user,'op') || $channel->has($user,'halfop'));
+  } else { $success = 1; }
+  if ($success) {
+    $channel->{'topic'} = {
+      'topic' => $topic,
+      'time' => time,
+      'setby' => (::conf('main','fullmasktopic')?$user->fullcloak:$user->nick)
+    };
+    $channel->allsend(':'.$user->fullcloak.' TOPIC '.$channel->name.' :'.$topic);
+  } else { $user->sendserv('482 '.$user->nick.' '.$channel->name.' :You\'re not a channel operator'); }
 }
 1

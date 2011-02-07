@@ -507,6 +507,18 @@ sub handle_globops {
 }
 sub handle_topic {
   my ($user,$data) = @_;
-  
+  my @s = split(' ',$data,3);
+  if (defined $s[1]) {
+    my $channel = channel::chanexists($s[1]);
+    if ($channel) {
+      if (defined $s[2]) {
+        $channel->settopic($user,::col($s[2]));
+      } else {
+        $channel->showtopic($user);
+      }
+    } else { $user->sendserv('401 '.$user->nick.' '.$s[1].' :No such nick/channel'); }
+  } else {
+    $user->sendserv('461 '.$user->nick.' TOPIC :Not enough parameters.');
+  }
 }
 1

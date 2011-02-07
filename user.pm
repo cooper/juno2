@@ -228,7 +228,7 @@ sub start {
   $user->sendnum('003',':This server was created '.$::TIME); # this should actually have a date
   # modes
   $user->sendnum('004',::conf('server','name').' junodev-0.0.1 ix o bei');
-  $user->sendnum('005','CHANTYPES=# EXCEPTS INVEX CHANMODES=bei PREFIX=(qaohv)~&@%+ NETWORK='.::conf('server','network').' STATUSMSG=@+ :are support by this server');
+  $user->sendnum('005','CHANTYPES=# EXCEPTS INVEX CHANMODES=,,,nt PREFIX=(qaohv)~&@%+ NETWORK='.::conf('server','network').' STATUSMSG=@+ :are support by this server');
   $user->handle_lusers;
   $user->handle_motd;
   $user->setmode(::conf('user','automodes'));

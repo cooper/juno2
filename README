@@ -86,6 +86,10 @@ o operator status
 h half-operator status
 v voiced status
 m only users with voice or higher status can speak
+b ban
+Z mute
+I invite exception
+e exception
 
 oper flags
 ----------

@@ -28,7 +28,8 @@ max number of users in LUSERS
 only accept hosts if the resolution matches the client address
 show modes alphabetical, capitals first.
 KICK command
-channel modes Y and V
+USERMODE command
+VERSION command
 
 Done - things I've done already
 ----

@@ -18,6 +18,10 @@ sub new {
     'ops' => {$user->{'id'}=>time},
     'halfops' => {},
     'voices' => {},
+    'bans' => {}, # array ref [setby,time]
+    'mutes' => {},
+    'invexes' => {},
+    'exempts' => {}
   };
   bless $this;
   $channels{lc($name)} = $this;
@@ -27,10 +31,12 @@ sub new {
 }
 sub dojoin {
   my ($channel,$user) = @_;
-  $channel->{'users'}->{$user->{'id'}} = time;
-  $channel->allsend(':'.$user->fullcloak.' JOIN :'.$channel->name,undef);
-  $channel->showtopic($user,1);
-  $channel->names($user);
+  if (!(::hostmatch($user->fullcloak,keys %{$channel->{'bans'}}) && !::hostmatch($user->fullcloak,keys %{$channel->{'exempts'}}))) {
+    $channel->{'users'}->{$user->{'id'}} = time;
+    $channel->allsend(':'.$user->fullcloak.' JOIN :'.$channel->name);
+    $channel->showtopic($user,1);
+    $channel->names($user);
+  } else { $user->sendserv('474 '.$user->nick.' '.$channel->name.' :Cannot join channel (+b) - you are banned'); }
 }
 sub allsend {
   my ($channel,$data,$nou) = @_; my $halt;
@@ -159,6 +165,19 @@ sub handlemode {
           $cstate = $state;
           push(@par,$target);
         }
+      } elsif ($_ =~ m/(b|Z|e|I)/) {
+        my $target = shift(@args);
+        unless (defined $target) { $channel->sendmasklist($user,$_); next; }
+        my $suc = $channel->handlemaskmode($user,$state,$_,$target);
+        if ($suc) {
+          if ($cstate == $state) {
+            push(@final,$_);
+          } else {
+            push(@final,($state?'+':'-').$_);
+          }
+          $cstate = $state;
+          push(@par,$suc);
+        }
       } else {
         $user->sendserv('472 '.$user->nick.' '.$_.' :no such mode');
       }
@@ -166,7 +185,7 @@ sub handlemode {
     unshift(@final,'+');
     my $finished = join('',@final);
     $finished =~ s/\+-/-/g;
-    $channel->allsend(':'.$user->fullcloak.' MODE '.$channel->name.' '.$finished.' '.join(' ',@par));
+    $channel->allsend(':'.$user->fullcloak.' MODE '.$channel->name.' '.$finished.' '.join(' ',@par)) unless $finished eq '+';
   }
 }
 sub handlestatus {
@@ -297,14 +316,74 @@ sub settopic {
     $channel->allsend(':'.$user->fullcloak.' TOPIC '.$channel->name.' :'.$topic);
   } else { $user->sendserv('482 '.$user->nick.' '.$channel->name.' :You\'re not a channel operator'); }
 }
+sub canspeakwithstatus {
+  my ($channel,$user) = @_;
+  if(!$channel->has($user,'owner') && !$channel->has($user,'admin') && !$channel->has($user,'op') && !$channel->has($user,'halfop') && !$channel->has($user,'voice')) {
+    return;
+  }
+  return 1;
+}
 sub privmsgnotice {
   my ($channel,$user,$type,$msg) = @_;
   if (($channel->ismode('n') && !$user->ison($channel)) ||
-  ($channel->ismode('m') && !$channel->has($user,'owner') && !$channel->has($user,'admin') && !$channel->has($user,'op') && !$channel->has($user,'halfop') && !$channel->has($user,'voice'))
-  ) {
+  ($channel->ismode('m') && !$channel->canspeakwithstatus($user)) ||
+  ((::hostmatch($user->fullcloak,keys %{$channel->{'bans'}}) || 
+  ::hostmatch($user->fullcloak,keys %{$channel->{'mutes'}})) && 
+  !$channel->canspeakwithstatus($user) && !::hostmatch($user->fullcloak,keys %{$channel->{'exempts'}}))) {
     $user->sendserv(join(' ',404,$user->nick,$channel->name,':Cannot send to channel'));
     return;
   }
   $channel->allsend(':'.$user->fullcloak.' '.join(' ',$type,$channel->name,':'.$msg),$user);
+}
+sub handlemaskmode {
+  my ($channel,$user,$state,$mode,$mask) = @_;
+ 	if ($mask =~ m/\@/) {
+		if ($mask =~ m/\!/) {
+			$mask = $mask;
+		}	else {
+			$mask = '*!'.$mask;
+		}
+	}	else {
+		if ($mask =~ m/\!/) {
+			$mask = $mask.'@*';
+		} else {
+			$mask = $mask.'!*@*';
+		}
+	}
+  my $modename;
+  $modename = 'bans' if $mode eq 'b';
+  $modename = 'mutes' if $mode eq 'Z';
+  $modename = 'invexes' if $mode eq 'I';
+  $modename = 'exempts' if $mode eq 'e';
+  if ($state) {
+    $channel->{$modename}->{$mask} = [$user->fullcloak,time];
+  } else {
+    delete $channel->{$modename}->{$mask} if exists $channel->{$modename}->{$mask};
+  }
+  return $mask;
+}
+sub sendmasklist {
+  my ($channel,$user,$mode) = @_;
+  if ($mode eq 'b') {
+    foreach (keys %{$channel->{'bans'}}) {
+      $user->sendserv(join(' ',367,$user->nick,$channel->name,$_,$channel->{'bans'}->{$_}->[0],$channel->{'bans'}->{$_}->[1]));
+    }
+    $user->sendserv('368 '.$user->nick.' '.$channel->name.' :End of channel ban list');
+  } elsif ($mode eq 'Z') {
+    foreach (keys %{$channel->{'mutes'}}) {
+      $user->sendserv(join(' ',728,$user->nick,$channel->name,$_,$channel->{'mutes'}->{$_}->[0],$channel->{'mutes'}->{$_}->[1]));
+    }
+    $user->sendserv('368 '.$user->nick.' '.$channel->name.' :End of channel mute list');
+  } elsif ($mode eq 'e') {
+    foreach (keys %{$channel->{'exempts'}}) {
+      $user->sendserv(join(' ',348,$user->nick,$channel->name,$_,$channel->{'exempts'}->{$_}->[0],$channel->{'exempts'}->{$_}->[1]));
+    }
+    $user->sendserv('349 '.$user->nick.' '.$channel->name.' :End of channel exception list');
+  } elsif ($mode eq 'I') {
+    foreach (keys %{$channel->{'invexes'}}) {
+      $user->sendserv(join(' ',346,$user->nick,$channel->name,$_,$channel->{'invexes'}->{$_}->[0],$channel->{'invexes'}->{$_}->[1]));
+    }
+    $user->sendserv('347 '.$user->nick.' '.$channel->name.' :End of channel invite list');
+  }
 }
 1

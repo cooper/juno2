@@ -228,7 +228,7 @@ sub start {
   $user->sendnum('003',':This server was created '.$::TIME); # this should actually have a date
   # modes
   $user->sendnum('004',::conf('server','name').' junodev-0.0.1 ix o bei');
-  $user->sendnum('005','CHANTYPES=# EXCEPTS INVEX CHANMODES=,,,mnt PREFIX=(qaohv)~&@%+ NETWORK='.::conf('server','network').' STATUSMSG=@+ MODES='.::conf('limit','chanmodes').' NICKLEN='.::conf('limit','nick').' TOPICLEN='.::conf('limit','topic').' :are support by this server');
+  $user->sendnum('005','CHANTYPES=# EXCEPTS INVEX CHANMODES=eIbZ,,,mnt PREFIX=(qaohv)~&@%+ NETWORK='.::conf('server','network').' STATUSMSG=@+ MODES='.::conf('limit','chanmodes').' NICKLEN='.::conf('limit','nick').' TOPICLEN='.::conf('limit','topic').' :are support by this server');
   $user->handle_lusers;
   $user->handle_motd;
   $user->setmode(::conf('user','automodes'));
@@ -455,12 +455,13 @@ sub handle_who {
 }
 sub handle_names {
   my $user = shift;
-  my $name = shift;
-  my $target = channel::chanexists((split(' ',$name))[1]);
-  if ($target) {
-    $target->names($user);
-  } else {
-    $user->sendserv('401 '.$user->nick.' '.$name.' :No such nick/channel');
+  foreach (split(',',(split(' ',shift))[1])) { 
+    my $target = channel::chanexists((split(' ',$_))[1]);
+    if ($target) {
+      $target->names($user);
+    } else {
+      $user->sendserv('401 '.$user->nick.' '.$_.' :No such nick/channel');
+    }
   }
 }
 sub handle_part {

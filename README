@@ -2,10 +2,10 @@
 
 as you know, I attempted to fork pIRCd while learning perl. that failed very badly. now I'm starting over from scratch because I have nothing better to do.
 
-setting up: edit ircd.conf and read the comments.
+setting up: edit ircd.conf.example and read the comments.
 	perl juno.pl
 
-support: irc.flsnet.co.cc #chat, probably. maybe not.
+support: cooper.on.fgtb.us #k, possibly.
 
 requirements:
 IO::Select (core)
@@ -30,6 +30,10 @@ show modes alphabetical, capitals first.
 KICK command
 USERMODE command
 VERSION command
+fix bug where you must have op to view the ban list
+make it so you can't change your nick if you're banned in a channel you're in
+NAMES channel1,channel2
+WHO user
 
 Done - things I've done already
 ----
@@ -62,6 +66,10 @@ KLINE
 GLOBOPS command
 channel/user mode parser
 channel topics/TOPIC command
+channel bans
+channel mutes
+channel invite exeptions
+channel ban exceptions
 
 user modes
 ----------

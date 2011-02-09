@@ -1,13 +1,11 @@
-#####################################################################
-#                The Perl Internet Relay Chat Daemon                #
-#              _                     _              _               # 
-#             (_)                   (_)            | |              #
-#              _ _   _ _ __   ___    _ _ __ ___  __| |              #
-#             | | | | | '_ \ / _ \  | | '__/ __|/ _` |              #
-#             | | |_| | | | | (_) | | | | | (__| (_| |              #
-##############| |\__,_|_| |_|\___/  |_|_|  \___|\__,_|###############
-             _/ |
-            |__/
+              _                     _              _
+             (_)                   (_)            | |
+              _ _   _ _ __   ___    _ _ __ ___  __| |
+             | | | | | '_ \ / _ \  | | '__/ __|/ _` |
+             | | |_| | | | | (_) |-| | | | (__| (_| |
+#############| |\__,_|_| |_|\___/  |_|_|  \___|\__,_|###############
+            _/ |  Perl Internet Relay Chat daemon
+           |__/
 
 this is my rewrite of juno-ircd, the fork of the Perl IRC Daemon.
 It is written mostly from scratch; however, I will not take credit for the many
@@ -38,8 +36,8 @@ IO::Select (core)
 IO::Socket::INET (core)
 Socket (core)
 POSIX (core)
-IO::Socket::SSL if you want SSL support
-IO::Socket::INET6 if you want IPv6 support
+if IPv6 enabled: IO::Socket::INET6  and Socket6
+if SSL enabled: IO::Socket::SSL
 -
 currently, all required modules are core perl modules, so you should be okay.
 if you wish to install IO::Socket::INET6 and IO::Socket::SSL for SSL and IPv6
@@ -125,6 +123,6 @@ e exception
 
 oper flags
 ----------
-kline - local kill line
+kill - kill a user
 rehash - rehash config
 globops - send globops to all opers

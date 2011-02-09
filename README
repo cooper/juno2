@@ -1,28 +1,56 @@
-<insert ASCII art here>
+#####################################################################
+#                The Perl Internet Relay Chat Daemon                #
+#              _                     _              _               # 
+#             (_)                   (_)            | |              #
+#              _ _   _ _ __   ___    _ _ __ ___  __| |              #
+#             | | | | | '_ \ / _ \  | | '__/ __|/ _` |              #
+#             | | |_| | | | | (_) | | | | | (__| (_| |              #
+##############| |\__,_|_| |_|\___/  |_|_|  \___|\__,_|###############
+             _/ |
+            |__/
 
-as you know, I attempted to fork pIRCd while learning perl. that failed very badly. now I'm starting over from scratch because I have nothing better to do.
+this is my rewrite of juno-ircd, the fork of the Perl IRC Daemon.
+It is written mostly from scratch; however, I will not take credit for the many
+concepts from pIRCd that I have used in my writing.
 
-setting up: edit ircd.conf.example and read the comments.
-	perl juno.pl
+setting up/installation
+-----------------------
+one thing I have tried to do is to make it as simple as possible to setup and install, so
+there is no install script and there are no files that the IRCd requires to be built before
+it is started. for this reason, there is an 'enable' block in the configuration to enable
+certain features that were originally to be enabled in installation; but as long as the etc
+directory is readable and writable, you should be ready to enjoy juno, that is, of course, after
+you edit etc/ircd.conf.example and read the comments. the configuration is setup very simply:
+the first word of a line is the value you're setting and everything beyond it is the value
+you are setting it to (except for in oper, listen, etc blocks.) when you finish configuring,
+just run juno.pl.
 
-support: cooper.on.fgtb.us #k, possibly.
+if you are in need of assistance, you are likely to find me on my development
+network at cooper.on.fgtb.us #k. If I'm not there, I'm probably on irc.alphachat.net.
+this is pretty basic when it comes to the style of which it's written, so if you know
+a little bit of Perl editing it should be fairly easy.
 
-requirements:
+requirements
+------------
+you must have the following perl modules to run juno:
+-
 IO::Select (core)
 IO::Socket::INET (core)
 Socket (core)
 POSIX (core)
 IO::Socket::SSL if you want SSL support
 IO::Socket::INET6 if you want IPv6 support
+-
+currently, all required modules are core perl modules, so you should be okay.
+if you wish to install IO::Socket::INET6 and IO::Socket::SSL for SSL and IPv6
+support, use cpan to install te modules.
 
 Plans - things I plan to do
------
+---------------------------
 I'm not going to put anything here until I run out of useful things to do.
 
 TODO - things I NEED to do
-----
-this and linked server objects
-fix SSL listening
+--------------------------
 CAP
 max number of users in LUSERS
 only accept hosts if the resolution matches the client address
@@ -30,13 +58,14 @@ show modes alphabetical, capitals first.
 KICK command
 USERMODE command
 VERSION command
-fix bug where you must have op to view the ban list
+fix bug where you must have op to view the ban list (?)
 make it so you can't change your nick if you're banned in a channel you're in
 NAMES channel1,channel2
 WHO user
+channel names may not contain ASCII character 7
 
-Done - things I've done already
-----
+done - things I've done already
+-------------------------------
 configuration parser
 client listening (non-ssl)
 ping system
@@ -62,7 +91,7 @@ PART command
 flood protection
 REHASH command
 IRC operator server notices
-KLINE
+KLINE by configuration
 GLOBOPS command
 channel/user mode parser
 channel topics/TOPIC command
@@ -70,12 +99,15 @@ channel bans
 channel mutes
 channel invite exeptions
 channel ban exceptions
+SSL support
 
 user modes
 ----------
 i invisible
+o IRC operator
 x cloaking enabled
 S oper snotices enabled
+Z SSL connection
 
 channel modes
 -------------
@@ -94,6 +126,5 @@ e exception
 oper flags
 ----------
 kline - local kill line
-akill - global kill line
 rehash - rehash config
 globops - send globops to all opers

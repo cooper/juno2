@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use warnings;
 use strict;
-use less;
+use less 'mem';
 package handle;
 sub new {
   my $user = user::lookup(shift);

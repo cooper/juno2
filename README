@@ -2,10 +2,10 @@
              (_)                   (_)            | |
               _ _   _ _ __   ___    _ _ __ ___  __| |
              | | | | | '_ \ / _ \  | | '__/ __|/ _` |
-             | | |_| | | | | (_) |-| | | | (__| (_| |
-#############| |\__,_|_| |_|\___/  |_|_|  \___|\__,_|###############
+             | | |_| | | | | (_) |-| | | | (__| (_| | v0.4
+#############| |\__,_|_| |_|\___/  |_|_|  \___|\__,_|#############
             _/ |  Perl Internet Relay Chat daemon
-           |__/
+           |__/ 
 
 this is my rewrite of juno-ircd, the fork of the Perl IRC Daemon.
 It is written mostly from scratch; however, I will not take credit for the many
@@ -18,10 +18,12 @@ there is no install script and there are no files that the IRCd requires to be b
 it is started. for this reason, there is an 'enable' block in the configuration to enable
 certain features that were originally to be enabled in installation; but as long as the etc
 directory is readable and writable, you should be ready to enjoy juno, that is, of course, after
-you edit etc/ircd.conf.example and read the comments. the configuration is setup very simply:
-the first word of a line is the value you're setting and everything beyond it is the value
+you edit etc/ircd.conf.example and read the comments. the configuration is setup very simply.
+the first word of a line is the value you're setting, and everything beyond it is the value
 you are setting it to (except for in oper, listen, etc blocks.) when you finish configuring,
-just run juno.pl.
+just start juno.pl.
+--config=/path/to/config # use a configuration other than etc/ircd.conf
+--nofork # prevent the IRCd from running in the background
 
 if you are in need of assistance, you are likely to find me on my development
 network at cooper.on.fgtb.us #k. If I'm not there, I'm probably on irc.alphachat.net.
@@ -61,6 +63,7 @@ make it so you can't change your nick if you're banned in a channel you're in
 NAMES channel1,channel2
 WHO user
 channel names may not contain ASCII character 7
+create a script to start, stop, and rehash.
 
 done - things I've done already
 -------------------------------

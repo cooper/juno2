@@ -8,14 +8,28 @@ use IO::Socket;
 use user;
 use handle;
 use channel;
-$0 = 'juno';
+local $0 = 'juno';
+our $VERSION = 0.4;
 our $TIME = time;
+our $CONFIG = 'etc/ircd.conf';
+my $NOFORK = 0;
+my $PID = 0;
 $SIG{'INT'} = \&sigexit;
-&POSIX::setsid;
 our (%config,%oper,%kline,%listen,%outbuffer,%inbuffer,%timer);
-my (%listensockets,@sel,$ipv6);
-confparse('ircd.conf');
+my (%listensockets,%SSL,@sel,$ipv6);
+&handleargs;
+confparse($CONFIG);
+&loadrequirements;
 &createsockets;
+unless ($NOFORK) {
+  print "Becoming a daemon...\n";
+  open STDIN,  '/dev/null' or die "Can't read /dev/null: $!";
+  open STDOUT, '>/dev/null';
+  open STDERR, '>/dev/null';
+  $PID = fork;
+}
+exit if ($PID != 0);
+&POSIX::setsid;
 our $id = conf('server','id');
 die 'not listening' if $#sel < 0;
 our $select = new IO::Select(@sel);
@@ -24,7 +38,7 @@ for(;;) {
   foreach my $peer ($select->can_read(conf('main','timeout'))) {
     $timer{$peer} = 0 unless $timer{$peer};
     if ($listensockets{$peer}) {
-      user::new($peer->accept);
+      user::new(($SSL{$peer}?1:0),$peer->accept);
     } else {
       my $data;
       $time = time;
@@ -187,27 +201,40 @@ sub createsockets {
   foreach my $name (keys %listen) {
     my $socket;
     foreach my $port (split(' ',$listen{$name}{'port'})) {
-      if ($listen{$name}{'ipv'} == 6) {
+      last if $port == 0;
+      if ($ipv6) {
         $socket = IO::Socket::INET6->new(
           Listen => 1,
           ReuseAddr => 1,
           LocalPort => $port,
           LocalAddr => $name
-        ) or die 'could not listen: block '.$name;
-        unless ($ipv6) {
-          require IO::Socket::INET6;
-          $ipv6 = 1;
-        }
-      } elsif ($listen{$name}{'ipv'} == 4) {
+        ) or die 'could not listen: block '.$name.' on '.$port.': '.$!;
+      } else {
         $socket = IO::Socket::INET->new(
           Listen => 1,
           ReuseAddr => 1,
           LocalPort => $port,
           LocalAddr => $name
-        ) or die 'could not listen: block '.$name;
-      } else { die 'unknown IP version? block '.$name; }
+        ) or die 'could not listen: block '.$name.' on '.$port.': '.$!;
+      }
       push(@sel,$socket) if $socket;
-      $listensockets{$socket} = $listen{$name}{'port'};
+      $listensockets{$socket} = $port if $socket;
+    }
+    foreach my $port (split(' ',$listen{$name}{'ssl'})) {
+      last if $port == 0;
+      $socket = IO::Socket::SSL->new(
+        Listen => 1,
+        ReuseAddr => 1,
+        LocalPort => $port,
+        LocalAddr => $name,
+        SSL_cert_file => conf('ssl','cert'),
+        SSL_key_file => conf('ssl','key')
+        ) or die 'could not listen: block '.$name.' on '.$port.': '.$!;
+      if ($socket) {
+        push(@sel,$socket);
+        $listensockets{$socket} = $port;
+        $SSL{$socket} = 1;
+      }
     }
   }
 }
@@ -217,4 +244,21 @@ sub col {
   return $str unless $str =~ m/^:/;
   $str =~ s/://;
   return $str;
+}
+sub loadrequirements {
+  if (conf('enabled','ipv6')) {
+    $ipv6 = 1;
+    require IO::Socket::INET6;
+  }
+  if (conf('enabled','ssl')) {
+    require IO::Socket::SSL;
+    IO::Socket::SSL->import('inet6') if (conf('enabled','ipv6'));
+  }
+}
+sub handleargs {
+  foreach (@ARGV) {
+    my @s = split('=',$_);
+    $CONFIG = $s[1] if $s[0] eq '--config';
+    $NOFORK = 1 if $s[0] eq '--nofork';
+  }
 }

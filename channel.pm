@@ -141,6 +141,7 @@ sub handlemode {
     foreach (split(//,$s[0])) {
       last if $i > ::conf('limit','chanmodes');
       $i++ if $_ !~ m/(\+|-)/; 
+      next if $_ =~ m/Z/; # modes that cannot be unset
       if ($_ eq '+') { $state = 1; }
       elsif ($_ eq '-') { $state = 0; }
       elsif ($_ =~ m/(n|t|m)/) {

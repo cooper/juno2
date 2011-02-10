@@ -4,8 +4,8 @@ use strict;
 use less 'mem';
 package user;
 my $cid = 0;
+my $max = 0;
 our %connection;
-our @users; # obsolete
 my %commands = (
   PONG => sub{},
   LUSERS => \&handle_lusers,
@@ -30,7 +30,9 @@ my %commands = (
 );
 sub new {
 #user::new($peer)
+  my $ssl = shift;
   my $peer = shift;
+  return unless $peer;
   my ($success,$host,$ipv);
   $::select->add($peer);
   ::sendpeer($peer,':'.::conf('server','name').' NOTICE * :*** Looking up your hostname...');
@@ -39,6 +41,7 @@ sub new {
   $success = 0;
   $host = $ip;
   my $this = {
+    'ssl' => $ssl,
     'server' => $::id,
     'id' => $::id.&newid,
     'obj' => $peer,
@@ -56,7 +59,6 @@ sub new {
   bless $this;
   if ($success) { $this->servernotice('*** Found your hostname ('.$this->{'host'}.')'); }
   else { $this->servernotice('*** Could not resolve hostname; using IP address instead'); }
-  #$this->send('PING :'.::conf('server','name'));
   $connection{$peer} = $this;
   return $this;
 }
@@ -224,14 +226,14 @@ sub start {
   my $user = shift;
   return if $user->checkkline;
   $user->sendnum('001',':Welcome to the '.::conf('server','network').' Internet Relay Chat Network '.$user->nick);
-  $user->sendnum('002',':Your host is '.::conf('server','name').', running version junodev-0.0.1');
+  $user->sendnum('002',':Your host is '.::conf('server','name').', running version juno-'.$::VERSION);
   $user->sendnum('003',':This server was created '.$::TIME); # this should actually have a date
   # modes
-  $user->sendnum('004',::conf('server','name').' junodev-0.0.1 ix o bei');
+  $user->sendnum('004',::conf('server','name').' juno-'.$::VERSION.' ix o bei');
   $user->sendnum('005','CHANTYPES=# EXCEPTS INVEX CHANMODES=eIbZ,,,mnt PREFIX=(qaohv)~&@%+ NETWORK='.::conf('server','network').' STATUSMSG=@+ MODES='.::conf('limit','chanmodes').' NICKLEN='.::conf('limit','nick').' TOPICLEN='.::conf('limit','topic').' :are support by this server');
   $user->handle_lusers;
   $user->handle_motd;
-  $user->setmode(::conf('user','automodes'));
+  $user->setmode(::conf('user','automodes').($user->{'ssl'}?'Z':''));
   ::snotice('client connectting: '.$user->fullhost.' ['.$user->{'ip'}.']');
 }
 sub newid {
@@ -288,9 +290,10 @@ sub handle_lusers {
       $ii++;
     } else { $i++; }
   } my $t = $i+$ii;
+  $max = $t if $max < $t;
   $user->sendnum(251,':There are '.$i.' users are '.$ii.' invisible on 1 servers');
-  $user->sendnum(265,$t.' '.$t.' :Current local users '.$t.', max '.$t);
-  $user->sendnum(267,$t.' '.$t.' :Current global users '.$t.', max '.$t);
+  $user->sendnum(265,$t.' '.$max.' :Current local users '.$t.', max '.$max);
+  $user->sendnum(267,$t.' '.$max.' :Current global users '.$t.', max '.$max);
 }
 sub handle_motd {
   my $user = shift;
@@ -340,7 +343,7 @@ sub handle_whois {
       $user->sendserv('311 '.$user->nick.' '.$target->nick.' '.$target->{'ident'}.' '.$target->{'cloak'}.' * :'.$target->{'gecos'});
       #>> :server 319 nick targetnick :~#chat @#halp
       $user->sendserv('312 '.$user->nick.' '.$target->nick.' '.::conf('server','name').' :'.::conf('server','desc')); # only until linking
-      #>> :server 671 nick targetnick :is using a secure connection
+      $user->sendserv('641 '.$user->nick.' '.$target->nick.' :is using a secure connection') if $target->{'ssl'};
       $user->sendserv('301 '.$user->nick.' '.$target->nick.' :'.$target->{'away'}) if defined $target->{'away'};
       $user->sendserv('313 '.$user->nick.' '.$target->nick.' :is an IRC operator') if $target->ismode('o');
       $user->sendserv('379 '.$user->nick.' '.$target->nick.' :is using modes +'.$modes);
@@ -491,7 +494,7 @@ sub handle_rehash {
   my $user = shift;
   if ($user->can('rehash')) {
     (%::config,%::oper,%::kline) = ((),(),());
-    ::confparse('ircd.conf');
+    ::confparse('etc/ircd.conf');
     ::snotice($user->nick.' is rehash server configuration file');
   } else {
     $user->sendserv('481 '.$user->nick.' :Permission Denied');

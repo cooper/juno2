@@ -1,0 +1,142 @@
+# sample configuration
+# all files are relative the the directory of juno.pl
+# if you want to disable something, your best bet is to
+# set the value to 0 unless the comments say otherwise
+
+# your configuration file is to be set up in the 
+# following layout:
+
+# sec <section> # set the section
+#	  <key> <value> [...] # set a value
+# inc <file> # include a file
+# die <reason> [...] # execute perl die
+# oper <name>
+#   password <password>
+#   hosts <host> [<host>] [...]
+#   <priv> <value> [...] # set a privilege
+# kline <mask>
+#   reason <reason>
+# listen <address>
+#   port <port> [<port>] [...]
+#   ssl <port> [<port>] [...]
+
+sec main
+  # the loop timeout (1 recommended)
+  timeout 1
+  # the DNS server(s) to use
+  dns 8.8.8.8 8.8.4.4
+  # show K-Line reason in quit
+  showkline 0
+  # show full mask in topic "set by"
+  fullmasktopic 0
+
+sec enabled
+  # enable SSL (requires IO::Socket::SSL)
+  # please see the note a few blocks down
+  # about issues with SSL.
+  ssl 1
+  # enable IPv6 (requires IO::Socket::INET6)
+  ipv6 1
+
+sec ssl
+  #### ignore this block if you have SSL disabled ###
+  # path to SSL certificate
+  cert etc/cert.pem
+  # path to SSL key
+  key etc/key.pem
+
+### NOTE ### (as of February 8, 2011)
+# according to CPAN's documentation for IO::Socket::SSL,
+# it does not support IPv4 and IPv6 at the same time, but
+# I have done so with no error and all seems as if it works;
+# however, I may be wrong. use at your own risk. in addition
+# to this possible issue, enabling SSL can nearly double the
+# memory usage of juno.
+
+# example of an IPv4 listen with
+# no SSL enabled
+listen 0.0.0.0
+  # the port(s) to listen on
+  port 6667 6668 7000
+  # the SSL port(s) to listen on
+  ssl 0
+
+# example of an IPv6 listen on port
+# 6667 and SSL on ports 6697 and 7000
+listen 2607:f128:46:0:216:3eff:fe85:d64a
+  port 6667
+  ssl 6697 7000
+
+# example of an SSL-only listen on port 6697
+listen 127.456.789
+  port 0
+  ssl 6697
+
+sec server
+  # SID (used for global identification)
+	id 0
+  # the name of the server
+	name cooper.on.fgtb.us
+  # the name of the network
+	network coopernet
+  # the MOTD file location
+	motd etc/motd.conf
+  # the server description
+	desc some server
+
+sec ping
+  # the frequency of pinging users
+	freq 30
+  # how long to wait before dropping an unresponsive client
+	timeout 120
+  # the quit message for a timeout
+	msg Ping timeout
+
+sec limit
+  # the maximum chars in a nickname
+	nick 32
+  # the maximum chars in a topic
+	topic 500
+  # the maximum chars in a username
+	ident 15
+  # the maximum number of channel modes set at once
+  chanmodes 5
+
+sec cloak
+  # enable cloaking
+  enabled 1
+  # the "cloak key"
+  salt secret
+
+sec user
+  # modes to be set upon connecting
+  # do not prepend the modes with +
+  # do not use nonexistent modes; they are not ignored.
+  # do not use x if cloaking is disabled.
+  automodes ix
+  # maximum number of channels a user may join
+  maxchans 50
+
+sec flood
+  # the quit message of a flooding user
+  msg Excess flood
+  # number of lines permitted
+  lines 50
+  # number of bytes permitted
+  bytes 1
+
+oper cooper
+  # the oper's password (encrypted with perl crypt)
+  password seIDIAoMCMcTc
+  # the hostmask(s) to allow opering from
+  host *@*
+  # the salt used in the encryption
+  salt sea
+  # oper privs (see README)
+  privs rehash kill globops
+  # enable snotices
+  snotice 1
+
+kline *@*.mx
+  # the reason for the K-Line
+  reason Mexico is prohibited

@@ -64,6 +64,7 @@ NAMES channel1,channel2
 WHO user
 channel names may not contain ASCII character 7
 create a script to start, stop, and rehash.
+fix bug where you cannot set +x after it has been unset
 
 done - things I've done already
 -------------------------------

@@ -83,7 +83,7 @@ sub unsetmode {
   $user->send(':'.$user->nick.' MODE '.$user->nick.' :-'.$modes) unless $a;
   foreach (split(//,$modes)) {
     delete $user->{'mode'}->{$_};
-    next if $_ =~ m/iS/;
+    next if $_ =~ m/(i|S)/;
     if ($_ eq 'x' && ::conf('cloak','enabled')) {
       $user->{'cloak'} = $user->unsetcloak;
     } elsif ($_ eq 'o') {
@@ -105,7 +105,7 @@ sub hmodes {
         $user->unsetmode($_) if $state == 0;
         $user->setmode($_) if $state == 1;
       }
-    } elsif ($_ =~ m/o|S/) { # oper-only modes
+    } elsif ($_ =~ m/(o|S)/) { # oper-only modes
       if ($user->ismode('o')) {
         $user->unsetmode($_) if $state == 0;
         $user->setmode($_) if $state == 1;

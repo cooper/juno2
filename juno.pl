@@ -202,6 +202,7 @@ sub createsockets {
     my $socket;
     foreach my $port (split(' ',$listen{$name}{'port'})) {
       last if $port == 0;
+      print "listening on $name:$port\n";
       if ($ipv6) {
         $socket = IO::Socket::INET6->new(
           Listen => 1,
@@ -222,6 +223,7 @@ sub createsockets {
     }
     foreach my $port (split(' ',$listen{$name}{'ssl'})) {
       last if $port == 0;
+      print "listening on $name:$port\n";
       $socket = IO::Socket::SSL->new(
         Listen => 1,
         ReuseAddr => 1,

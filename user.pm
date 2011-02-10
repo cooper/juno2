@@ -494,7 +494,7 @@ sub handle_rehash {
   my $user = shift;
   if ($user->can('rehash')) {
     (%::config,%::oper,%::kline) = ((),(),());
-    ::confparse('etc/ircd.conf');
+    ::confparse($::CONFIG);
     ::snotice($user->nick.' is rehash server configuration file');
   } else {
     $user->sendserv('481 '.$user->nick.' :Permission Denied');

@@ -55,6 +55,7 @@ sub remove {
   my $channel = shift;
   my $id = shift->{'id'};
   delete $channel->{$_}->{$id} foreach ('users','owners','admins','ops','halfops','voices');
+  $channel->check;
 }
 sub who {
   my $channel = shift;
@@ -140,7 +141,7 @@ sub handlemode {
     $user->sendserv(join(' ',324,$user->nick,$channel->name,'+'.$all,$params));
     $user->sendserv(join(' ',329,$user->nick,$channel->name,$channel->{'first'}));
   } else {
-    if ($channel->basicstatus($user)) {
+    unless ($channel->basicstatus($user)) {
       $user->sendserv('482 '.$user->nick.' '.$channel->name.' :You\'re not a channel operator');
       return;
     }
@@ -396,5 +397,16 @@ sub sendmasklist {
     }
     $user->sendserv('347 '.$user->nick.' '.$channel->name.' :End of channel invite list');
   }
+}
+sub kick {
+  my ($channel,$user,$target,$reason) = @_;
+  return unless $channel->basicstatus($user);
+  return if ($channel->has($target,'owner') && !$channel->has($user,'owner'));
+  return if ($channel->has($target,'admin') && !$channel->has($user,'owner') && !$channel->has($user,'admin'));
+  return if ($channel->has($target,'op') && !$channel->has($user,'owner') && !$channel->has($user,'admin') && !$channel->has($user,'op'));
+  return if ($channel->has($target,'halfop') && !$channel->has($user,'owner') && !$channel->has($user,'admin') && !$channel->has($user,'op'));
+  $channel->allsend(':'.$user->fullcloak.' KICK '.$channel->name.' '.$target->nick.' :'.$reason);
+  $channel->remove($target);
+  return 1;
 }
 1

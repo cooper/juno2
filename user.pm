@@ -26,7 +26,8 @@ my %commands = (
   PART => \&handle_part,
   REHASH => \&handle_rehash,
   GLOBOPS => \&handle_globops,
-  TOPIC => \&handle_topic
+  TOPIC => \&handle_topic,
+  KICK => \&handle_kick
 );
 sub new {
 #user::new($peer)
@@ -525,5 +526,18 @@ sub handle_topic {
   } else {
     $user->sendserv('461 '.$user->nick.' TOPIC :Not enough parameters.');
   }
+}
+sub handle_kick {
+  my($user,$data) = @_;
+  my @s = split(' ',$data,4);
+  if (defined $s[2]) {
+    my $channel = channel::chanexists($s[1]);
+    my $target = nickexists($s[2]);
+    if ($channel && $target) {
+      my $reason = $target->nick;
+      $reason = ::col($s[3]) if defined $s[3];
+      $user->sendserv('482 '.$user->nick.' '.$channel->name.' :You do not have the proper privileges to kick this user') unless $channel->kick($user,$target,$reason);
+    } else { $user->sendserv('401 '.$user->nick.' '.$s[1].' :No such nick/channel'); }
+  } else { $user->sendserv('461 '.$user->nick.' KICK :Not enough parameters.'); }
 }
 1

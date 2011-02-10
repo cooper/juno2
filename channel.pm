@@ -103,6 +103,12 @@ sub chanexists {
   return $channels{$name} if exists $channels{$name};
   return undef;
 }
+sub basicstatus {
+  my ($channel,$user) = @_;
+  if(!$channel->has($user,'owner') && !$channel->has($user,'admin') && !$channel->has($user,'op') && !$channel->has($user,'halfop')) {
+    return;
+  } return 1;
+}
 sub setmode {
   my $channel = shift;
   my $mode = shift;
@@ -134,7 +140,7 @@ sub handlemode {
     $user->sendserv(join(' ',324,$user->nick,$channel->name,'+'.$all,$params));
     $user->sendserv(join(' ',329,$user->nick,$channel->name,$channel->{'first'}));
   } else {
-    if (!$channel->has($user,'owner') && !$channel->has($user,'admin') && !$channel->has($user,'op') && !$channel->has($user,'halfop')) {
+    if ($channel->basicstatus($user)) {
       $user->sendserv('482 '.$user->nick.' '.$channel->name.' :You\'re not a channel operator');
       return;
     }

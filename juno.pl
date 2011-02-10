@@ -85,8 +85,11 @@ for(;;) {
       $client->{'ping'} = time;
       $client->quit('Registration timeout') unless $client->{'ready'};
     }
-    if ((time-$client->{'last'}) > conf('ping','timeout')) {
-      $client->quit(conf('ping','msg'),undef);
+    my $last = time-$client->{'last'};
+    if ($last > conf('ping','timeout')) {
+      my $ping = conf('ping','msg');
+      $ping =~ s/\%s/$last/g;
+      $client->quit($ping,undef);
     }
   }
 }

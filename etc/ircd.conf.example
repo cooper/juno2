@@ -90,7 +90,7 @@ sec ping
   # how long to wait before dropping an unresponsive client
 	timeout 120
   # the quit message for a timeout
-	msg Ping timeout
+	msg Ping timeout: %s seconds
 
 sec limit
   # the maximum chars in a nickname

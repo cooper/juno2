@@ -10,7 +10,7 @@ sub new {
     'name' => $name,
     'time' => time,
     'first' => time,
-    'mode' => {}, # (time => time, params => something or undef), qaohv don't count
+    'mode' => {}, # (time => time, params => something or undef), qaohvbieIZ don't count
     'creator' => $user->nick,
     'users' => {},
     'owners' => {$user->{'id'}=>time},
@@ -26,6 +26,10 @@ sub new {
   bless $this;
   $channels{lc($name)} = $this;
   $this->dojoin($user);
+  foreach (split(//,::conf('channel','automodes'))) {
+    $this->{'mode'}->{$_} = {time => time, params => undef};
+  }
+  $this->allsend(':'.::conf('server','name').' MODE '.$name.' +'.::conf('channel','automodes')) if ::conf('channel','automodes');
   ::snotice('channel '.$name.' created by '.$user->fullhost);
   return $this;
 }

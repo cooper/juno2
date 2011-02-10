@@ -114,8 +114,13 @@ sec user
   # do not use nonexistent modes; they are not ignored.
   # do not use x if cloaking is disabled.
   automodes ix
-  # maximum number of channels a user may join
-  maxchans 50
+
+sec channel
+  # modes to be set upon channel creation
+  # do not prepend the modes with +
+  # do not use nonexistent modes; they are not ignored.
+  # mode parameters are not yet supported.
+  automodes nt
 
 sec flood
   # the quit message of a flooding user

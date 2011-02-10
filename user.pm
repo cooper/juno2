@@ -459,7 +459,7 @@ sub handle_who {
 sub handle_names {
   my $user = shift;
   foreach (split(',',(split(' ',shift))[1])) { 
-    my $target = channel::chanexists((split(' ',$_))[1]);
+    my $target = channel::chanexists($_);
     if ($target) {
       $target->names($user);
     } else {

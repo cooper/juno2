@@ -168,7 +168,7 @@ sub handlemode {
             push(@final,($state?'+':'-').$_);
           }
           $cstate = $state;
-          push(@par,$target);
+          push(@par,$suc);
         }
       } elsif ($_ =~ m/(b|Z|e|I)/) {
         my $target = shift(@args);
@@ -202,7 +202,7 @@ sub handlestatus {
         if ($target->ison($channel)) {
           $channel->{'owners'}->{$target->{'id'}} = time if $state;
           delete $channel->{'owners'}->{$target->{'id'}} unless $state;
-          return 1;
+          return $target->nick;
         } else {
           $user->send(join(' ',441,$target->nick,$channel->name,':is not on that channel'));
           return;
@@ -222,7 +222,7 @@ sub handlestatus {
         if ($target->ison($channel)) {
           $channel->{'admins'}->{$target->{'id'}} = time if $state;
           delete $channel->{'admins'}->{$target->{'id'}} unless $state;
-          return 1;
+          return $target->nick;
         } else {
           $user->send(join(' ',441,$target->nick,$channel->name,':is not on that channel'));
           return;
@@ -242,7 +242,7 @@ sub handlestatus {
         if ($target->ison($channel)) {
           $channel->{'ops'}->{$target->{'id'}} = time if $state;
           delete $channel->{'ops'}->{$target->{'id'}} unless $state;
-          return 1;
+          return $target->nick;
         } else {
           $user->send(join(' ',441,$target->nick,$channel->name,':is not on that channel'));
           return;
@@ -262,7 +262,7 @@ sub handlestatus {
         if ($target->ison($channel)) {
           $channel->{'halfops'}->{$target->{'id'}} = time if $state;
           delete $channel->{'halfops'}->{$target->{'id'}} unless $state;
-          return 1;
+          return $target->nick;
         } else {
           $user->send(join(' ',441,$target->nick,$channel->name,':is not on that channel'));
           return;
@@ -282,7 +282,7 @@ sub handlestatus {
         if ($target->ison($channel)) {
           $channel->{'voices'}->{$target->{'id'}} = time if $state;
           delete $channel->{'voices'}->{$target->{'id'}} unless $state;
-          return 1;
+          return $target->nick;
         } else {
           $user->send(join(' ',441,$target->nick,$channel->name,':is not on that channel'));
           return;

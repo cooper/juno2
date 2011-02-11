@@ -71,7 +71,6 @@ USERMODE command
 VERSION command
 fix bug where you must have op to view the ban list (?)
 make it so you can't change your nick if you're banned in a channel you're in
-NAMES channel1,channel2
 WHO user
 channel names may not contain ASCII character 7
 create a script to start, stop, and rehash.

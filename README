@@ -64,7 +64,6 @@ I'm not going to put anything here until I run out of useful things to do.
 TODO - things I NEED to do
 --------------------------
 CAP
-max number of users in LUSERS
 only accept hosts if the resolution matches the client address
 show modes alphabetical, capitals first.
 KICK command

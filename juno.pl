@@ -2,6 +2,7 @@
 use warnings;
 use strict;
 use less 'mem';
+use feature qw(say switch);
 use POSIX;
 use IO::Select;
 use IO::Socket;
@@ -22,7 +23,7 @@ confparse($CONFIG);
 &loadrequirements;
 &createsockets;
 unless ($NOFORK) {
-  print "Becoming a daemon...\n";
+  say 'Becoming a daemon...';
   open STDIN,  '/dev/null' or die "Can't read /dev/null: $!";
   open STDOUT, '>/dev/null';
   open STDERR, '>/dev/null';
@@ -118,57 +119,40 @@ sub oper {
 sub confparse {
   my $file = shift;
   open(my $CONF,'<',$file) or die 'can not open configuration file '.$file;
-  my ($section,$opersection,$klinesection,$listensection);
-  while (<$CONF>) {
-    my $line = $_;
+  my @sections;
+  while (my $line = <$CONF>) {
     $line =~ s/\t//g;
     $line =~ s/^\s+//;
     $line =~ s/\s+$//;
     next if $line eq '';
     next if $line =~ m/^#/;
     my @s = split(' ',$line,2);
-    if ($s[0] eq 'sec') {
-      $section = $s[1];
-      $opersection = 0;
-      $klinesection = 0;
-      $listensection = 0;
-      next;
-    } elsif ($s[0] eq 'inc') {
-      $opersection = 0;
-      $klinesection = 0;
-      $section = 0;
-      $listensection = 0;
-      confparse($s[1]);
-    } elsif ($s[0] eq 'oper') {
-      $section = 0;
-      $klinesection = 0;
-      $opersection = $s[1];
-      $listensection = 0;
-    } elsif ($s[0] eq 'kline') {
-      $section = 0;
-      $opersection = 0;
-      $klinesection = $s[1];
-      $listensection = 0;
-    } elsif ($s[0] eq 'listen') {
-      $section = 0;
-      $opersection = 0;
-      $klinesection = 0;
-      $listensection = $s[1];
-    } elsif ($s[0] eq 'die') {
-      die $s[1];
-    } else {
-      if ($section) {
-        $config{$section}{$s[0]} = $s[1];
-      } elsif ($listensection) {
-        $listen{$listensection}{$s[0]} = $s[1];
-      } elsif ($opersection) {
-        $oper{$opersection}{$s[0]} = $s[1];
-      } elsif ($klinesection) {
-        $kline{$klinesection}{$s[0]} = $s[1];
-      } else { die 'no section set in configuration'; }
+    given($s[0]) {
+      when('sec') {
+        @sections = ($s[1],0,0,0);
+      } when('inc') {
+        @sections = (0,0,0,0);
+        confparse($s[1]);
+      } when('oper') {
+        @sections = (0,$s[1],0,0);
+      } when('kline') {
+        @sections = (0,0,$s[1],0);
+      } when('listen') {
+        @sections = (0,0,0,$s[1]);
+      } default {
+        if ($sections[0]) {
+          $config{$sections[0]}{$s[0]} = $s[1];
+        } elsif ($sections[1]) {
+          $oper{$sections[1]}{$s[0]} = $s[1];
+        } elsif ($sections[2]) {
+          $kline{$sections[2]}{$s[0]} = $s[1];
+        } elsif ($sections[3]) {
+          $listen{$sections[3]}{$s[0]} = $s[1];
+        } else { die 'no section set in configuration'; }
+      }
     }
+    $_->checkkline foreach values %user::connection;
   }
-  $_->checkkline foreach values %user::connection;
   close $CONF;
 }
 sub validnick {
@@ -181,17 +165,14 @@ sub validnick {
 sub hostmatch {
   my ($mask,@list) = @_;
   my @aregexps;
-  foreach(@list) {
-    my $regexp = $_;
+  foreach my $regexp (@list) {
     $regexp =~ s/\./\\\./g;
     $regexp =~ s/\?/\./g;
     $regexp =~ s/\*/\.\*/g;
     $regexp = '^'.$regexp.'$';
     push(@aregexps,$regexp);
   }
-  if(grep {$mask =~ /$_/} @aregexps) {
-    return 1;
-  }
+  return 1 if (grep {$mask =~ /$_/} @aregexps);
   return;
 }
 sub snotice {
@@ -205,7 +186,7 @@ sub createsockets {
     my $socket;
     foreach my $port (split(' ',$listen{$name}{'port'})) {
       last if $port == 0;
-      print "listening on $name:$port\n";
+      say "listening on $name:$port";
       if ($ipv6) {
         $socket = IO::Socket::INET6->new(
           Listen => 1,
@@ -226,7 +207,7 @@ sub createsockets {
     }
     foreach my $port (split(' ',$listen{$name}{'ssl'})) {
       last if $port == 0;
-      print "listening on $name:$port\n";
+      say "listening on $name:$port";
       $socket = IO::Socket::SSL->new(
         Listen => 1,
         ReuseAddr => 1,

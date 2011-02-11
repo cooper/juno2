@@ -152,7 +152,6 @@ sub handlemode {
     foreach (split(//,$s[0])) {
       last if $i > ::conf('limit','chanmodes');
       $i++ if $_ !~ m/(\+|-)/; 
-      next if $_ =~ m/Z/; # modes that cannot be unset
       if ($_ eq '+') { $state = 1; }
       elsif ($_ eq '-') { $state = 0; }
       elsif ($_ =~ m/(n|t|m)/) {
@@ -202,105 +201,107 @@ sub handlemode {
 }
 sub handlestatus {
   my ($channel,$user,$state,$mode,$tuser) = @_;
-  if ($mode eq 'q') {
-    if ($channel->has($user,'owner')) {
-      my $target = user::nickexists($tuser);
-      if ($target) {
-        if ($target->ison($channel)) {
-          $channel->{'owners'}->{$target->{'id'}} = time if $state;
-          delete $channel->{'owners'}->{$target->{'id'}} unless $state;
-          return $target->nick;
+  given($mode) {
+    when('q') {
+      if ($channel->has($user,'owner')) {
+        my $target = user::nickexists($tuser);
+        if ($target) {
+          if ($target->ison($channel)) {
+            $channel->{'owners'}->{$target->{'id'}} = time if $state;
+            delete $channel->{'owners'}->{$target->{'id'}} unless $state;
+            return $target->nick;
+          } else {
+            $user->send(join(' ',441,$target->nick,$channel->name,':is not on that channel'));
+            return;
+          }
         } else {
-          $user->send(join(' ',441,$target->nick,$channel->name,':is not on that channel'));
+          $user->sendserv('401 '.$user->nick.' '.$tuser.' :No such nick/channel');
           return;
         }
       } else {
-        $user->sendserv('401 '.$user->nick.' '.$tuser.' :No such nick/channel');
+        $user->sendserv('482 '.$user->nick.' '.$channel->name.' :You\'re not a channel owner');
         return;
       }
-    } else {
-      $user->sendserv('482 '.$user->nick.' '.$channel->name.' :You\'re not a channel owner');
-      return;
-    }
-  } elsif ($mode eq 'a') {
-    if ($channel->has($user,'owner') || $channel->has($user,'admin')) {
-      my $target = user::nickexists($tuser);
-      if ($target) {
-        if ($target->ison($channel)) {
-          $channel->{'admins'}->{$target->{'id'}} = time if $state;
-          delete $channel->{'admins'}->{$target->{'id'}} unless $state;
-          return $target->nick;
+    } when ('a') {
+      if ($channel->has($user,'owner') || $channel->has($user,'admin')) {
+        my $target = user::nickexists($tuser);
+        if ($target) {
+          if ($target->ison($channel)) {
+            $channel->{'admins'}->{$target->{'id'}} = time if $state;
+            delete $channel->{'admins'}->{$target->{'id'}} unless $state;
+            return $target->nick;
+          } else {
+            $user->send(join(' ',441,$target->nick,$channel->name,':is not on that channel'));
+            return;
+          }
         } else {
-          $user->send(join(' ',441,$target->nick,$channel->name,':is not on that channel'));
+          $user->sendserv('401 '.$user->nick.' '.$tuser.' :No such nick/channel');
           return;
         }
       } else {
-        $user->sendserv('401 '.$user->nick.' '.$tuser.' :No such nick/channel');
+        $user->sendserv('482 '.$user->nick.' '.$channel->name.' :You\'re not a channel administrator');
         return;
       }
-    } else {
-      $user->sendserv('482 '.$user->nick.' '.$channel->name.' :You\'re not a channel administrator');
-      return;
-    }
-  } elsif ($mode eq 'o') {
-    if ($channel->has($user,'owner') || $channel->has($user,'admin') || $channel->has($user,'op')) {
-      my $target = user::nickexists($tuser);
-      if ($target) {
-        if ($target->ison($channel)) {
-          $channel->{'ops'}->{$target->{'id'}} = time if $state;
-          delete $channel->{'ops'}->{$target->{'id'}} unless $state;
-          return $target->nick;
+    } when('o') {
+      if ($channel->has($user,'owner') || $channel->has($user,'admin') || $channel->has($user,'op')) {
+        my $target = user::nickexists($tuser);
+        if ($target) {
+          if ($target->ison($channel)) {
+            $channel->{'ops'}->{$target->{'id'}} = time if $state;
+            delete $channel->{'ops'}->{$target->{'id'}} unless $state;
+            return $target->nick;
+          } else {
+            $user->send(join(' ',441,$target->nick,$channel->name,':is not on that channel'));
+            return;
+          }
         } else {
-          $user->send(join(' ',441,$target->nick,$channel->name,':is not on that channel'));
+          $user->sendserv('401 '.$user->nick.' '.$tuser.' :No such nick/channel');
           return;
         }
       } else {
-        $user->sendserv('401 '.$user->nick.' '.$tuser.' :No such nick/channel');
+        $user->sendserv('482 '.$user->nick.' '.$channel->name.' :You\'re not a channel operator');
         return;
       }
-    } else {
-      $user->sendserv('482 '.$user->nick.' '.$channel->name.' :You\'re not a channel operator');
-      return;
-    }
-  } elsif ($mode eq 'h') {
-    if ($channel->has($user,'owner') || $channel->has($user,'admin') || $channel->has($user,'op')) {
-      my $target = user::nickexists($tuser);
-      if ($target) {
-        if ($target->ison($channel)) {
-          $channel->{'halfops'}->{$target->{'id'}} = time if $state;
-          delete $channel->{'halfops'}->{$target->{'id'}} unless $state;
-          return $target->nick;
+    } when('h') {
+      if ($channel->has($user,'owner') || $channel->has($user,'admin') || $channel->has($user,'op')) {
+        my $target = user::nickexists($tuser);
+        if ($target) {
+          if ($target->ison($channel)) {
+            $channel->{'halfops'}->{$target->{'id'}} = time if $state;
+            delete $channel->{'halfops'}->{$target->{'id'}} unless $state;
+            return $target->nick;
+          } else {
+            $user->send(join(' ',441,$target->nick,$channel->name,':is not on that channel'));
+            return;
+          }
         } else {
-          $user->send(join(' ',441,$target->nick,$channel->name,':is not on that channel'));
+          $user->sendserv('401 '.$user->nick.' '.$tuser.' :No such nick/channel');
           return;
         }
       } else {
-        $user->sendserv('401 '.$user->nick.' '.$tuser.' :No such nick/channel');
+        $user->sendserv('482 '.$user->nick.' '.$channel->name.' :You\'re not a channel operator');
         return;
       }
-    } else {
-      $user->sendserv('482 '.$user->nick.' '.$channel->name.' :You\'re not a channel operator');
-      return;
-    }
-  } elsif ($mode eq 'v') {
-    if ($channel->has($user,'owner') || $channel->has($user,'admin') || $channel->has($user,'op') || $channel->has($user,'halfop')) {
-      my $target = user::nickexists($tuser);
-      if ($target) {
-        if ($target->ison($channel)) {
-          $channel->{'voices'}->{$target->{'id'}} = time if $state;
-          delete $channel->{'voices'}->{$target->{'id'}} unless $state;
-          return $target->nick;
+    } when('v') {
+      if ($channel->has($user,'owner') || $channel->has($user,'admin') || $channel->has($user,'op') || $channel->has($user,'halfop')) {
+        my $target = user::nickexists($tuser);
+        if ($target) {
+          if ($target->ison($channel)) {
+            $channel->{'voices'}->{$target->{'id'}} = time if $state;
+            delete $channel->{'voices'}->{$target->{'id'}} unless $state;
+            return $target->nick;
+          } else {
+            $user->send(join(' ',441,$target->nick,$channel->name,':is not on that channel'));
+            return;
+          }
         } else {
-          $user->send(join(' ',441,$target->nick,$channel->name,':is not on that channel'));
+          $user->sendserv('401 '.$user->nick.' '.$tuser.' :No such nick/channel');
           return;
         }
       } else {
-        $user->sendserv('401 '.$user->nick.' '.$tuser.' :No such nick/channel');
+        $user->sendserv('482 '.$user->nick.' '.$channel->name.' :You\'re not a channel operator');
         return;
       }
-    } else {
-      $user->sendserv('482 '.$user->nick.' '.$channel->name.' :You\'re not a channel operator');
-      return;
     }
   }
 }
@@ -376,26 +377,28 @@ sub handlemaskmode {
 }
 sub sendmasklist {
   my ($channel,$user,$mode) = @_;
-  if ($mode eq 'b') {
-    foreach (keys %{$channel->{'bans'}}) {
-      $user->sendserv(join(' ',367,$user->nick,$channel->name,$_,$channel->{'bans'}->{$_}->[0],$channel->{'bans'}->{$_}->[1]));
+  given($mode) {
+    when('b') {
+      foreach (keys %{$channel->{'bans'}}) {
+        $user->sendserv(join(' ',367,$user->nick,$channel->name,$_,$channel->{'bans'}->{$_}->[0],$channel->{'bans'}->{$_}->[1]));
+      }
+      $user->sendserv('368 '.$user->nick.' '.$channel->name.' :End of channel ban list');
+    } when('Z') {
+      foreach (keys %{$channel->{'mutes'}}) {
+        $user->sendserv(join(' ',728,$user->nick,$channel->name,$_,$channel->{'mutes'}->{$_}->[0],$channel->{'mutes'}->{$_}->[1]));
+      }
+      $user->sendserv('368 '.$user->nick.' '.$channel->name.' :End of channel mute list');
+    } when('e') {
+      foreach (keys %{$channel->{'exempts'}}) {
+        $user->sendserv(join(' ',348,$user->nick,$channel->name,$_,$channel->{'exempts'}->{$_}->[0],$channel->{'exempts'}->{$_}->[1]));
+      }
+      $user->sendserv('349 '.$user->nick.' '.$channel->name.' :End of channel exception list');
+    } when('I') {
+      foreach (keys %{$channel->{'invexes'}}) {
+        $user->sendserv(join(' ',346,$user->nick,$channel->name,$_,$channel->{'invexes'}->{$_}->[0],$channel->{'invexes'}->{$_}->[1]));
+      }
+      $user->sendserv('347 '.$user->nick.' '.$channel->name.' :End of channel invite list');
     }
-    $user->sendserv('368 '.$user->nick.' '.$channel->name.' :End of channel ban list');
-  } elsif ($mode eq 'Z') {
-    foreach (keys %{$channel->{'mutes'}}) {
-      $user->sendserv(join(' ',728,$user->nick,$channel->name,$_,$channel->{'mutes'}->{$_}->[0],$channel->{'mutes'}->{$_}->[1]));
-    }
-    $user->sendserv('368 '.$user->nick.' '.$channel->name.' :End of channel mute list');
-  } elsif ($mode eq 'e') {
-    foreach (keys %{$channel->{'exempts'}}) {
-      $user->sendserv(join(' ',348,$user->nick,$channel->name,$_,$channel->{'exempts'}->{$_}->[0],$channel->{'exempts'}->{$_}->[1]));
-    }
-    $user->sendserv('349 '.$user->nick.' '.$channel->name.' :End of channel exception list');
-  } elsif ($mode eq 'I') {
-    foreach (keys %{$channel->{'invexes'}}) {
-      $user->sendserv(join(' ',346,$user->nick,$channel->name,$_,$channel->{'invexes'}->{$_}->[0],$channel->{'invexes'}->{$_}->[1]));
-    }
-    $user->sendserv('347 '.$user->nick.' '.$channel->name.' :End of channel invite list');
   }
 }
 sub kick {

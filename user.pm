@@ -101,11 +101,10 @@ sub hmodes {
   foreach (split(//,$modes)) {
     if ($_ eq '+') { $state = 1; next; }
     elsif ($_ eq '-') { $state = 0; next; }
+    next if $_ =~ m/Z/; # modes that cannot be unset
     if ($_ =~ m/(i|x)/) { # normal modes
-      if ($state == 0) {
-        $user->unsetmode($_) if $state == 0;
-        $user->setmode($_) if $state == 1;
-      }
+      $user->unsetmode($_) if $state == 0;
+      $user->setmode($_) if $state == 1;
     } elsif ($_ =~ m/(o|S)/) { # oper-only modes
       if ($user->ismode('o')) {
         $user->unsetmode($_) if $state == 0;
@@ -302,8 +301,7 @@ sub handle_motd {
   $user->sendnum(375,':'.::conf('server','name').' message of the day');
   while (<$MOTD>) {
     my $line = $_;
-    $line =~ s/^\s+//;
-    $line =~ s/\s+$//;
+    chomp $line;
     $user->sendnum(372,':- '.$line);
   }
   $user->sendnum(376,':End of message of the day.');
@@ -354,7 +352,7 @@ sub handle_whois {
     } else {
       $user->sendserv('401 '.$user->nick.' '.$nick.' :No suck nick/channel');
     }
-    $user->sendserv('318 '.$nick.' '.$nick.' :End of /WHOIS list.');
+    $user->sendserv('318 '.$user->nick.' '.$nick.' :End of /WHOIS list.');
   } else { $user->sendserv('461 '.$user->nick.' WHOIS :Not enough parameters'); }
 
 }

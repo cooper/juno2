@@ -7,9 +7,19 @@
             _/ |  Perl Internet Relay Chat daemon
            |__/ 
 
-this is my rewrite of juno-ircd, the fork of the Perl IRC Daemon.
+about
+-----
+In July 2010, I found pIRCd, the perl internet relay chat daemon. while learning
+Perl, I added a few more features to it; however, I caused several disadvantages,
+bugs, and memory failures. I decided to start over from scratch because if I wrote
+it myself I would understand more how to modify it and work around the issues that
+I had when I was working on the perl IRC daemon that Jay Kominek wrote 13 years ago.
 It is written mostly from scratch; however, I will not take credit for the many
 concepts from pIRCd that I have used in my writing.
+
+license
+-------
+juno-ircd is released under the New BSD License (see LICENSE.)
 
 setting up/installation
 -----------------------
@@ -25,6 +35,8 @@ just start juno.pl.
 --config=/path/to/config # use a configuration other than etc/ircd.conf
 --nofork # prevent the IRCd from running in the background
 
+support
+-------
 if you are in need of assistance, you are likely to find me on my development
 network at cooper.on.fgtb.us #k. If I'm not there, I'm probably on irc.alphachat.net.
 this is pretty basic when it comes to the style of which it's written, so if you know
@@ -64,7 +76,6 @@ NAMES channel1,channel2
 WHO user
 channel names may not contain ASCII character 7
 create a script to start, stop, and rehash.
-fix bug where you cannot set +x after it has been unset
 
 done - things I've done already
 -------------------------------

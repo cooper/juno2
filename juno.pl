@@ -10,12 +10,13 @@ use user;
 use handle;
 use channel;
 local $0 = 'juno';
-our $VERSION = 0.4;
+our $VERSION = '0.4.1';
 our $TIME = time;
-our $CONFIG = 'etc/ircd.conf';
+our $CONFIG = './etc/ircd.conf';
 my $NOFORK = 0;
 my $PID = 0;
 $SIG{'INT'} = \&sigexit;
+$SIG{'HUP'} = \&sighup;
 our (%config,%oper,%kline,%listen,%outbuffer,%inbuffer,%timer);
 my (%listensockets,%SSL,@sel,$ipv6);
 &handleargs;
@@ -27,7 +28,10 @@ unless ($NOFORK) {
   open STDIN,  '/dev/null' or die "Can't read /dev/null: $!";
   open STDOUT, '>/dev/null';
   open STDERR, '>/dev/null';
+  open my $pidfile,'>','./etc/juno.pid' or die 'could not write etc/juno.pid';
   $PID = fork;
+  say $pidfile $PID;
+  close $pidfile;
 }
 exit if ($PID != 0);
 &POSIX::setsid;
@@ -100,11 +104,14 @@ sub sendpeer {
     $outbuffer{$peer} .= $_."\r\n";
   }
 }
-sub sigexit {
-  # add a loop here later
-  print "\nexiting by signal.\n";
+sub sigint {
+  say 'exiting by signal';
   sleep 1;
   die;
+}
+sub sighup {
+  snotice('Receieved SIGHUP, rehashing server configuration file.');
+  confparse($CONFIG);
 }
 sub conf {
   my ($key,$val) = @_;
@@ -193,14 +200,14 @@ sub createsockets {
           ReuseAddr => 1,
           LocalPort => $port,
           LocalAddr => $name
-        ) or die 'could not listen: block '.$name.' on '.$port.': '.$!;
+        ) or die 'could not listen: block '.$name.':'.$port.': '.$!;
       } else {
         $socket = IO::Socket::INET->new(
           Listen => 1,
           ReuseAddr => 1,
           LocalPort => $port,
           LocalAddr => $name
-        ) or die 'could not listen: block '.$name.' on '.$port.': '.$!;
+        ) or die 'could not listen: block '.$name.':'.$port.': '.$!;
       }
       push(@sel,$socket) if $socket;
       $listensockets{$socket} = $port if $socket;
@@ -215,7 +222,7 @@ sub createsockets {
         LocalAddr => $name,
         SSL_cert_file => conf('ssl','cert'),
         SSL_key_file => conf('ssl','key')
-        ) or die 'could not listen: block '.$name.' on '.$port.': '.$!;
+        ) or die 'could not listen (SSL): block '.$name.':'.$port.': '.$!;
       if ($socket) {
         push(@sel,$socket);
         $listensockets{$socket} = $port;
@@ -242,9 +249,41 @@ sub loadrequirements {
   }
 }
 sub handleargs {
+print <<EOF;
+\t   _                     _              _
+\t  (_)                   (_)            | |
+\t   _ _   _ _ __   ___    _ _ __ ___  __| |
+\t  | | | | | '_ \\ / _ \\  | | '__/ __|/ _` |
+\t  | | |_| | | | | (_) |-| | | | (__| (_| |
+\t  | |\\__,_|_| |_|\\___/  |_|_|  \\___|\\__,_|
+\t _/ |
+\t|__/   development version $VERSION
+
+EOF
   foreach (@ARGV) {
     my @s = split('=',$_);
-    $CONFIG = $s[1] if $s[0] eq '--config';
-    $NOFORK = 1 if $s[0] eq '--nofork';
+    given($s[0]) {
+      when('--rehash') {
+        open my $pidfile,'<','./etc/juno.pid' or die 'juno-ircd is not running!';
+        my $pid = <$pidfile>; chomp $pid;
+        close $pid;
+        say 'Signaling '.$pid.' HUP';
+        say 'Rehashed server configuration.';
+        kill 'HUP',$pid;
+        exit;
+      } when ('--config') {
+        $CONFIG = $s[1] if $s[0] eq '--config';
+      } when('--nofork') {
+        $NOFORK = 1 if $s[0] eq '--nofork';
+      } default {
+print <<EOF;
+usage: perl juno.pl
+\t[--config=/path/to/config]
+\t[--rehash]
+\t[--nofork]
+EOF
+exit;
+      }
+    }
   }
 }

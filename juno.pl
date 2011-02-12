@@ -15,7 +15,7 @@ our $TIME = time;
 our $CONFIG = './etc/ircd.conf';
 my $NOFORK = 0;
 my $PID = 0;
-$SIG{'INT'} = \&sigexit;
+$SIG{'INT'} = \&sigint;
 $SIG{'HUP'} = \&sighup;
 our (%config,%oper,%kline,%listen,%outbuffer,%inbuffer,%timer);
 my (%listensockets,%SSL,@sel,$ipv6);

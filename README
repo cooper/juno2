@@ -130,7 +130,7 @@ PING
 WHOIS*
   A WHOIS query replies with several numerics with information on a user.
   The current WHOIS replies are as follows:
-      - Nick, username, visable host, and real name
+      - Nick, username, visible host, and real name
       - Name of the server that the user is connecting to the network with
       - Whether or not the user is using SSL
       - If the user is away, the away reason
@@ -211,7 +211,7 @@ TOPIC*
   If you are viewing the topic of a channel, a numeric containing the topic, who it was set by, and when it was set will be displayed.
   Parameters: <channel> [<topic>]
 KICK
-  The KICK command is used to focibly remove a user from a channel.
+  The KICK command is used to forcibly remove a user from a channel.
   The requesting user must have channel operator status to use the KICK command.
   If the user attempts to kick a user of higher status, a numeric error will be displayed.
   A numeric error will also be displayed if the nick or channel is invalid.

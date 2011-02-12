@@ -459,11 +459,7 @@ sub handle_names {
   my $user = shift;
   foreach (split(',',(split(' ',shift))[1])) { 
     my $target = channel::chanexists($_);
-    if ($target) {
-      $target->names($user);
-    } else {
-      $user->sendserv('401 '.$user->nick.' '.$_.' :No such nick/channel');
-    }
+    $target->names($user);
   }
 }
 sub handle_part {

@@ -66,8 +66,7 @@ TODO - things I NEED to do
 CAP
 only accept hosts if the resolution matches the client address
 show modes alphabetical, capitals first.
-KICK command
-USERMODE command
+USERHOST command
 VERSION command
 fix bug where you must have op to view the ban list (?)
 make it so you can't change your nick if you're banned in a channel you're in

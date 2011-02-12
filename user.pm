@@ -459,7 +459,8 @@ sub handle_names {
   my $user = shift;
   foreach (split(',',(split(' ',shift))[1])) { 
     my $target = channel::chanexists($_);
-    $target->names($user);
+    $target->names($user) if $target;
+    $user->sendserv('366 '.$user->nick.' '.$_.' :End of /NAMES list.') unless $target;
   }
 }
 sub handle_part {

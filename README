@@ -80,7 +80,7 @@ all dependencies are core modules as of now.
 IPv6
 ----
 to enable IPv6 listening, you must set the configuration option enabled:ipv6 to a true value.
-This requires the IO::Socket::INET6 perl module.
+This requires the IO::Socket::INET6 and Socket6 perl modules.
 If you wish to listen with SSL on IPv6, you must also have SSL enabled.
 
 SSL

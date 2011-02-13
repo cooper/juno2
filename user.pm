@@ -163,7 +163,6 @@ sub quit {
   my ($user,$r,$no,$display) = @_;
   my %sent;
   foreach (values %channel::channels) {
-    $_->remove($user);
     if ($user->ison($_)) {
       $_->check;
       foreach (keys %{$_->{'users'}}) {
@@ -171,6 +170,7 @@ sub quit {
         $sent{$_} = 1;
       }
     }
+    $_->remove($user);
   }
   ::snotice('client exiting: '.$user->fullhost.' ['.$user->{'ip'}.'] ('.$r.')') if $user->{'ready'};
   $user->obj->syswrite('ERROR :Closing Link: ('.(defined $user->{'ident'}?$user->{'ident'}:'*').'@'.$user->host.') ['.$r.']'."\r\n",POSIX::BUFSIZ) unless $no;

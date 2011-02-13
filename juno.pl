@@ -30,6 +30,7 @@ unless ($NOFORK) {
   open STDERR, '>/dev/null';
   open my $pidfile,'>','./etc/juno.pid' or die 'could not write etc/juno.pid';
   $PID = fork;
+  say 'Started as '.$PID;
   say $pidfile $PID;
   close $pidfile;
 }

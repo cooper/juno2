@@ -450,10 +450,12 @@ sub handle_join {
   } else { $user->sendserv('461 '.$user->nick.' JOIN :Not enough parameters.'); }
 }
 sub handle_who {
-  my ($user,$target) = (shift,channel::chanexists((split(' ',shift))[1]));
+  my ($user,$query) = (shift,(split(' ',shift))[1]);
+  my $target = channel::chanexists($query);
   if ($target) {
     $target->who($user);
   }
+  $user->sendserv('315 '.$user->nick.' '.$query.' :End of /WHO list.');
 }
 sub handle_names {
   my $user = shift;
@@ -491,7 +493,7 @@ sub handle_rehash {
   if ($user->can('rehash')) {
     (%::config,%::oper,%::kline) = ((),(),());
     ::confparse($::CONFIG);
-    ::snotice($user->nick.' is rehash server configuration file');
+    ::snotice($user->nick.' is rehashing server configuration file');
   } else {
     $user->sendserv('481 '.$user->nick.' :Permission Denied');
   }

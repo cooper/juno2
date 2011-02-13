@@ -234,7 +234,7 @@ sub start {
   $user->handle_lusers;
   $user->handle_motd;
   $user->setmode(::conf('user','automodes').($user->{'ssl'}?'Z':''));
-  ::snotice('client connectting: '.$user->fullhost.' ['.$user->{'ip'}.']');
+  ::snotice('client connecting: '.$user->fullhost.' ['.$user->{'ip'}.']');
 }
 sub newid {
   $cid++;

@@ -27,7 +27,8 @@ my %commands = (
   REHASH => \&handle_rehash,
   GLOBOPS => \&handle_globops,
   TOPIC => \&handle_topic,
-  KICK => \&handle_kick
+  KICK => \&handle_kick,
+  INVITE => \&handle_invite
 );
 sub new {
 #user::new($peer)
@@ -162,8 +163,8 @@ sub quit {
   my ($user,$r,$no,$display) = @_;
   my %sent;
   foreach (values %channel::channels) {
+    $_->remove($user);
     if ($user->ison($_)) {
-      $_->remove($user);
       $_->check;
       foreach (keys %{$_->{'users'}}) {
         lookupbyid($_)->send(':'.$user->fullcloak.' QUIT :'.($display?$display:$r)) unless $sent{$_};
@@ -535,5 +536,25 @@ sub handle_kick {
       $user->sendserv('482 '.$user->nick.' '.$channel->name.' :You do not have the proper privileges to kick this user') unless $channel->kick($user,$target,$reason);
     } else { $user->sendserv('401 '.$user->nick.' '.$s[1].' :No such nick/channel'); }
   } else { $user->sendserv('461 '.$user->nick.' KICK :Not enough parameters.'); }
+}
+sub handle_invite {
+  my($user,@s) = (shift,split(' ',shift));
+  if (defined $s[2]) {
+    my $someone = nickexists($s[1]);
+    if ($someone) {
+      my $somewhere = channel::chanexists($s[2]);
+      if ($somewhere) {
+        if ($user->ison($somewhere)) {
+          if ($somewhere->basicstatus($user)) {
+            unless ($someone->ison($somewhere)) {
+              $somewhere->{'invites'}->{$someone->{'id'}} = time;
+              $someone->sendfrom($user->nick,' INVITE '.$someone->nick.' :'.$somewhere->name);
+              $user->sendserv(join(' ',341,$user->nick,$someone->nick,$somewhere->name));
+            } else { $user->sendserv('443 '.$user->nick.' '.$someone->nick.' '.$somewhere->name.' :is already on channel'); }
+          } else { $user->sendserv('482 '.$user->nick.' '.$somewhere->name.' :You\'re not a channel operator'); }
+        } else { $user->sendserv('422 '.$user->nick.' '.$somewhere->name.' :You\'re not on that channel'); }
+      } else { $user->sendserv('401 '.$user->nick.' '.$s[2].' :No such nick/channel'); }
+    } else { $user->sendserv('401 '.$user->nick.' '.$s[1].' :No such nick/channel'); }
+  } else { $user->sendserv('461 '.$user->nick.' INVITE :Not enough parameters.'); }
 }
 1

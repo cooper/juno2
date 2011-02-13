@@ -280,6 +280,9 @@ I*
 e
   The e channel mode is used exactly as the b channel mode.
   If a user's mask matches, they completely override a channel ban (+b) or a channel mute (+Z).
+i
+  The i channel mode prohibits users from joining the channel unless they were invited.
+  This mode may be overseen by an invite exception, channel mode I.
 
 oper flags
 ----------

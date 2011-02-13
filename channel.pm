@@ -21,7 +21,8 @@ sub new {
     'bans' => {}, # array ref [setby,time]
     'mutes' => {},
     'invexes' => {},
-    'exempts' => {}
+    'exempts' => {},
+    'invites' => {}
   };
   bless $this;
   $channels{lc($name)} = $this;
@@ -36,6 +37,11 @@ sub new {
 sub dojoin {
   my ($channel,$user) = @_;
   if (!(::hostmatch($user->fullcloak,keys %{$channel->{'bans'}}) && !::hostmatch($user->fullcloak,keys %{$channel->{'exempts'}}))) {
+    if ($channel->ismode('i') && !$channel->{'invites'}->{$user->{'id'}} && !::hostmatch($user->fullcloak,keys %{$channel->{'invexes'}})) {
+      $user->sendserv('473 '.$user->nick.' '.$channel->name.' :Cannot join channel - channel is invite only');
+      return
+    }
+    delete $channel->{'invites'}->{$user->{'id'}};
     $channel->{'users'}->{$user->{'id'}} = time;
     $channel->allsend(':'.$user->fullcloak.' JOIN :'.$channel->name);
     $channel->showtopic($user,1);
@@ -54,7 +60,7 @@ sub allsend {
 sub remove {
   my $channel = shift;
   my $id = shift->{'id'};
-  delete $channel->{$_}->{$id} foreach ('users','owners','admins','ops','halfops','voices');
+  delete $channel->{$_}->{$id} foreach ('users','owners','admins','ops','halfops','voices','invites');
   $channel->check;
 }
 sub who {
@@ -154,7 +160,7 @@ sub handlemode {
       $i++ if $_ !~ m/(\+|-)/; 
       if ($_ eq '+') { $state = 1; }
       elsif ($_ eq '-') { $state = 0; }
-      elsif ($_ =~ m/(n|t|m)/) {
+      elsif ($_ =~ m/(n|t|m|i)/) {
         $channel->setmode($_) if $state;
         $channel->unsetmode($_) unless $state;
         if ($cstate == $state) {

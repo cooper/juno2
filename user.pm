@@ -435,6 +435,7 @@ sub handle_join {
   my ($user,$data) = @_;
   my @s = split(' ',$data);
   if (defined($s[1])) {
+    $s[1] = ::col($s[1]);
     foreach(split(',',$s[1])) {
       my $target = channel::chanexists($_);
       if ($target) {

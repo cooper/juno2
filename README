@@ -105,7 +105,7 @@ make it so you can't change your nick if you're banned in a channel you're in
 WHO user
 channel names may not contain ASCII character 7
 create a script to start, stop, and rehash.
-INVITE command, channel mode i
+clean up messy numerics
 
 user commands
 -------------

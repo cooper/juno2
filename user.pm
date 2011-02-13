@@ -230,7 +230,7 @@ sub start {
   $user->sendnum('003',':This server was created '.$::TIME); # this should actually have a date
   # modes
   $user->sendnum('004',::conf('server','name').' juno-'.$::VERSION.' ix o bei');
-  $user->sendnum('005','CHANTYPES=# EXCEPTS INVEX CHANMODES=eIbZ,,,mnt PREFIX=(qaohv)~&@%+ NETWORK='.::conf('server','network').' STATUSMSG=@+ MODES='.::conf('limit','chanmodes').' NICKLEN='.::conf('limit','nick').' TOPICLEN='.::conf('limit','topic').' :are supported by this server');
+  $user->sendnum('005','CHANTYPES=# EXCEPTS INVEX CHANMODES=eIbZ,,,mnt PREFIX=(qaohv)~&@%+ NETWORK='.::conf('server','network').' MODES='.::conf('limit','chanmodes').' NICKLEN='.::conf('limit','nick').' TOPICLEN='.::conf('limit','topic').' :are supported by this server');
   $user->handle_lusers;
   $user->handle_motd;
   $user->setmode(::conf('user','automodes').($user->{'ssl'}?'Z':''));

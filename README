@@ -106,6 +106,7 @@ WHO user
 channel names may not contain ASCII character 7
 create a script to start, stop, and rehash.
 clean up messy numerics
+add a channel mode similar to inspircd's +J - you may not rejoin after being kicked until it has been x seconds
 
 user commands
 -------------

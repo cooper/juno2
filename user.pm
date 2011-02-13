@@ -477,7 +477,6 @@ sub handle_part {
         if ($user->ison($channel)) {
           $channel->allsend(':'.$user->fullcloak.' PART '.$channel->name.(defined $reason?' :'.$reason:''),undef);
           $channel->remove($user);
-          $channel->check;
         } else { $user->sendserv('422 '.$user->nick.' '.$channel->name.' :You\'re not on that channel'); }
       } else {
         $user->sendserv('401 '.$user->nick.' '.$_.' :No such nick/channel');

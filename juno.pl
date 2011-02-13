@@ -10,7 +10,7 @@ use user;
 use handle;
 use channel;
 local $0 = 'juno';
-our $VERSION = 'dev-0.4.6';
+our $VERSION = 'dev-0.4.7';
 our $TIME = time;
 our $CONFIG = './etc/ircd.conf';
 my $NOFORK = 0;

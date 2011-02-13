@@ -172,10 +172,9 @@ sub quit {
     }
   }
   ::snotice('client exiting: '.$user->fullhost.' ['.$user->{'ip'}.'] ('.$r.')') if $user->{'ready'};
-  $user->obj->syswrite('ERROR :Closing Link: ['.$r.']'."\r\n",POSIX::BUFSIZ) unless $no;
+  $user->obj->syswrite('ERROR :Closing Link: ('.(defined $user->{'ident'}?$user->{'ident'}:'*').'@'.$user->host.') ['.$r.']'."\r\n",POSIX::BUFSIZ) unless $no;
   delete $connection{$user->obj};
   $::select->remove($user->obj);
-  delete $::inbuffer{$user->obj};
   delete $::outbuffer{$user->obj};
   delete $::timer{$user->obj};
   $user->obj->close;

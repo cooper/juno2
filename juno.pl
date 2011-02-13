@@ -10,7 +10,7 @@ use user;
 use handle;
 use channel;
 local $0 = 'juno';
-our $VERSION = 'dev-0.4.2';
+our $VERSION = 'dev-0.4.3';
 our $TIME = time;
 our $CONFIG = './etc/ircd.conf';
 my $NOFORK = 0;
@@ -58,6 +58,7 @@ for(;;) {
       }
     } my ($theline,$therest);
     if($inbuffer{$peer}) {
+      unless (user::lookup($peer)) { delete $inbuffer{$peer}; next }
       while(($timer{$peer}-conf('flood','lines') <= $time) && (($theline,$therest) = $inbuffer{$peer} =~ m/([^\n]*)\n(.*)/s)) {
         $inbuffer{$peer} = $therest;
         $theline=~s/\r$//;

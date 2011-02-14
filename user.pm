@@ -190,7 +190,9 @@ sub sendnum {
   $user->send(':'.::conf('server','name').' '.shift().' '.$user->nick." @_");
 }
 sub sendserv {
-  shift->send(':'.::conf('server','name')." @_");
+  my $user = shift;
+  my $send = sprintf(shift, @_);
+  $user->send(':'.::conf('server','name')." $send");
 }
 sub sendfrom {
   shift->send(':'.shift()." @_");

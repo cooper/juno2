@@ -109,6 +109,7 @@ clean up messy numerics
 add a channel mode similar to inspircd's +J - you may not rejoin after being kicked until it has been x seconds
 Impliment WeIRCdlike built-in services
 Chakora is now an officially supported services package.
+mIRCservices is now an officially supported services package.
 
 user commands
 -------------

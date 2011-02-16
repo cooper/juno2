@@ -30,6 +30,14 @@ my %commands = (
   KICK => \&handle_kick,
   INVITE => \&handle_invite
 );
+my %numerics = (
+  461 => '%s :Not enough parameters', 
+  401 => '%s :No such nick/channel',
+  422 => '%s :You\'re not on that channel',
+  482 => '%s :You\'re not a channel operator',
+  443 => '%s %s :is already on channel',
+  341 => '%s %s',
+);
 sub new {
 #user::new($peer)
   my $ssl = shift;
@@ -189,13 +197,22 @@ sub sendnum {
   my $user = shift;
   $user->send(':'.::conf('server','name').' '.shift().' '.$user->nick." @_");
 }
-sub sendserv {
+sub numeric {
   my $user = shift;
-  my $send = sprintf(shift, @_);
-  $user->send(':'.::conf('server','name')." $send");
+  my $num = shift;
+  $user->send(join(' ',':'.::conf('server','name'),$num,$user->nick,sprintf($numerics{$num},@_)));
+}
+sub sendserv {
+  shift->send(':'.::conf('server','name').' '.sprintf(shift, @_));
+}
+sub sendservj {
+  shift->send(':'.::conf('server','name').' '.join(' ',@_));
 }
 sub sendfrom {
-  shift->send(':'.shift()." @_");
+  shift->send(':'.shift().' '.sprintf(shift, @_));
+}
+sub sendfromj {
+  shift->send(':'.shift().' '.join(' ',@_));
 }
 sub fullcloak {
   my $user = shift;
@@ -536,14 +553,15 @@ sub handle_kick {
       my $reason = $target->nick;
       $reason = ::col($s[3]) if defined $s[3];
       $user->sendserv('482 '.$user->nick.' '.$channel->name.' :You do not have the proper privileges to kick this user') unless $channel->kick($user,$target,$reason);
-    } else { $user->sendserv('401 '.$user->nick.' '.$s[1].' :No such nick/channel'); }
-  } else { $user->sendserv('461 '.$user->nick.' KICK :Not enough parameters.'); }
+    } else { $user->numeric(401,$s[1]); }
+  } else { $user->numeric(461,'KICK'); }
 }
 sub handle_invite {
   my($user,@s) = (shift,split(' ',shift));
   if (defined $s[2]) {
     my $someone = nickexists($s[1]);
     if ($someone) {
+      return if $someone == $user;
       my $somewhere = channel::chanexists($s[2]);
       if ($somewhere) {
         if ($user->ison($somewhere)) {
@@ -551,12 +569,12 @@ sub handle_invite {
             unless ($someone->ison($somewhere)) {
               $somewhere->{'invites'}->{$someone->{'id'}} = time;
               $someone->sendfrom($user->nick,' INVITE '.$someone->nick.' :'.$somewhere->name);
-              $user->sendserv(join(' ',341,$user->nick,$someone->nick,$somewhere->name));
-            } else { $user->sendserv('443 '.$user->nick.' '.$someone->nick.' '.$somewhere->name.' :is already on channel'); }
-          } else { $user->sendserv('482 '.$user->nick.' '.$somewhere->name.' :You\'re not a channel operator'); }
-        } else { $user->sendserv('422 '.$user->nick.' '.$somewhere->name.' :You\'re not on that channel'); }
-      } else { $user->sendserv('401 '.$user->nick.' '.$s[2].' :No such nick/channel'); }
-    } else { $user->sendserv('401 '.$user->nick.' '.$s[1].' :No such nick/channel'); }
-  } else { $user->sendserv('461 '.$user->nick.' INVITE :Not enough parameters.'); }
+              $user->numeric(341,$someone->nick,$somewhere->name);
+            } else { $user->numeric(433,$someone->nick,$somewhere->name); }
+          } else { $user->numeric(482,$somewhere->name); }
+        } else { $user->numeric(422,$somewhere->name); }
+      } else { $user->numeric(401,$s[2]); }
+    } else { $user->numeric(401,$s[1]); }
+  } else { $user->numeric(461,'INVITE'); }
 }
 1

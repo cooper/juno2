@@ -383,16 +383,18 @@ sub handle_ping {
 sub handle_mode {
   my ($user,$data) = @_;
   my @s = split(' ',$data);
-  if (lc($s[1]) eq lc($user->nick)) {
-    $user->hmodes($s[2]);
-  } else {
-    my $target = channel::chanexists($s[1]);
-    if ($target) {
-      $target->handlemode($user,(split(' ',$data,3))[2]);
-    } else {
-      $user->sendserv('401 '.$user->nick.' '.$s[1].' :No suck nick/channel');
-    }
-  }
+	if (defined($s[1])) {
+		if (lc($s[1]) eq lc($user->nick)) {
+		  $user->hmodes($s[2]);
+		} else {
+		  my $target = channel::chanexists($s[1]);
+		  if ($target) {
+		    $target->handlemode($user,(split(' ',$data,3))[2]);
+		  } else {
+		    $user->sendserv('401 '.$user->nick.' '.$s[1].' :No suck nick/channel');
+		  }
+		}
+	} else { $user->numeric(461,'MODE'); }
 }
 sub handle_privmsgnotice {
   my ($user,$data) = @_;
@@ -560,9 +562,9 @@ sub handle_invite {
   my($user,@s) = (shift,split(' ',shift));
   if (defined $s[2]) {
     my $someone = nickexists($s[1]);
+    my $somewhere = channel::chanexists($s[2]);
     if ($someone) {
-      return if $someone == $user;
-      my $somewhere = channel::chanexists($s[2]);
+			return if $someone == $user;
       if ($somewhere) {
         if ($user->ison($somewhere)) {
           if ($somewhere->basicstatus($user)) {

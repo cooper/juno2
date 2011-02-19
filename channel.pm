@@ -57,6 +57,16 @@ sub allsend {
     $u->send($data) unless $halt;
   }
 }
+sub opsend {
+  my ($channel,$data,$nou) = @_; my $halt;
+  foreach (keys %{$channel->{'users'}}) {
+    $halt = 0;
+    my $u = user::lookupbyid($_);
+		next unless $channel->basicstatus($u,1);
+    $halt = 1 if defined $nou && $nou == $u;
+    $u->send($data) unless $halt;
+  }
+}
 sub remove {
   my $channel = shift;
   my $id = shift->{'id'};
@@ -73,7 +83,7 @@ sub who {
     (defined $channel->{'owners'}->{$_}?'~':'').
     (defined $channel->{'admins'}->{$_}?'&':'').
     (defined $channel->{'ops'}->{$_}?'@':'').
-    (defined $channel->{'halfops'}->{$_}?'%':'').
+    (defined $channel->{'halfops'}->{$_}?'%%':'').
     (defined $channel->{'voices'}->{$_}?'+':'');
     $user->sendserv(join(' ',352,$user->nick,$channel->name,$u->{'ident'},$u->{'cloak'},::conf('server','name'),$u->nick,$flags,':0',$u->{'gecos'}));
   }
@@ -98,7 +108,7 @@ sub names {
     (defined $channel->{'owners'}->{$_}?'~':
     (defined $channel->{'admins'}->{$_}?'&':
     (defined $channel->{'ops'}->{$_}?'@':
-    (defined $channel->{'halfops'}->{$_}?'%':
+    (defined $channel->{'halfops'}->{$_}?'%%':
     (defined $channel->{'voices'}->{$_}?'+':''))))).
     $u->nick.' ';
   }
@@ -111,8 +121,10 @@ sub chanexists {
   return undef;
 }
 sub basicstatus {
-  my ($channel,$user) = @_;
-  if(!$channel->has($user,'owner') && !$channel->has($user,'admin') && !$channel->has($user,'op') && !$channel->has($user,'halfop')) {
+  my ($channel,$user,$HOP) = @_;
+	my $halfop = $channel->has($user,'halfop');
+	$halfop = 0 if $HOP;
+  if(!$channel->has($user,'owner') && !$channel->has($user,'admin') && !$channel->has($user,'op') && !$halfop) {
     return;
   } return 1;
 }
@@ -160,7 +172,7 @@ sub handlemode {
       $i++ if $_ !~ m/(\+|-)/; 
       if ($_ eq '+') { $state = 1; }
       elsif ($_ eq '-') { $state = 0; }
-      elsif ($_ =~ m/(n|t|m|i)/) {
+      elsif ($_ =~ m/(n|t|m|i|z)/) {
         $channel->setmode($_) if $state;
         $channel->unsetmode($_) unless $state;
         if ($cstate == $state) {
@@ -349,8 +361,13 @@ sub privmsgnotice {
   ((::hostmatch($user->fullcloak,keys %{$channel->{'bans'}}) || 
   ::hostmatch($user->fullcloak,keys %{$channel->{'mutes'}})) && 
   !$channel->canspeakwithstatus($user) && !::hostmatch($user->fullcloak,keys %{$channel->{'exempts'}}))) {
-    $user->sendserv(join(' ',404,$user->nick,$channel->name,':Cannot send to channel'));
-    return;
+		if ($channel->ismode('z')) {
+			$channel->opsend(':'.$user->fullcloak.' '.join(' ',$type,$channel->name,':'.$msg),$user);
+			return 1;
+		} else {
+		  $user->sendserv(join(' ',404,$user->nick,$channel->name,':Cannot send to channel'));
+		  return;
+		}
   }
   $channel->allsend(':'.$user->fullcloak.' '.join(' ',$type,$channel->name,':'.$msg),$user);
 }

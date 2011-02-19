@@ -108,8 +108,11 @@ create a script to start, stop, and rehash.
 clean up messy numerics
 add a channel mode similar to inspircd's +J - you may not rejoin after being kicked until it has been x seconds
 Impliment WeIRCdlike built-in services
-Chakora is now an officially supported services package.
-mIRCservices is now an officially supported services package.
+Chakora is now an officially supported services package, fully support it.
+mIRCservices is now an officially supported services package, fully support it.
+InspIRCd-compatible server linking protocol
+UnrealIRCd-compatible server linking protocol
+InspIRCd-type SA* commands: SANICK, SAMODE, SAJOIN, SAPART, SAQUIT
 
 user commands
 -------------

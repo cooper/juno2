@@ -28,7 +28,8 @@ my %commands = (
   GLOBOPS => \&handle_globops,
   TOPIC => \&handle_topic,
   KICK => \&handle_kick,
-  INVITE => \&handle_invite
+  INVITE => \&handle_invite,
+	LIST => \&handle_list
 );
 my %numerics = (
   461 => '%s :Not enough parameters', 
@@ -37,6 +38,8 @@ my %numerics = (
   482 => '%s :You\'re not a channel operator',
   443 => '%s %s :is already on channel',
   341 => '%s %s',
+	322 => '%s %s :%s',
+	323 => ':End of /LIST'
 );
 sub new {
 #user::new($peer)
@@ -578,5 +581,22 @@ sub handle_invite {
       } else { $user->numeric(401,$s[2]); }
     } else { $user->numeric(401,$s[1]); }
   } else { $user->numeric(461,'INVITE'); }
+}
+sub handle_list {
+	my($user,@s) = (shift,split(' ',shift));
+	$user->sendserv('321 %s Channel :Users  Name',$user->nick);
+	if ($s[1]) {
+		foreach(split(',',$s[1])) {
+			my $channel = channel::chanexists($_);
+			if ($channel) {
+				$channel->list($user);
+			} else {
+				$user->numeric(401,$_);
+			}
+		}
+	} else {
+		$_->list($user) foreach values %channel::channels;
+	}
+	$user->numeric(323);
 }
 1

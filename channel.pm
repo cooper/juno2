@@ -418,4 +418,10 @@ sub kick {
   $channel->remove($target);
   return 1;
 }
+sub list {
+	my $channel = shift;
+	my $user = shift;
+  my @users = keys %{$channel->{'users'}};
+	$user->numeric(322,$channel->name,$#users+1,$channel->{'topic'}?$channel->{'topic'}->{'topic'}:'');
+}
 1

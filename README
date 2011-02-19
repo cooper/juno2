@@ -2,7 +2,7 @@
              (_)                   (_)            | |
               _ _   _ _ __   ___    _ _ __ ___  __| |
              | | | | | '_ \ / _ \  | | '__/ __|/ _` |
-             | | |_| | | | | (_) |-| | | | (__| (_| | v0.4.*
+             | | |_| | | | | (_) |-| | | | (__| (_| | v0.5.*
 #############| |\__,_|_| |_|\___/  |_|_|  \___|\__,_|#############
             _/ |  Perl Internet Relay Chat daemon
            |__/ 
@@ -220,7 +220,11 @@ KICK
   If the user attempts to kick a user of higher status, a numeric error will be displayed.
   A numeric error will also be displayed if the nick or channel is invalid.
   If successful, nothing other than the KICK command will be replied.
-  Parameters: <channel> <user> [<comment>]  
+  Parameters: <channel> <user> [<comment>]
+LIST
+	A LIST query is used to list or view the number of users and topic of one or more channels.
+	If no parameters are given, every channel is displayed unless they have modes enabled to keep them hidden.
+	Parameters: [<channel>,<channel>,...]
 
 user modes
 ----------

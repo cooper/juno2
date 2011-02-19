@@ -321,8 +321,7 @@ sub handle_motd {
   my $user = shift;
   open(my $MOTD,::conf('server','motd')) or $user->sendnum(376,':MOTD file missing.');
   $user->sendnum(375,':'.::conf('server','name').' message of the day');
-  while (<$MOTD>) {
-    my $line = $_;
+  while (my $line = <$MOTD>) {
     chomp $line;
     $user->sendnum(372,':- '.$line);
   }

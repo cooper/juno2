@@ -251,7 +251,8 @@ sub loadrequirements {
     IO::Socket::SSL->import('inet6') if (conf('enabled','ipv6'));
   }
 	if (conf('enabled','cloaking')) {
-		require Digest::SHA qw(sha256_hex);
+		require Digest::SHA;
+		Digest::SHA->import(sha256_hex);
 	}
 }
 sub handleargs {

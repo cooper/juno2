@@ -359,7 +359,9 @@ sub privmsgnotice {
   if (($channel->ismode('n') && !$user->ison($channel)) ||
   ($channel->ismode('m') && !$channel->canspeakwithstatus($user)) ||
   ((::hostmatch($user->fullcloak,keys %{$channel->{'bans'}}) || 
-  ::hostmatch($user->fullcloak,keys %{$channel->{'mutes'}})) && 
+  ::hostmatch($user->fullhost,keys %{$channel->{'bans'}}) ||
+  ::hostmatch($user->fullcloak,keys %{$channel->{'mutes'}}) ||
+  ::hostmatch($user->fullhost,keys %{$channel->{'mutes'}})) && 
   !$channel->canspeakwithstatus($user) && !::hostmatch($user->fullcloak,keys %{$channel->{'exempts'}}))) {
 		if ($channel->ismode('z')) {
 			$channel->opsend(':'.$user->fullcloak.' '.join(' ',$type,$channel->name,':'.$msg),$user);

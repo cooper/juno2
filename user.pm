@@ -138,12 +138,18 @@ sub handle {
 }
 sub setcloak {
   my $user = shift;
-	my $sha = Digest::SHA::sha1_hex($user->{'host'},::conf('cloak','salt'));
-	my $sep = $user->{'ipv'}==6?':':'.';
-	my $cloak = join($sep,($sha =~ m/...../g)[0..3]);
-	$cloak .= $sep.'ip';
+	my $cloak = host2cloak($user->{'ipv'}==6?1:0,$user->{'host'});
   $user->sendserv('396 '.$user->nick.' '.$cloak.' :is now your displayed host');
   return $cloak;
+}
+sub host2cloak {
+	my @pieces = ();
+	my $sep = shift;
+	foreach (split(($sep?':':'\.'),shift)) {
+		my $part = Digest::SHA::sha1_hex($_,::conf('cloak','salt'),$#pieces);
+  	push(@pieces,($part=~m/....../g)[0]);
+	}
+	return join($sep?':':'.',@pieces);
 }
 sub unsetcloak {
   my $user = shift;

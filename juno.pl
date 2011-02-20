@@ -252,7 +252,7 @@ sub loadrequirements {
   }
 	if (conf('enabled','cloaking')) {
 		require Digest::SHA;
-		Digest::SHA->import(sha256_hex);
+		Digest::SHA->import('sha256_hex');
 	}
 }
 sub handleargs {
@@ -282,6 +282,8 @@ EOF
         $CONFIG = $s[1] if $s[0] eq '--config';
       } when('--nofork') {
         $NOFORK = 1 if $s[0] eq '--nofork';
+			} when('--version') {
+				say $VERSION;
       } default {
 print <<EOF;
 usage: perl juno.pl

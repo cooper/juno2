@@ -36,7 +36,8 @@ sub new {
 }
 sub dojoin {
   my ($channel,$user) = @_;
-  if (!(::hostmatch($user->fullcloak,keys %{$channel->{'bans'}}) && !::hostmatch($user->fullcloak,keys %{$channel->{'exempts'}}))) {
+  if (!::hostmatch($user->fullcloak,keys %{$channel->{'bans'}}) && !::hostmatch($user->fullcloak,keys %{$channel->{'exempts'}}) &&
+	!::hostmatch($user->fullhost,keys %{$channel->{'bans'}}) && !::hostmatch($user->fullhost,keys %{$channel->{'exempts'}})) {
     if ($channel->ismode('i') && !$channel->{'invites'}->{$user->{'id'}} && !::hostmatch($user->fullcloak,keys %{$channel->{'invexes'}})) {
       $user->sendserv('473 '.$user->nick.' '.$channel->name.' :Cannot join channel - channel is invite only');
       return

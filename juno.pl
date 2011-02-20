@@ -10,7 +10,6 @@ use user;
 use handle;
 use channel;
 use easyedit;
-use Digest::SHA qw(sha256_hex);
 local $0 = 'juno';
 our $VERSION = 'dev-0.5.2';
 our $TIME = time;
@@ -252,7 +251,7 @@ sub loadrequirements {
     IO::Socket::SSL->import('inet6') if (conf('enabled','ipv6'));
   }
 	if (conf('enabled','cloaking')) {
-		require Digest::SHA;
+		require Digest::SHA qw(sha256_hex);
 	}
 }
 sub handleargs {

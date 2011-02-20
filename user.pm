@@ -29,7 +29,8 @@ my %commands = (
   TOPIC => \&handle_topic,
   KICK => \&handle_kick,
   INVITE => \&handle_invite,
-	LIST => \&handle_list
+	LIST => \&handle_list,
+	ISON => \&handle_ison
 );
 my %numerics = (
   461 => '%s :Not enough parameters', 
@@ -39,7 +40,8 @@ my %numerics = (
   443 => '%s %s :is already on channel',
   341 => '%s %s',
 	322 => '%s %s :%s',
-	323 => ':End of /LIST'
+	323 => ':End of /LIST',
+	303 => ':%s'
 );
 sub new {
 #user::new($peer)
@@ -81,7 +83,7 @@ sub setmode {
   foreach (split(//,$modes)) {
     $user->{'mode'}->{$_} = time;
     next if $_ =~ m/i/;
-    if ($_ eq 'x' && ::conf('cloak','enabled')) {
+    if ($_ eq 'x' && ::conf('enabled','cloaking')) {
       $user->{'cloak'} = $user->setcloak;
     }
   }
@@ -97,7 +99,7 @@ sub unsetmode {
   foreach (split(//,$modes)) {
     delete $user->{'mode'}->{$_};
     next if $_ =~ m/(i|S)/;
-    if ($_ eq 'x' && ::conf('cloak','enabled')) {
+    if ($_ eq 'x' && ::conf('enabled','cloaking')) {
       $user->{'cloak'} = $user->unsetcloak;
     } elsif ($_ eq 'o') {
       delete $user->{'oper'};
@@ -136,14 +138,10 @@ sub handle {
 }
 sub setcloak {
   my $user = shift;
-  my $cloak = crypt($user->{'host'},::conf('cloak','salt'));
-  if ($user->{'res'}) {
-    my @h = split(/\./,$user->host);
-    $cloak .= (defined($h[-2])?'.'.$h[-2]:'').'.'.$h[-1];
-  } else {
-    $cloak .= '.ipv'.$user->{'ipv'};
-  }
-  $cloak = lc $cloak; # since bans are not cap-specific
+	my $sha = Digest::SHA::sha1_hex($user->{'host'},::conf('cloak','salt'));
+	my $sep = $user->{'ipv'}==6?':':'.';
+	my $cloak = join($sep,($sha =~ m/...../g)[0..3]);
+	$cloak .= $sep.'ip';
   $user->sendserv('396 '.$user->nick.' '.$cloak.' :is now your displayed host');
   return $cloak;
 }
@@ -515,8 +513,8 @@ sub handle_rehash {
   my $user = shift;
   if ($user->can('rehash')) {
     (%::config,%::oper,%::kline) = ((),(),());
-    ::confparse($::CONFIG);
     ::snotice($user->nick.' is rehashing server configuration file');
+    ::confparse($::CONFIG);
   } else {
     $user->sendserv('481 '.$user->nick.' :Permission Denied');
   }
@@ -597,5 +595,17 @@ sub handle_list {
 		$_->list($user) foreach values %channel::channels;
 	}
 	$user->numeric(323);
+}
+sub handle_ison {
+	my($user,@s,@final) = (shift,split(' ',shift),());
+	if (defined $s[1]) {
+		foreach (@s[1..$#s]) {
+			my $u = nickexists($_);
+			if ($u) {
+				push(@final,$u->nick);
+			}
+		}
+		$user->numeric(303,join(' ',@final));
+	} else { $user->numeric(461,'ISON'); }
 }
 1

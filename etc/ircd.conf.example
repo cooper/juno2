@@ -37,6 +37,8 @@ sec enabled
   ssl 1
   # enable IPv6 (requires IO::Socket::INET6)
   ipv6 1
+	# enable cloaking (requires Digest::SHA (core))
+	cloaking 0
 
 sec ssl
   #### ignore this block if you have SSL disabled ###
@@ -103,8 +105,6 @@ sec limit
   chanmodes 5
 
 sec cloak
-  # enable cloaking
-  enabled 1
   # the "cloak key"
   salt secret
 

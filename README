@@ -89,6 +89,11 @@ to enable SSL listening, you must must set the configuration option enabled:ssl 
 This requires the IO::Socket::SSL perl module.
 If you wish to listen with SSL on IPv6, you must also have IPv6 enabled.
 
+cloaking
+--------
+cloaking requires use of the Digest::SHA module, which is a core perl module.
+enabling cloaking may increase resource usage when importing the module.
+
 Plans - things I plan to do
 ---------------------------
 I'm not going to put anything here until I run out of useful things to do.
@@ -222,6 +227,11 @@ LIST
 	A LIST query is used to list or view the number of users and topic of one or more channels.
 	If no parameters are given, every channel is displayed unless they have modes enabled to keep them hidden.
 	Parameters: [<channel>,<channel>,...]
+ISON
+	An ISON query is used to check if one or more users are on the network.
+	A numeric will be displayed containing those users' nicks.
+	If there are no users that match, there will be no error, but only an empty numeric.
+	Parameters: <nickname> [<nickname>] [...]
 
 user modes
 ----------

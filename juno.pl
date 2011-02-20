@@ -10,8 +10,9 @@ use user;
 use handle;
 use channel;
 use easyedit;
+use Digest::SHA qw(sha256_hex);
 local $0 = 'juno';
-our $VERSION = 'dev-0.5.1';
+our $VERSION = 'dev-0.5.2';
 our $TIME = time;
 our $CONFIG = './etc/ircd.conf';
 my $NOFORK = 0;
@@ -250,6 +251,9 @@ sub loadrequirements {
     require IO::Socket::SSL;
     IO::Socket::SSL->import('inet6') if (conf('enabled','ipv6'));
   }
+	if (conf('enabled','cloaking')) {
+		require Digest::SHA;
+	}
 }
 sub handleargs {
 print <<EOF;
@@ -260,7 +264,7 @@ print <<EOF;
 \t  | | |_| | | | | (_) |-| | | | (__| (_| |
 \t  | |\\__,_|_| |_|\\___/  |_|_|  \\___|\\__,_|
 \t _/ |
-\t|__/   development version $VERSION
+\t|__/   version $VERSION
 
 EOF
   foreach (@ARGV) {

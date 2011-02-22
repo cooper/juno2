@@ -340,19 +340,20 @@ sub handle_nick {
   if ($s[1]) {
     return if $s[1] eq $user->nick;
     if (::validnick($s[1],::conf('limit','nick'),undef)) {
-      unless(user::nickexists($s[1])) {
-        my %sent = ();
+      if(!user::nickexists($s[1]) || lc($s[1]) eq lc($user->nick)) {
+        my %sent = ($user->{'id'}=>1);
+				my @users = $user;
         foreach (values %channel::channels) {
           if ($user->ison($_)) {
             $_->check;
             foreach (keys %{$_->{'users'}}) {
               next if $sent{$_};
-              lookupbyid($_)->send(':'.$user->fullcloak.' NICK :'.$s[1]);
+							push(@users,lookupbyid($_));
               $sent{$_} = 1;
             }
           }
         }
-        undef %sent;
+				$_->send(':'.$user->fullcloak.' NICK :'.$s[1]) foreach @users;
         $user->{'nick'} = $s[1];
       } else { $user->sendserv('432 '.$user->nick.' '.$s[1].' :Nickname is already in use.'); }
     } else { $user->sendserv('432 '.$user->nick.' '.$s[1].' :Erroneous nickname'); }

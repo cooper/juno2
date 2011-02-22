@@ -43,7 +43,26 @@ my %numerics = (
 	322 => '%s %s :%s',
 	323 => ':End of /LIST',
 	303 => ':%s',
-	462 => ':You may not reregister'
+	462 => ':You may not reregister',
+	376 => ':End of message of the day.',
+	372 => ':- %s',
+	432 => '%s :Erroneous nickname',
+	433 => '%s :Nickname is already in use',
+	431 => ':No nickname given',
+	381 => '%s :End of /WHOIS list.',
+	412 => ':No text to send',
+	305 => ':You are no longer marked as being away',
+	306 => ':You have been marked as being away',
+	491 => ':Invalid oper credentials',
+	481 => ':Permission Denied',
+	403 => '%s :Invalid channel name',
+	315 => '%s :End of /WHO list',
+	366 => '%s :End of /NAMES list.',
+	482 => '%s :You do not have the proper privileges to kick this user',
+	501 => '%s :No such mode',
+	421 => '%s :Unknown command',
+	396 => '%s :is now your displayed host',
+	321 => 'Channel :Users  Name'
 );
 sub new {
 #user::new($peer)
@@ -57,7 +76,7 @@ sub new {
   if ($ip =~ m/:/) { $ipv = 6; } else { $ipv = 4; }
   $success = 0;
   $host = $ip;
-  my $this = {
+  my $user = {
     'ssl' => $ssl,
     'server' => $::id,
     'id' => $::id.&newid,
@@ -73,11 +92,11 @@ sub new {
     'ping' => time,
     'last' => time
   };
-  bless $this;
-  if ($success) { $this->servernotice('*** Found your hostname ('.$this->{'host'}.')'); }
-  else { $this->servernotice('*** Could not resolve hostname; using IP address instead'); }
-  $connection{$peer} = $this;
-  return $this;
+  bless $user;
+  if ($success) { $user->servernotice('*** Found your hostname ('.$user->{'host'}.')'); }
+  else { $user->servernotice('*** Could not resolve hostname; using IP address instead'); }
+  $connection{$peer} = $user;
+  return $user;
 }
 sub setmode {
   my ($user,$modes,$a) = @_;
@@ -127,7 +146,7 @@ sub hmodes {
         $user->setmode($_) if $state == 1;
       }
     } else {
-      $user->sendserv('501 '.$user->nick.' '.$_.' :no such mode');
+      $user->numeric(501,$_);
     }
   }
 }
@@ -136,12 +155,12 @@ sub handle {
   my $command = uc shift;
   if (exists($commands{$command})) {
     $commands{$command}($user,shift);
-  } else { $user->sendserv('421 '.$user->nick.' '.$command.' :Unknown command'); }
+  } else { $user->numeric(421,$command); }
 }
 sub setcloak {
   my $user = shift;
 	my $cloak = host2cloak($user->{'ipv'}==6?1:0,$user->{'host'});
-  $user->sendserv('396 '.$user->nick.' '.$cloak.' :is now your displayed host');
+  $user->numeric(396,$cloak);
   return $cloak;
 }
 sub host2cloak {
@@ -155,7 +174,7 @@ sub host2cloak {
 }
 sub unsetcloak {
   my $user = shift;
-  $user->sendserv('396 '.$user->nick.' '.$user->host.' :is now your displayed host');
+  $user->numeric(396,$user->host);
   return $user->host;
 }
 #user::lookup($peer)
@@ -325,13 +344,13 @@ sub handle_lusers {
 }
 sub handle_motd {
   my $user = shift;
-  open(my $MOTD,::conf('server','motd')) or $user->sendnum(376,':MOTD file missing.');
+  open my $MOTD, ::conf('server','motd') or $user->numeric(372,'MOTD file is missing.');
   $user->sendnum(375,':'.::conf('server','name').' message of the day');
   while (my $line = <$MOTD>) {
     chomp $line;
-    $user->sendnum(372,':- '.$line);
+    $user->numeric(372,$line);
   }
-  $user->sendnum(376,':End of message of the day.');
+  $user->numeric(376);
   close $MOTD;
 }
 sub handle_nick {
@@ -356,11 +375,11 @@ sub handle_nick {
 				$sent{$user->{'id'}} = 1;
 				$_->send(':'.$user->fullcloak.' NICK :'.$s[1]) foreach @users;
         $user->{'nick'} = $s[1];
-      } else { $user->sendserv('432 '.$user->nick.' '.$s[1].' :Nickname is already in use.'); }
-    } else { $user->sendserv('432 '.$user->nick.' '.$s[1].' :Erroneous nickname'); }
-  } else { $user->sendnum(431,':No nickname given'); }
+      } else { $user->numeric(433,$s[1]); }
+    } else { $user->numeric(432,$s[1]); }
+  } else { $user->sendnum(431); }
 }
-sub handle_whois {
+sub handle_whois { #TODO clean this up.
   my $user = shift;
   my $nick = (split(' ',shift))[1];
   my $modes = '';
@@ -379,16 +398,15 @@ sub handle_whois {
       $user->sendserv('317 '.$user->nick.' '.$target->nick.' '.(time-$target->{'idle'}).' '.$target->{'time'}.' :seconds idle, signon time');
 
     } else {
-      $user->sendserv('401 '.$user->nick.' '.$nick.' :No suck nick/channel');
+			$user->numeric(401,$nick);
     }
-    $user->sendserv('318 '.$user->nick.' '.$nick.' :End of /WHOIS list.');
-  } else { $user->sendserv('461 '.$user->nick.' WHOIS :Not enough parameters'); }
-
+		$user->numeric(318,$nick);
+  } else { $user->numeric(461,'WHOIS'); }
 }
 sub handle_ping {
   my $user = shift;
   my $reason = (split(' ',shift,2))[1];
-  $user->sendserv('PONG '.::conf('server','name').($reason?' '.$reason:''));
+  $user->sendserv('PONG '.::conf('server','name').(defined $reason?' '.$reason:''));
 }
 sub handle_mode {
   my ($user,$data) = @_;
@@ -401,7 +419,7 @@ sub handle_mode {
 		  if ($target) {
 		    $target->handlemode($user,(split(' ',$data,3))[2]);
 		  } else {
-		    $user->sendserv('401 '.$user->nick.' '.$s[1].' :No suck nick/channel');
+				$user->numeric(401,$s[1]);
 		  }
 		}
 	} else { $user->numeric(461,'MODE'); }
@@ -418,23 +436,23 @@ sub handle_privmsgnotice {
     if (defined $s[2]) {
       if ($msg ne '') { 
         $target->recvprivmsg($user->fullcloak,$target->nick,$msg,($n?'NOTICE':'PRIVMSG'));
-      } else { $user->sendserv('412 '.$user->nick.' :No text to send'); }
-    } else { $user->sendserv('461 '.$user->nick.' '.($n?'NOTICE':'PRIVMSG').' :Not enough parameters.'); }
+      } else { $user->numeric(412); }
+    } else { $user->numeric(461,$n?'NOTICE':'PRIVMSG'); }
   } elsif ($channel) {
     $channel->privmsgnotice($user,($n?'NOTICE':'PRIVMSG'),$msg);
   } else {
-    $user->sendserv('401 '.$user->nick.' '.$s[1].' :No suck nick/channel');
+		$user->numeric(401,$s[1]);
   }
 }
 sub handle_away {
   my ($user,$reason) = (shift,(split(' ',shift,2))[1]);
   if (defined $user->{'away'}) {
     $user->{'away'} = undef;
-    $user->sendserv('305 '.$user->nick.' :You are no longer marked as being away');
+    $user->numeric(305);
     return;
   }
   $user->{'away'} = ::col($reason);
-  $user->sendserv('306 '.$user->nick.' :You have been marked as being away');
+  $user->numeric(306);
 }
 sub handle_oper {
   my ($user,$data) = @_;
@@ -446,8 +464,8 @@ sub handle_oper {
       $user->setmode('o'.(::oper($oper,'snotice')?'S':''));
       ::snotice($user->fullhost.' is now an IRC operator using name '.$oper);
       ::snotice('user '.$user->nick.' now has oper privs: '.::oper($oper,'privs'));
-    } else { $user->sendserv('491 '.$user->nick.' :Invalid oper credentials'); }
-  } else { $user->sendserv('461 '.$user->nick.' OPER :Not enough parameters.'); }
+    } else { $user->numeric(491); }
+  } else { $user->numeric(461,'OPER'); }
 }
 sub handle_kill {
   my ($user,$data) = @_;
@@ -458,9 +476,9 @@ sub handle_kill {
       if ($target) {
         my $reason = ::col((split(' ',$data,3))[2]);
         $target->quit('Killed ('.$user->nick.' ('.$reason.'))');
-      } else { $user->sendserv('401 '.$user->nick.' nightly :No such nick/channel'); }
-    } else { $user->sendserv('481 '.$user->nick.' :Permission Denied'); }
-  } else { $user->sendserv('461 '.$user->nick.' KILL :Not enough parameters.'); }
+      } else { $user->numeric(401,$s[1]); }
+    } else { $user->numeric(481); }
+  } else { $user->numeric(461,'KILL'); }
 }
 sub handle_join {
   my ($user,$data) = @_;
@@ -475,11 +493,11 @@ sub handle_join {
         if ($_ =~ m/^#/) {
           channel::new($user,$_);
         } else {
-          $user->sendserv('403 '.$user->nick.' '.$_.' :Invalid channel name');
+          $user->numeric(403,$_);
         }
       }
     }
-  } else { $user->sendserv('461 '.$user->nick.' JOIN :Not enough parameters.'); }
+  } else { $user->numeric(461,'JOIN'); }
 }
 sub handle_who {
   my ($user,$query) = (shift,(split(' ',shift))[1]);
@@ -487,14 +505,14 @@ sub handle_who {
   if ($target) {
     $target->who($user);
   }
-  $user->sendserv('315 '.$user->nick.' '.$query.' :End of /WHO list.');
+  $user->numeric(315,$query);
 }
 sub handle_names {
   my $user = shift;
   foreach (split(',',(split(' ',shift))[1])) { 
     my $target = channel::chanexists($_);
     $target->names($user) if $target;
-    $user->sendserv('366 '.$user->nick.' '.$_.' :End of /NAMES list.') unless $target;
+    $user->numeric(366,$_) unless $target;
   }
 }
 sub handle_part {
@@ -508,12 +526,12 @@ sub handle_part {
         if ($user->ison($channel)) {
           $channel->allsend(':'.$user->fullcloak.' PART '.$channel->name.(defined $reason?' :'.$reason:''),undef);
           $channel->remove($user);
-        } else { $user->sendserv('422 '.$user->nick.' '.$channel->name.' :You\'re not on that channel'); }
+        } else { $user->numeric(422,$channel->name); }
       } else {
-        $user->sendserv('401 '.$user->nick.' '.$_.' :No such nick/channel');
+        $user->numeric(401,$_);
       }
     }
-  } else { $user->sendserv('461 '.$user->nick.' JOIN :Not enough parameters.'); }
+  } else { $user->numeric(461,'PART'); }
 }
 sub handle_quit {
   my ($user,$reason) = (shift,::col((split(' ',shift,2))[1]));
@@ -526,7 +544,7 @@ sub handle_rehash {
     ::snotice($user->nick.' is rehashing server configuration file');
     ::confparse($::CONFIG);
   } else {
-    $user->sendserv('481 '.$user->nick.' :Permission Denied');
+    $user->numeric(481);
   }
 }
 sub handle_globops {
@@ -535,8 +553,8 @@ sub handle_globops {
     my @s = split(' ',$data,2);
     if (defined $s[1]) {
       ::snotice('GLOBOPS from '.$user->nick.': '.$s[1]);
-    } else { $user->sendserv('461 '.$user->nick.' GLOBOPS :Not enough parameters.'); }
-  } else { $user->sendserv('481 '.$user->nick.' :Permission Denied'); }
+    } else { $user->numeric(461,'GLOBOPS'); }
+  } else { $user->numeric(481); }
 }
 sub handle_topic {
   my ($user,$data) = @_;
@@ -550,9 +568,9 @@ sub handle_topic {
       } else {
         $channel->showtopic($user);
       }
-    } else { $user->sendserv('401 '.$user->nick.' '.$s[1].' :No such nick/channel'); }
+    } else { $user->numeric(401,$s[1]); }
   } else {
-    $user->sendserv('461 '.$user->nick.' TOPIC :Not enough parameters.');
+    $user->numeric(461,'TOPIC');
   }
 }
 sub handle_kick {
@@ -564,7 +582,7 @@ sub handle_kick {
     if ($channel && $target) {
       my $reason = $target->nick;
       $reason = ::col($s[3]) if defined $s[3];
-      $user->sendserv('482 '.$user->nick.' '.$channel->name.' :You do not have the proper privileges to kick this user') unless $channel->kick($user,$target,$reason);
+      $user->numeric(482,$channel->name) unless $channel->kick($user,$target,$reason);
     } else { $user->numeric(401,$s[1]); }
   } else { $user->numeric(461,'KICK'); }
 }
@@ -591,7 +609,7 @@ sub handle_invite {
 }
 sub handle_list {
 	my($user,@s) = (shift,split(' ',shift));
-	$user->sendserv('321 %s Channel :Users  Name',$user->nick);
+	$user->numeric(321);
 	if ($s[1]) {
 		foreach(split(',',$s[1])) {
 			my $channel = channel::chanexists($_);

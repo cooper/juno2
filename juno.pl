@@ -11,7 +11,7 @@ use handle;
 use channel;
 use easyedit;
 local $0 = 'juno';
-our $VERSION = 'dev-0.5.6';
+our $VERSION = 'dev-0.5.7';
 our $TIME = time;
 our $CONFIG = './etc/ircd.conf';
 my $NOFORK = 0;

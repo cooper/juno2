@@ -10,8 +10,8 @@ use user;
 use handle;
 use channel;
 use easyedit;
-local $0 = 'JoahFailsIRCd';
-our $VERSION = 'jf-0.5.5';
+local $0 = 'BeyondAndJoahFailIRCd';
+our $VERSION = 'BeyondAndJoahFailIRCd-0.5.5';
 our $TIME = time;
 our $CONFIG = './etc/ircd.conf';
 my $NOFORK = 0;
@@ -257,14 +257,14 @@ sub loadrequirements {
 }
 sub handleargs {
 print <<EOF;
-       _             _     ______    _ _     _____ _____   _____     _ 
-      | |           | |   |  ____|  (_) |   |_   _|  __ \\ / ____|   | |
-      | | ___   __ _| |__ | |__ __ _ _| |___  | | | |__) | |      __| |
-  _   | |/ _ \\ / _` | '_ \\|  __/ _` | | / __| | | |  _  /| |     / _` |
- | |__| | (_) | (_| | | | | | | (_| | | \\__ \\_| |_| | \\ \\| |____| (_| |
-  \\____/ \\___/ \\__,_|_| |_|_|  \\__,_|_|_|___/_____|_|  \\_\\\\_____|\\__,_|
-                                                                       
-                       version $VERSION
+\t   _                     _              _
+\t  (_)                   (_)            | |
+\t   _ _   _ _ __   ___    _ _ __ ___  __| |
+\t  | | | | | '_ \\ / _ \\  | | '__/ __|/ _` |
+\t  | | |_| | | | | (_) |-| | | | (__| (_| |
+\t  | |\\__,_|_| |_|\\___/  |_|_|  \\___|\\__,_|
+\t _/ |
+\t|__/   version $VERSION
 
 EOF
   foreach (@ARGV) {

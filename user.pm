@@ -253,7 +253,7 @@ sub start {
   return if $user->checkkline;
   $user->sendnum('001',':Welcome to the '.::conf('server','network').' Internet Relay Chat Network '.$user->nick);
   $user->sendnum('002',':Your host is '.::conf('server','name').', running version juno-'.$::VERSION);
-  $user->sendnum('003',':This server was created '.$::TIME); # this should actually have a date
+  $user->sendnum('003',':This server was created '.POSIX::strftime('%a %b %d %Y at %H:%M:%S %Z',localtime $::TIME));
   # modes
   $user->sendnum('004',::conf('server','name').' juno-'.$::VERSION.' ix o bei');
   $user->sendnum('005','CHANTYPES=# EXCEPTS INVEX CHANMODES=eIbZ,,,mntz PREFIX=(qaohv)~&@%+ NETWORK='.::conf('server','network').' MODES='.::conf('limit','chanmodes').' NICKLEN='.::conf('limit','nick').' TOPICLEN='.::conf('limit','topic').' :are supported by this server');

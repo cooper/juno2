@@ -8,6 +8,7 @@ my $max = 0;
 our %connection;
 my %commands = (
   PONG => sub{},
+	USER => sub{ shift->numeric(462); },
   LUSERS => \&handle_lusers,
   MOTD => \&handle_motd,
   NICK => \&handle_nick,
@@ -41,7 +42,8 @@ my %numerics = (
   341 => '%s %s',
 	322 => '%s %s :%s',
 	323 => ':End of /LIST',
-	303 => ':%s'
+	303 => ':%s',
+	462 => ':You may not reregister'
 );
 sub new {
 #user::new($peer)

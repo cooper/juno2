@@ -145,3 +145,6 @@ oper cooper
 kline *@*.mx
   # the reason for the K-Line
   reason Mexico is prohibited
+
+kline Joah@*
+  reason you are a fgt i h8 u G T F O

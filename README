@@ -96,7 +96,13 @@ enabling cloaking may increase resource usage when importing the module.
 
 Plans - things I plan to do
 ---------------------------
-I'm not going to put anything here until I run out of useful things to do.
+add full support for mIRCservices
+add full support for Chakora IRC services
+create an unrealIRCd-compatible linking protocol
+create an inspIRCd-compatible linking protocol
+implement WeIRCd-style built-in services
+implement SporksIRCd-style FSAY command (roleplay)
+create an Inspircd-style H channel mode to replay the last x lines spoken in x seconds
 
 TODO - things I NEED to do
 --------------------------

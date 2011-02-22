@@ -103,6 +103,9 @@ create an inspIRCd-compatible linking protocol
 implement WeIRCd-style built-in services
 implement SporksIRCd-style FSAY command (roleplay)
 create an Inspircd-style H channel mode to replay the last x lines spoken in x seconds
+create an ircu-compatible linking protocol
+create an ircd-compatible linking protocol
+attempt to create an equivalent to InspIRCd's SACONNECT command
 
 TODO - things I NEED to do
 --------------------------

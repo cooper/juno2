@@ -364,7 +364,7 @@ sub handle_nick {
     } else { $user->numeric(432,$s[1]); }
   } else { $user->sendnum(431); }
 }
-sub handle_whois { #TODO clean this up.
+sub handle_whois {
   my $user = shift;
   my $nick = (split(' ',shift))[1];
   my $modes = '';

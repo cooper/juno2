@@ -8,7 +8,7 @@
            |__/ 
 
 about
------
+-----------------------
 In July 2010, I found pIRCd, the perl internet relay chat daemon. while learning
 Perl, I added a few more features to it; however, I caused several disadvantages,
 bugs, and memory failures. I decided to start over from scratch because if I wrote
@@ -18,7 +18,7 @@ It is written mostly from scratch; however, I will not take credit for the many
 concepts from pIRCd that I have used in my writing.
 
 license
--------
+-----------------------
 juno-ircd is Copyright (c) 2011, Juno-IRCd Development Group
 All rights reserved.
 
@@ -62,14 +62,14 @@ just start juno.pl.
 --nofork # prevent the IRCd from running in the background
 
 support
--------
+-----------------------
 if you are in need of assistance, you are likely to find me on my development
 network at cooper.on.fgtb.us #k. If I'm not there, I'm probably on irc.alphachat.net.
 this is pretty basic when it comes to the style of which it's written, so if you know
 a little bit of Perl editing it should be fairly easy.
 
 requirements
-------------
+-----------------------
 you must have the following perl modules to run juno:
   IO::Select (core)
   IO::Socket::INET (core)
@@ -78,24 +78,24 @@ you must have the following perl modules to run juno:
 all dependencies are core modules as of now.
 
 IPv6
-----
+-----------------------
 to enable IPv6 listening, you must set the configuration option enabled:ipv6 to a true value.
 This requires the IO::Socket::INET6 and Socket6 perl modules.
 If you wish to listen with SSL on IPv6, you must also have SSL enabled.
 
 SSL
----
+-----------------------
 to enable SSL listening, you must must set the configuration option enabled:ssl to a true value.
 This requires the IO::Socket::SSL perl module.
 If you wish to listen with SSL on IPv6, you must also have IPv6 enabled.
 
 cloaking
---------
+-----------------------
 cloaking requires use of the Digest::SHA module, which is a core perl module.
 enabling cloaking may increase resource usage when importing the module.
 
-Plans - things I plan to do
----------------------------
+plans
+-----------------------
 add full support for mIRCservices
 add full support for Chakora IRC services
 create an unrealIRCd-compatible linking protocol
@@ -108,24 +108,24 @@ create an ircd-compatible linking protocol
 attempt to create an equivalent to InspIRCd's SACONNECT command
 allow colors in hostnames, usernames, and nicknames.
 
-TODO - things I NEED to do
---------------------------
+
+TODO
+-----------------------
 CAP
-only accept hosts if the resolution matches the client address
 show modes alphabetical, capitals first.
 USERHOST command
 VERSION command
-fix bug where you must have op to view the ban list (?)
 make it so you can't change your nick if you're banned in a channel you're in
 WHO user
 channel names may not contain ASCII character 7
 create a script to start, stop, and rehash.
 add a channel mode similar to inspircd's +J - you may not rejoin after being kicked until it has been x seconds
 fix "no text to send"
-By 0.6.0, I /HAVE/ to add more flood protection, client limits, etc.
+ADD MAX-PER-IP AND MAXIMUM CLIENTS!
+add a KLINE command and store K-Lines in a database of some sort
 
 user commands
--------------
+-----------------------
 PONG
   The PONG command is the response to the PING command.
   Parameters: (none required)
@@ -264,7 +264,7 @@ Z
   It may not be set or unset by any user.
 
 channel modes
--------------
+-----------------------
 All channel modes require half-operator status if not greater.
 
 t
@@ -315,7 +315,7 @@ z
 	In actuality, only owners, protected users, and operators are capable of seeing these messages.
 
 oper flags
-----------
+-----------------------
 kill
   The kill flag grants use of the KILL command to an IRC operator.
 rehash - rehash config

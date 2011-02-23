@@ -235,14 +235,14 @@ KICK
   If successful, nothing other than the KICK command will be replied.
   Parameters: <channel> <user> [<comment>]
 LIST
-	A LIST query is used to list or view the number of users and topic of one or more channels.
-	If no parameters are given, every channel is displayed unless they have modes enabled to keep them hidden.
-	Parameters: [<channel>,<channel>,...]
+  A LIST query is used to list or view the number of users and topic of one or more channels.
+  If no parameters are given, every channel is displayed unless they have modes enabled to keep them hidden.
+  Parameters: [<channel>,<channel>,...]
 ISON
-	An ISON query is used to check if one or more users are on the network.
-	A numeric will be displayed containing those users' nicks.
-	If there are no users that match, there will be no error, but only an empty numeric.
-	Parameters: <nickname> [<nickname>] [...]
+  An ISON query is used to check if one or more users are on the network.
+  A numeric will be displayed containing those users' nicks.
+  If there are no users that match, there will be no error, but only an empty numeric.
+  Parameters: <nickname> [<nickname>] [...]
 
 user modes
 ----------
@@ -310,9 +310,9 @@ i
   The i channel mode prohibits users from joining the channel unless they were invited.
   This mode may be overseen by an invite exception, channel mode I.
 z
-	The z channel mode allows operators to see what a user is saying if the user is incapable of NOTICEing or PRIVMSGing a channel.
-	If set, it appears to the user as if they were actually capable of messaging the channel, and no error is displayed.
-	In actuality, only owners, protected users, and operators are capable of seeing these messages.
+  The z channel mode allows operators to see what a user is saying if the user is incapable of NOTICEing or PRIVMSGing a channel.
+  If set, it appears to the user as if they were actually capable of messaging the channel, and no error is displayed.
+  In actuality, only owners, protected users, and operators are capable of seeing these messages.
 
 oper flags
 -----------------------

@@ -8,7 +8,7 @@ $::GV{'max'} = 0;
 our %connection;
 my %commands = (
   PONG => sub{},
-	USER => sub{ shift->numeric(462); },
+  USER => sub{ shift->numeric(462); },
   LUSERS => \&handle_lusers,
   MOTD => \&handle_motd,
   NICK => \&handle_nick,
@@ -30,8 +30,8 @@ my %commands = (
   TOPIC => \&handle_topic,
   KICK => \&handle_kick,
   INVITE => \&handle_invite,
-	LIST => \&handle_list,
-	ISON => \&handle_ison
+  LIST => \&handle_list,
+  ISON => \&handle_ison
 );
 my %numerics = (
   461 => '%s :Not enough parameters', 
@@ -40,29 +40,29 @@ my %numerics = (
   482 => '%s :You\'re not a channel operator',
   443 => '%s %s :is already on channel',
   341 => '%s %s',
-	322 => '%s %s :%s',
-	323 => ':End of /LIST',
-	303 => ':%s',
-	462 => ':You may not reregister',
-	376 => ':End of message of the day.',
-	372 => ':- %s',
-	432 => '%s :Erroneous nickname',
-	433 => '%s :Nickname is already in use',
-	431 => ':No nickname given',
-	381 => '%s :End of /WHOIS list.',
-	412 => ':No text to send',
-	305 => ':You are no longer marked as being away',
-	306 => ':You have been marked as being away',
-	491 => ':Invalid oper credentials',
-	481 => ':Permission Denied',
-	403 => '%s :Invalid channel name',
-	315 => '%s :End of /WHO list',
-	366 => '%s :End of /NAMES list.',
-	482 => '%s :You do not have the proper privileges to kick this user',
-	501 => '%s :No such mode',
-	421 => '%s :Unknown command',
-	396 => '%s :is now your displayed host',
-	321 => 'Channel :Users  Name'
+  322 => '%s %s :%s',
+  323 => ':End of /LIST',
+  303 => ':%s',
+  462 => ':You may not reregister',
+  376 => ':End of message of the day.',
+  372 => ':- %s',
+  432 => '%s :Erroneous nickname',
+  433 => '%s :Nickname is already in use',
+  431 => ':No nickname given',
+  381 => '%s :End of /WHOIS list.',
+  412 => ':No text to send',
+  305 => ':You are no longer marked as being away',
+  306 => ':You have been marked as being away',
+  491 => ':Invalid oper credentials',
+  481 => ':Permission Denied',
+  403 => '%s :Invalid channel name',
+  315 => '%s :End of /WHO list',
+  366 => '%s :End of /NAMES list.',
+  482 => '%s :You do not have the proper privileges to kick this user',
+  501 => '%s :No such mode',
+  421 => '%s :Unknown command',
+  396 => '%s :is now your displayed host',
+  321 => 'Channel :Users  Name'
 );
 sub new {
 #user::new($peer)
@@ -159,18 +159,18 @@ sub handle {
 }
 sub setcloak {
   my $user = shift;
-	my $cloak = host2cloak($user->{'ipv'}==6?1:0,$user->{'host'});
+  my $cloak = host2cloak($user->{'ipv'}==6?1:0,$user->{'host'});
   $user->numeric(396,$cloak);
   return $cloak;
 }
 sub host2cloak {
-	my @pieces = ();
-	my $sep = shift;
-	foreach (split(($sep?':':'\.'),shift)) {
-		my $part = Digest::SHA::sha1_hex($_,::conf('cloak','salt'),$#pieces);
-  	push(@pieces,($part=~m/....../g)[0]);
-	}
-	return join($sep?':':'.',@pieces);
+  my @pieces = ();
+  my $sep = shift;
+  foreach (split(($sep?':':'\.'),shift)) {
+    my $part = Digest::SHA::sha1_hex($_,::conf('cloak','salt'),$#pieces);
+    push(@pieces,($part=~m/....../g)[0]);
+  }
+  return join($sep?':':'.',@pieces);
 }
 sub unsetcloak {
   my $user = shift;
@@ -358,19 +358,19 @@ sub handle_nick {
     if (::validnick($s[1],::conf('limit','nick'),undef)) {
       if(!user::nickexists($s[1]) || lc($s[1]) eq lc($user->nick)) {
         my %sent;
-				my @users = $user;
+        my @users = $user;
         foreach (values %channel::channels) {
           if ($user->ison($_)) {
             $_->check;
             foreach (keys %{$_->{'users'}}) {
               next if $sent{$_};
-							push(@users,lookupbyid($_));
+              push(@users,lookupbyid($_));
               $sent{$_} = 1;
             }
           }
         }
-				$sent{$user->{'id'}} = 1;
-				$_->send(':'.$user->fullcloak.' NICK :'.$s[1]) foreach @users;
+        $sent{$user->{'id'}} = 1;
+        $_->send(':'.$user->fullcloak.' NICK :'.$s[1]) foreach @users;
         $user->{'nick'} = $s[1];
       } else { $user->numeric(433,$s[1]); }
     } else { $user->numeric(432,$s[1]); }
@@ -395,9 +395,9 @@ sub handle_whois { #TODO clean this up.
       $user->sendserv('317 '.$user->nick.' '.$target->nick.' '.(time-$target->{'idle'}).' '.$target->{'time'}.' :seconds idle, signon time');
 
     } else {
-			$user->numeric(401,$nick);
+      $user->numeric(401,$nick);
     }
-		$user->numeric(318,$nick);
+    $user->numeric(318,$nick);
   } else { $user->numeric(461,'WHOIS'); }
 }
 sub handle_ping {
@@ -408,18 +408,18 @@ sub handle_ping {
 sub handle_mode {
   my ($user,$data) = @_;
   my @s = split(' ',$data);
-	if (defined($s[1])) {
-		if (lc($s[1]) eq lc($user->nick)) {
-		  $user->hmodes($s[2]);
-		} else {
-		  my $target = channel::chanexists($s[1]);
-		  if ($target) {
-		    $target->handlemode($user,(split(' ',$data,3))[2]);
-		  } else {
-				$user->numeric(401,$s[1]);
-		  }
-		}
-	} else { $user->numeric(461,'MODE'); }
+  if (defined($s[1])) {
+    if (lc($s[1]) eq lc($user->nick)) {
+      $user->hmodes($s[2]);
+    } else {
+      my $target = channel::chanexists($s[1]);
+      if ($target) {
+        $target->handlemode($user,(split(' ',$data,3))[2]);
+      } else {
+        $user->numeric(401,$s[1]);
+      }
+    }
+  } else { $user->numeric(461,'MODE'); }
 }
 sub handle_privmsgnotice {
   my ($user,$data) = @_;
@@ -438,7 +438,7 @@ sub handle_privmsgnotice {
   } elsif ($channel) {
     $channel->privmsgnotice($user,($n?'NOTICE':'PRIVMSG'),$msg);
   } else {
-		$user->numeric(401,$s[1]);
+    $user->numeric(401,$s[1]);
   }
 }
 sub handle_away {
@@ -589,7 +589,7 @@ sub handle_invite {
     my $someone = nickexists($s[1]);
     my $somewhere = channel::chanexists($s[2]);
     if ($someone) {
-			return if $someone == $user;
+      return if $someone == $user;
       if ($somewhere) {
         if ($user->ison($somewhere)) {
           if ($somewhere->basicstatus($user)) {
@@ -605,32 +605,32 @@ sub handle_invite {
   } else { $user->numeric(461,'INVITE'); }
 }
 sub handle_list {
-	my($user,@s) = (shift,split(' ',shift));
-	$user->numeric(321);
-	if ($s[1]) {
-		foreach(split(',',$s[1])) {
-			my $channel = channel::chanexists($_);
-			if ($channel) {
-				$channel->list($user);
-			} else {
-				$user->numeric(401,$_);
-			}
-		}
-	} else {
-		$_->list($user) foreach values %channel::channels;
-	}
-	$user->numeric(323);
+  my($user,@s) = (shift,split(' ',shift));
+  $user->numeric(321);
+  if ($s[1]) {
+    foreach(split(',',$s[1])) {
+      my $channel = channel::chanexists($_);
+      if ($channel) {
+        $channel->list($user);
+      } else {
+        $user->numeric(401,$_);
+      }
+    }
+  } else {
+    $_->list($user) foreach values %channel::channels;
+  }
+  $user->numeric(323);
 }
 sub handle_ison {
-	my($user,@s,@final) = (shift,split(' ',shift),());
-	if (defined $s[1]) {
-		foreach (@s[1..$#s]) {
-			my $u = nickexists($_);
-			if ($u) {
-				push(@final,$u->nick);
-			}
-		}
-		$user->numeric(303,join(' ',@final));
-	} else { $user->numeric(461,'ISON'); }
+  my($user,@s,@final) = (shift,split(' ',shift),());
+  if (defined $s[1]) {
+    foreach (@s[1..$#s]) {
+      my $u = nickexists($_);
+      if ($u) {
+        push(@final,$u->nick);
+      }
+    }
+    $user->numeric(303,join(' ',@final));
+  } else { $user->numeric(461,'ISON'); }
 }
 1

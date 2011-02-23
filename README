@@ -311,7 +311,7 @@ i
 z
 	The z channel mode allows operators to see what a user is saying if the user is incapable of NOTICEing or PRIVMSGing a channel.
 	If set, it appears to the user as if they were actually capable of messaging the channel, and no error is displayed.
-	In actuality, nly owners, protected users, and operators are capable of seeing these messages.
+	In actuality, only owners, protected users, and operators are capable of seeing these messages.
 
 oper flags
 ----------

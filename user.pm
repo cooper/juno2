@@ -3,8 +3,8 @@ use warnings;
 use strict;
 use less 'mem';
 package user;
-my $cid = 0;
-my $max = 0;
+$::GV{'cid'} = 0;
+$::GV{'max'} = 0;
 our %connection;
 my %commands = (
   PONG => sub{},
@@ -284,8 +284,8 @@ sub start {
   ::snotice('client connecting: '.$user->fullhost.' ['.$user->{'ip'}.']');
 }
 sub newid {
-  $cid++;
-  return $cid-1;
+  $::GV{'cid'}++;
+  return $::GV{'cid'}-1;
 }
 sub id { return shift->{'id'}; }
 sub obj { return shift->{'obj'}; }
@@ -337,21 +337,18 @@ sub handle_lusers {
       $ii++;
     } else { $i++; }
   } my $t = $i+$ii;
-  $max = $t if $max < $t;
+  $::GV{'max'} = $t if $::GV{'max'} < $t;
   $user->sendnum(251,':There are '.$i.' users are '.$ii.' invisible on 1 servers');
-  $user->sendnum(265,$t.' '.$max.' :Current local users '.$t.', max '.$max);
-  $user->sendnum(267,$t.' '.$max.' :Current global users '.$t.', max '.$max);
+  $user->sendnum(265,$t.' '.$::GV{'max'}.' :Current local users '.$t.', max '.$::GV{'max'});
+  $user->sendnum(267,$t.' '.$::GV{'max'}.' :Current global users '.$t.', max '.$::GV{'max'});
 }
 sub handle_motd {
   my $user = shift;
-  open my $MOTD, ::conf('server','motd') or $user->numeric(372,'MOTD file is missing.');
   $user->sendnum(375,':'.::conf('server','name').' message of the day');
-  while (my $line = <$MOTD>) {
-    chomp $line;
+  foreach my $line (split($/,$::GV{'motd'})) {
     $user->numeric(372,$line);
   }
   $user->numeric(376);
-  close $MOTD;
 }
 sub handle_nick {
   my $user = shift;

@@ -11,11 +11,12 @@ use handle;
 use channel;
 use easyedit;
 local $0 = 'juno';
-our $VERSION = 'dev-0.5.7';
+our $VERSION = 'dev-0.5.8';
 our $TIME = time;
 our $CONFIG = './etc/ircd.conf';
 my $NOFORK = 0;
 my $PID = 0;
+our %GV;
 $SIG{'INT'} = \&sigint;
 $SIG{'HUP'} = \&sighup;
 our (%config,%oper,%kline,%listen,%outbuffer,%inbuffer,%timer);
@@ -31,7 +32,6 @@ unless ($NOFORK) {
   open STDERR, '>/dev/null';
   open my $pidfile,'>','./etc/juno.pid' or die 'could not write etc/juno.pid';
   $PID = fork;
-  say 'Started as '.$PID;
   say $pidfile $PID;
   close $pidfile;
 }
@@ -163,7 +163,17 @@ sub confparse {
     }
     $_->checkkline foreach values %user::connection;
   }
+	&loadmotd;
   close $CONF;
+}
+sub loadmotd {
+	open my $MOTD, conf('server','motd') or $GV{'motd'} = 'MOTD file is missing.', return;
+	while (my $line = <$MOTD>) {
+		chomp $line;
+		$GV{'motd'} .= $line.$/;
+	}
+	close $MOTD;
+	return 1;
 }
 sub validnick {
   my ($str,$limit,$i) = @_;

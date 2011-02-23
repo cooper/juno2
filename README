@@ -106,6 +106,7 @@ create an Inspircd-style H channel mode to replay the last x lines spoken in x s
 create an ircu-compatible linking protocol
 create an ircd-compatible linking protocol
 attempt to create an equivalent to InspIRCd's SACONNECT command
+allow colors in hostnames, usernames, and nicknames.
 
 TODO - things I NEED to do
 --------------------------

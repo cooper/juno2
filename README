@@ -122,6 +122,7 @@ channel names may not contain ASCII character 7
 create a script to start, stop, and rehash.
 add a channel mode similar to inspircd's +J - you may not rejoin after being kicked until it has been x seconds
 fix "no text to send"
+By 0.6.0, I /HAVE/ to add more flood protection, client limits, etc.
 
 user commands
 -------------

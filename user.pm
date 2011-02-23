@@ -65,17 +65,12 @@ my %numerics = (
   321 => 'Channel :Users  Name'
 );
 sub new {
-#user::new($peer)
-  my $ssl = shift;
-  my $peer = shift;
+	my($ssl,$peer) = @_;
   return unless $peer;
-  my ($success,$host,$ipv);
   $::select->add($peer);
   ::sendpeer($peer,':'.::conf('server','name').' NOTICE * :*** Looking up your hostname...');
-  my $ip = $peer->peerhost;
-  if ($ip =~ m/:/) { $ipv = 6; } else { $ipv = 4; }
-  $success = 0;
-  $host = $ip;
+  my ($ip,$ipv) = ($peer->peerhost,4);
+  $ipv = 6 if $ip =~ m/:/;
   my $user = {
     'ssl' => $ssl,
     'server' => $::id,
@@ -83,9 +78,8 @@ sub new {
     'obj' => $peer,
     'ip' => $ip,
     'ipv' => $ipv,
-    'host' => $host,
-    'cloak' => $host,
-    'res' => $success,
+    'host' => $ip,
+    'cloak' => $ip,
     'mode' => {},
     'time' => time,
     'idle' => time,
@@ -93,8 +87,7 @@ sub new {
     'last' => time
   };
   bless $user;
-  if ($success) { $user->servernotice('*** Found your hostname ('.$user->{'host'}.')'); }
-  else { $user->servernotice('*** Could not resolve hostname; using IP address instead'); }
+  $user->servernotice('*** Could not resolve hostname; using IP address instead');
   $connection{$peer} = $user;
   return $user;
 }
@@ -129,7 +122,6 @@ sub unsetmode {
   }
 }
 sub hmodes {
-  # modes: ix
   my ($user,$modes) = @_;
   return unless $modes;
   my ($state,$p,$m) = (1,'','',());
@@ -177,7 +169,6 @@ sub unsetcloak {
   $user->numeric(396,$user->host);
   return $user->host;
 }
-#user::lookup($peer)
 sub lookup {
   my $peer = shift;
   return $connection{$peer} if exists $connection{$peer};
@@ -256,14 +247,12 @@ sub mode {
   return shift->{'mode'}->{shift()};
 }
 sub fullhost {
-#$obj->fullhost
   my $user = shift;
   if (defined $user->{'ready'}) {
     return $user->{'nick'}.'!'.$user->{'ident'}.'@'.$user->{'host'};
   } else { return '*'; }
 }
 sub nick {
-#$obj->nick
   my $user = shift;
   if ($user->{'nick'}) {
     return $user->{'nick'};
@@ -275,7 +264,6 @@ sub start {
   $user->sendnum('001',':Welcome to the '.::conf('server','network').' Internet Relay Chat Network '.$user->nick);
   $user->sendnum('002',':Your host is '.::conf('server','name').', running version juno-'.$::VERSION);
   $user->sendnum('003',':This server was created '.POSIX::strftime('%a %b %d %Y at %H:%M:%S %Z',localtime $::TIME));
-  # modes
   $user->sendnum('004',::conf('server','name').' juno-'.$::VERSION.' ix o bei');
   $user->sendnum('005','CHANTYPES=# EXCEPTS INVEX CHANMODES=eIbZ,,,mntz PREFIX=(qaohv)~&@%+ NETWORK='.::conf('server','network').' MODES='.::conf('limit','chanmodes').' NICKLEN='.::conf('limit','nick').' TOPICLEN='.::conf('limit','topic').' :are supported by this server');
   $user->handle_lusers;
@@ -626,9 +614,7 @@ sub handle_ison {
   if (defined $s[1]) {
     foreach (@s[1..$#s]) {
       my $u = nickexists($_);
-      if ($u) {
-        push(@final,$u->nick);
-      }
+      push(@final,$u->nick) if $u;
     }
     $user->numeric(303,join(' ',@final));
   } else { $user->numeric(461,'ISON'); }

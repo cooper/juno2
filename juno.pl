@@ -247,8 +247,7 @@ sub createsockets {
 sub col {
   my $str = shift;
   return unless defined $str;
-  return $str unless $str =~ m/^:/;
-  $str =~ s/://;
+  $str =~ s/^://;
   return $str;
 }
 sub loadrequirements {

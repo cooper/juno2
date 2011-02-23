@@ -27,9 +27,7 @@ sub new {
   bless $this;
   $channels{lc($name)} = $this;
   $this->dojoin($user);
-  foreach (split(//,::conf('channel','automodes'))) {
-    $this->{'mode'}->{$_} = {time => time, params => undef};
-  }
+  $this->{'mode'}->{$_} = {time => time, params => undef} foreach (split //, ::conf('channel','automodes'));
   $this->allsend(':'.::conf('server','name').' MODE '.$name.' +'.::conf('channel','automodes')) if ::conf('channel','automodes');
   ::snotice('channel '.$name.' created by '.$user->fullhost);
   return $this;
@@ -151,6 +149,8 @@ sub unsetmode {
 sub name { return shift->{'name'}; }
 sub handlemode {
   my ($channel,$user,$str) = @_;
+	my @s = split(' ',$str,2);
+	my @args = split(' ',$s[1]) if defined $s[1];
   if (!$str || $str eq '') {
     my ($all,$params) = ('','');
     foreach (keys %{$channel->{'mode'}}) {
@@ -161,13 +161,15 @@ sub handlemode {
     $user->sendserv(join(' ',329,$user->nick,$channel->name,$channel->{'first'}));
   } else {
     unless ($channel->basicstatus($user)) {
-      $user->sendserv('482 '.$user->nick.' '.$channel->name.' :You\'re not a channel operator');
+			if ($s[0] =~ m/(b|Z)/) {
+				$channel->sendmasklist($user,$s[0]);
+			} else {
+     		$user->sendserv('482 '.$user->nick.' '.$channel->name.' :You\'re not a channel operator');
+			}
       return;
     }
     my ($state,$cstate,$i) = (1,1,1);
-    my (@args,@par,@final);
-    my @s = (split(' ',$str,2));
-    @args = split(' ',$s[1]) if defined $s[1];
+    my (@par,@final);
     foreach (split(//,$s[0])) {
       last if $i > ::conf('limit','chanmodes');
       $i++ if $_ !~ m/(\+|-)/; 
@@ -403,29 +405,32 @@ sub handlemaskmode {
 }
 sub sendmasklist {
   my ($channel,$user,$mode) = @_;
-  given($mode) {
-    when('b') {
-      foreach (keys %{$channel->{'bans'}}) {
-        $user->sendserv(join(' ',367,$user->nick,$channel->name,$_,$channel->{'bans'}->{$_}->[0],$channel->{'bans'}->{$_}->[1]));
-      }
-      $user->sendserv('368 '.$user->nick.' '.$channel->name.' :End of channel ban list');
-    } when('Z') {
-      foreach (keys %{$channel->{'mutes'}}) {
-        $user->sendserv(join(' ',728,$user->nick,$channel->name,$_,$channel->{'mutes'}->{$_}->[0],$channel->{'mutes'}->{$_}->[1]));
-      }
-      $user->sendserv('368 '.$user->nick.' '.$channel->name.' :End of channel mute list');
-    } when('e') {
-      foreach (keys %{$channel->{'exempts'}}) {
-        $user->sendserv(join(' ',348,$user->nick,$channel->name,$_,$channel->{'exempts'}->{$_}->[0],$channel->{'exempts'}->{$_}->[1]));
-      }
-      $user->sendserv('349 '.$user->nick.' '.$channel->name.' :End of channel exception list');
-    } when('I') {
-      foreach (keys %{$channel->{'invexes'}}) {
-        $user->sendserv(join(' ',346,$user->nick,$channel->name,$_,$channel->{'invexes'}->{$_}->[0],$channel->{'invexes'}->{$_}->[1]));
-      }
-      $user->sendserv('347 '.$user->nick.' '.$channel->name.' :End of channel invite list');
-    }
-  }
+	# TODO only ops can see I and e.
+	foreach (split //, $mode) {
+		given($_) {
+		  when('b') {
+		    foreach (keys %{$channel->{'bans'}}) {
+		      $user->sendserv(join(' ',367,$user->nick,$channel->name,$_,$channel->{'bans'}->{$_}->[0],$channel->{'bans'}->{$_}->[1]));
+		    }
+		    $user->sendserv('368 '.$user->nick.' '.$channel->name.' :End of channel ban list');
+		  } when('Z') {
+		    foreach (keys %{$channel->{'mutes'}}) {
+		      $user->sendserv(join(' ',728,$user->nick,$channel->name,$_,$channel->{'mutes'}->{$_}->[0],$channel->{'mutes'}->{$_}->[1]));
+		    }
+		    $user->sendserv('368 '.$user->nick.' '.$channel->name.' :End of channel mute list');
+		  } when('e') {
+		    foreach (keys %{$channel->{'exempts'}}) {
+		      $user->sendserv(join(' ',348,$user->nick,$channel->name,$_,$channel->{'exempts'}->{$_}->[0],$channel->{'exempts'}->{$_}->[1]));
+		    }
+		    $user->sendserv('349 '.$user->nick.' '.$channel->name.' :End of channel exception list');
+		  } when('I') {
+		    foreach (keys %{$channel->{'invexes'}}) {
+		      $user->sendserv(join(' ',346,$user->nick,$channel->name,$_,$channel->{'invexes'}->{$_}->[0],$channel->{'invexes'}->{$_}->[1]));
+		    }
+		    $user->sendserv('347 '.$user->nick.' '.$channel->name.' :End of channel invite list');
+		  }
+		}
+	}
 }
 sub kick {
   my ($channel,$user,$target,$reason) = @_;

@@ -90,7 +90,7 @@ sub who {
 sub check {
   my $channel = shift;
   my @c = keys %{$channel->{'users'}};
-	if($#c < 0)
+	if($#c < 0) {
   	delete $channels{lc($channel->name)};
   	::snotice('dead channel: '.$channel->name)
 	}

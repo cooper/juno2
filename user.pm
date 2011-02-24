@@ -37,7 +37,6 @@ my %numerics = (
   461 => '%s :Not enough parameters', 
   401 => '%s :No such nick/channel',
   422 => '%s :You\'re not on that channel',
-  482 => '%s :You\'re not a channel operator',
   443 => '%s %s :is already on channel',
   341 => '%s %s',
   322 => '%s %s :%s',
@@ -58,24 +57,34 @@ my %numerics = (
   403 => '%s :Invalid channel name',
   315 => '%s :End of /WHO list',
   366 => '%s :End of /NAMES list.',
-  482 => '%s :You\'re not a channel operator',
+  482 => '%s :You\'re not a channel %s',
   501 => '%s :No such mode',
   472 => '%s :No such mode',
   421 => '%s :Unknown command',
   396 => '%s :is now your displayed host',
   321 => 'Channel :Users  Name',
-	473 => '%s :Cannot join channel (channel is invite only)',
-	474 => '%s :Cannot join channel (you\'re banned)',
-	366 => '%s :End of /NAMES list',
-	353 => '= %s :%s',
-	441 => '%s :User is already on channel',
-	404 => '%s :Cannot send to channel',
-	332 => '%s %s :%s',
-	333 => '%s %s %s',
-	331 => '%s :No topic is set',	
+  473 => '%s :Cannot join channel (channel is invite only)',
+  474 => '%s :Cannot join channel (you\'re banned)',
+  366 => '%s :End of /NAMES list',
+  353 => '= %s :%s',
+  441 => '%s :User is already on channel',
+  404 => '%s :Cannot send to channel',
+  332 => '%s %s :%s',
+  333 => '%s %s %s',
+  331 => '%s :No topic is set',
+  367 => '%s %s %s %s',
+  368 => '%s :End of channel ban list',
+  728 => '%s %s %s %s',
+  729 => '%s :End of channel mute list',
+  348 => '%s %s %s %s',
+  349 => '%s :End of channel exception list',
+  346 => '%s %s %s %s',
+  347 => '%s :End of channel invite list',
+  324 => '%s %s %s',
+  329 => '%s %s'
 );
 sub new {
-	my($ssl,$peer) = @_;
+  my($ssl,$peer) = @_;
   return unless $peer;
   $::select->add($peer);
   ::sendpeer($peer,':'.::conf('server','name').' NOTICE * :*** Looking up your hostname...');
@@ -519,7 +528,7 @@ sub handle_part {
       my $channel = channel::chanexists($_);
       if ($channel) {
         if ($user->ison($channel)) {
-					$channel->allsend(':%s PART %s%s',0,$channel->name,(defined $reason?' :'.$reason:''));
+          $channel->allsend(':%s PART %s%s',0,$channel->name,(defined $reason?' :'.$reason:''));
           $channel->remove($user);
         } else { $user->numeric(422,$channel->name); }
       } else {
@@ -577,7 +586,7 @@ sub handle_kick {
     if ($channel && $target) {
       my $reason = $target->nick;
       $reason = ::col($s[3]) if defined $s[3];
-      $user->numeric(482,$channel->name) unless $channel->kick($user,$target,$reason);
+      $user->numeric(482,$channel->name,'half-operator') unless $channel->kick($user,$target,$reason);
     } else { $user->numeric(401,$s[1]); }
   } else { $user->numeric(461,'KICK'); }
 }
@@ -596,7 +605,7 @@ sub handle_invite {
               $someone->sendfrom($user->nick,' INVITE '.$someone->nick.' :'.$somewhere->name);
               $user->numeric(341,$someone->nick,$somewhere->name);
             } else { $user->numeric(433,$someone->nick,$somewhere->name); }
-          } else { $user->numeric(482,$somewhere->name); }
+          } else { $user->numeric(482,$somewhere->name,'half-operator'); }
         } else { $user->numeric(422,$somewhere->name); }
       } else { $user->numeric(401,$s[2]); }
     } else { $user->numeric(401,$s[1]); }

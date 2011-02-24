@@ -2,7 +2,7 @@
              (_)                   (_)            | |
               _ _   _ _ __   ___    _ _ __ ___  __| |
              | | | | | '_ \ / _ \  | | '__/ __|/ _` |
-             | | |_| | | | | (_) |-| | | | (__| (_| | v0.5.*
+             | | |_| | | | | (_) |-| | | | (__| (_| | v0.6.*
 #############| |\__,_|_| |_|\___/  |_|_|  \___|\__,_|#############
             _/ |  Perl Internet Relay Chat daemon
            |__/ 
@@ -108,7 +108,6 @@ create an ircd-compatible linking protocol
 attempt to create an equivalent to InspIRCd's SACONNECT command
 allow colors in hostnames, usernames, and nicknames.
 
-
 TODO
 -----------------------
 CAP
@@ -123,7 +122,6 @@ add a channel mode similar to inspircd's +J - you may not rejoin after being kic
 fix "no text to send"
 ADD MAX-PER-IP AND MAXIMUM CLIENTS!
 add a KLINE command and store K-Lines in a database of some sort
-rewrite channel::handlestatus and channel::sendmasklist
 
 user commands
 -----------------------

@@ -25,7 +25,7 @@ sub new {
                 $user->{'ready'} = 1;
                 $user->start;
               }
-            } else { $user->sendserv('432 '.$user->nick.' '.$s[1].' :Nickname is already in use.'); }
+            } else { $user->sendserv('433 '.$user->nick.' '.$s[1].' :Nickname is already in use.'); }
           } else { $user->sendserv('432 '.$user->nick.' '.$s[1].' :Erroneous nickname'); }
         } else { $user->sendnum(431,':No nickname given'); }
       } elsif (uc($s[0]) eq 'USER') { 

@@ -58,11 +58,20 @@ my %numerics = (
   403 => '%s :Invalid channel name',
   315 => '%s :End of /WHO list',
   366 => '%s :End of /NAMES list.',
-  482 => '%s :You do not have the proper privileges to kick this user',
+  482 => '%s :You\'re not a channel operator',
   501 => '%s :No such mode',
+  472 => '%s :No such mode',
   421 => '%s :Unknown command',
   396 => '%s :is now your displayed host',
-  321 => 'Channel :Users  Name'
+  321 => 'Channel :Users  Name',
+	473 => '%s :Cannot join channel (channel is invite only)',
+	474 => '%s :Cannot join channel (you\'re banned)',
+	366 => '%s :End of /NAMES list',
+	353 => '= %s :%s',
+	441 => '%s :User is already on channel',
+	404 => '%s :Cannot send to channel',
+	
+	
 );
 sub new {
 	my($ssl,$peer) = @_;

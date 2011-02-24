@@ -28,7 +28,7 @@ sub new {
   $channels{lc($name)} = $this;
   $this->dojoin($user);
   $this->{'mode'}->{$_} = {time => time, params => undef} foreach (split //, ::conf('channel','automodes'));
-  $this->allsend(':'.::conf('server','name').' MODE '.$name.' +'.::conf('channel','automodes')) if ::conf('channel','automodes');
+	$this->allsend(':%s MODE %s +%s',::conf('server','name'),$name,::conf('channel','automodes')) if ::conf('channel','automodes');
   ::snotice('channel '.$name.' created by '.$user->fullhost);
   return $this;
 }
@@ -37,15 +37,15 @@ sub dojoin {
   if (!::hostmatch($user->fullcloak,keys %{$channel->{'bans'}}) && !::hostmatch($user->fullcloak,keys %{$channel->{'exempts'}}) &&
 	!::hostmatch($user->fullhost,keys %{$channel->{'bans'}}) && !::hostmatch($user->fullhost,keys %{$channel->{'exempts'}})) {
     if ($channel->ismode('i') && !$channel->{'invites'}->{$user->{'id'}} && !::hostmatch($user->fullcloak,keys %{$channel->{'invexes'}})) {
-      $user->sendserv('473 '.$user->nick.' '.$channel->name.' :Cannot join channel - channel is invite only');
+			$user->numeric(473,$channel->name);
       return
     }
     delete $channel->{'invites'}->{$user->{'id'}};
     $channel->{'users'}->{$user->{'id'}} = time;
-    $channel->allsend(':'.$user->fullcloak.' JOIN :'.$channel->name);
+		$channel->allsend(':%s JOIN :%s',$user->fullcloak,$channel->name);
     $channel->showtopic($user,1);
     $channel->names($user);
-  } else { $user->sendserv('474 '.$user->nick.' '.$channel->name.' :Cannot join channel (+b) - you are banned'); }
+  } else { $user->numeric(474,$channel->name); }
 }
 sub allsend {
   my ($channel,$data,$nou) = @_; my $halt;
@@ -84,14 +84,16 @@ sub who {
     (defined $channel->{'ops'}->{$_}?'@':'').
     (defined $channel->{'halfops'}->{$_}?'%%':'').
     (defined $channel->{'voices'}->{$_}?'+':'');
-    $user->sendserv(join(' ',352,$user->nick,$channel->name,$u->{'ident'},$u->{'cloak'},::conf('server','name'),$u->nick,$flags,':0',$u->{'gecos'}));
+    $user->sendservj(352,$user->nick,$channel->name,$u->{'ident'},$u->{'cloak'},::conf('server','name'),$u->nick,$flags,':0',$u->{'gecos'});
   }
 }
 sub check {
   my $channel = shift;
   my @c = keys %{$channel->{'users'}};
-  delete $channels{lc($channel->name)} if $#c < 0;
-  ::snotice('dead channel: '.$channel->name) if $#c < 0;
+	if($#c < 0)
+  	delete $channels{lc($channel->name)};
+  	::snotice('dead channel: '.$channel->name)
+	}
 }
 sub has {
   my ($channel,$user,$status) = @_;
@@ -111,8 +113,8 @@ sub names {
     (defined $channel->{'voices'}->{$_}?'+':''))))).
     $u->nick.' ';
   }
-  $user->sendserv('353 '.$user->nick.' = '.$channel->name.' :'.$names) if $names ne '';
-  $user->sendserv('366 '.$user->nick.' '.$channel->name.' :End of /NAMES list.');
+  $user->numeric(353,$channel->name,$names) unless $names eq '';
+	$user->numeric(366,$channel->name);
 }
 sub chanexists {
   my $name = lc shift;
@@ -157,14 +159,15 @@ sub handlemode {
       $all .= $_;
       $params .= $channel->{'mode'}->{$_}->{'params'}.' ' if defined $channel->{'mode'}->{$_}->{'params'};
     }
-    $user->sendserv(join(' ',324,$user->nick,$channel->name,'+'.$all,$params));
-    $user->sendserv(join(' ',329,$user->nick,$channel->name,$channel->{'first'}));
+    $user->sendservj(324,$user->nick,$channel->name,'+'.$all,$params);
+    $user->sendservj(329,$user->nick,$channel->name,$channel->{'first'});
   } else {
     unless ($channel->basicstatus($user)) {
 			if ($s[0] =~ m/(b|Z)/) {
 				$channel->sendmasklist($user,$s[0]);
 			} else {
-     		$user->sendserv('482 '.$user->nick.' '.$channel->name.' :You\'re not a channel operator');
+
+				$user->numeric(482,$channel->name);
 			}
       return;
     }
@@ -211,16 +214,16 @@ sub handlemode {
           push(@par,$suc);
         }
       } else {
-        $user->sendserv('472 '.$user->nick.' '.$_.' :no such mode');
+				$user->numeric(472,$_);
       }
     }
     unshift(@final,'+');
     my $finished = join('',@final);
     $finished =~ s/\+-/-/g;
-    $channel->allsend(':'.$user->fullcloak.' MODE '.$channel->name.' '.$finished.' '.join(' ',@par)) unless $finished eq '+';
+		$channel->allsend(':%s MODE %s %s %s',$user->fullcloak,$channel->name,$finished,join(' ',@par)) unless $finished eq '+';
   }
 }
-sub handlestatus {
+sub handlestatus { #TODO this is buggy and will be rewritten ASAP.
   my ($channel,$user,$state,$mode,$tuser) = @_;
   given($mode) {
     when('q') {
@@ -232,11 +235,11 @@ sub handlestatus {
             delete $channel->{'owners'}->{$target->{'id'}} unless $state;
             return $target->nick;
           } else {
-            $user->send(join(' ',441,$target->nick,$channel->name,':is not on that channel'));
+						$user->numeric(441,$target->nick,$channel->name);
             return;
           }
         } else {
-          $user->sendserv('401 '.$user->nick.' '.$tuser.' :No such nick/channel');
+					$user->numeric(401,$tuser);
           return;
         }
       } else {
@@ -347,8 +350,8 @@ sub settopic {
       'time' => time,
       'setby' => (::conf('main','fullmasktopic')?$user->fullcloak:$user->nick)
     };
-    $channel->allsend(':'.$user->fullcloak.' TOPIC '.$channel->name.' :'.$topic);
-  } else { $user->sendserv('482 '.$user->nick.' '.$channel->name.' :You\'re not a channel operator'); }
+		$channel->allsend('%s TOPIC %s :%s',$user->fullcloak,$channel->name,$topic);
+  } else { $user->numeric(482,$channel->name); }
 }
 sub canspeakwithstatus {
   my ($channel,$user) = @_;
@@ -370,7 +373,7 @@ sub privmsgnotice {
 			$channel->opsend(':'.$user->fullcloak.' '.join(' ',$type,$channel->name,':'.$msg),$user);
 			return 1;
 		} else {
-		  $user->sendserv(join(' ',404,$user->nick,$channel->name,':Cannot send to channel'));
+			$user->numeric(404,$channel->name);
 		  return;
 		}
   }
@@ -403,7 +406,7 @@ sub handlemaskmode {
   }
   return $mask;
 }
-sub sendmasklist {
+sub sendmasklist { #TODO this is buggy and will be rewritten ASAP.
   my ($channel,$user,$mode) = @_;
 	# TODO only ops can see I and e.
 	foreach (split //, $mode) {
@@ -439,7 +442,7 @@ sub kick {
   return if ($channel->has($target,'admin') && !$channel->has($user,'owner') && !$channel->has($user,'admin'));
   return if ($channel->has($target,'op') && !$channel->has($user,'owner') && !$channel->has($user,'admin') && !$channel->has($user,'op'));
   return if ($channel->has($target,'halfop') && !$channel->has($user,'owner') && !$channel->has($user,'admin') && !$channel->has($user,'op'));
-  $channel->allsend(':'.$user->fullcloak.' KICK '.$channel->name.' '.$target->nick.' :'.$reason);
+	$channel->allsend(':%s KICK %s %s :%s',$user->fullcloak,$channel->name,$target->nick,$reason);
   $channel->remove($target);
   return 1;
 }

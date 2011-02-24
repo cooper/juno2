@@ -28,7 +28,7 @@ sub new {
   $channels{lc($name)} = $this;
   $this->dojoin($user);
   $this->{'mode'}->{$_} = {time => time, params => undef} foreach (split //, ::conf('channel','automodes'));
-  $this->allsend(':%s MODE %s +%s',::conf('server','name'),$name,::conf('channel','automodes')) if ::conf('channel','automodes');
+  $this->allsend(':%s MODE %s +%s',0,::conf('server','name'),$name,::conf('channel','automodes')) if ::conf('channel','automodes');
   ::snotice('channel '.$name.' created by '.$user->fullhost);
   return $this;
 }
@@ -42,18 +42,17 @@ sub dojoin {
     }
     delete $channel->{'invites'}->{$user->{'id'}};
     $channel->{'users'}->{$user->{'id'}} = time;
-    $channel->allsend(':%s JOIN :%s',$user->fullcloak,$channel->name);
+    $channel->allsend(':%s JOIN :%s',0,$user->fullcloak,$channel->name);
     $channel->showtopic($user,1);
     $channel->names($user);
   } else { $user->numeric(474,$channel->name); }
 }
 sub allsend {
-  my ($channel,$data,$nou) = @_; my $halt;
+  my ($channel,$data) = (shift,shift);
+	my $nou = shift;
   foreach (keys %{$channel->{'users'}}) {
-    $halt = 0;
     my $u = user::lookupbyid($_);
-    $halt = 1 if defined $nou && $nou == $u;
-    $u->send($data) unless $halt;
+    $u->send(sprintf($data,@_)) unless $u == $nou;
   }
 }
 sub opsend {
@@ -220,7 +219,7 @@ sub handlemode {
     unshift(@final,'+');
     my $finished = join('',@final);
     $finished =~ s/\+-/-/g;
-    $channel->allsend(':%s MODE %s %s %s',$user->fullcloak,$channel->name,$finished,join(' ',@par)) unless $finished eq '+';
+    $channel->allsend(':%s MODE %s %s %s',0,$user->fullcloak,$channel->name,$finished,join(' ',@par)) unless $finished eq '+';
   }
 }
 sub handlestatus { #TODO this is buggy and will be rewritten ASAP.
@@ -332,10 +331,10 @@ sub handlestatus { #TODO this is buggy and will be rewritten ASAP.
 sub showtopic {
   my ($channel,$user,$halt) = @_;
   if ($channel->{'topic'}) {
-    $user->sendserv('332 '.$user->nick.' '.$channel->name.' :'.$channel->{'topic'}->{'topic'});
-    $user->sendserv('333 '.$user->nick.' '.$channel->name.' '.$channel->{'topic'}->{'setby'}.' '.$channel->{'topic'}->{'time'});
+		$user->numeric(332,$channel->name,$channel->{'topic'}->{'topic'});
+    $user->numeric(333,$channel->name,$channel->{'topic'}->{'setby'},$channel->{'topic'}->{'time'});
   } else {
-    $user->sendserv('331 '.$user->nick.' '.$channel->name.' :No topic is set.') unless $halt;
+		$user->numeric(331,$channel->name) unless $halt;
   }
 }
 sub settopic {
@@ -350,7 +349,7 @@ sub settopic {
       'time' => time,
       'setby' => (::conf('main','fullmasktopic')?$user->fullcloak:$user->nick)
     };
-    $channel->allsend('%s TOPIC %s :%s',$user->fullcloak,$channel->name,$topic);
+    $channel->allsend('%s TOPIC %s :%s',0,$user->fullcloak,$channel->name,$topic);
   } else { $user->numeric(482,$channel->name); }
 }
 sub canspeakwithstatus {
@@ -377,7 +376,7 @@ sub privmsgnotice {
       return;
     }
   }
-  $channel->allsend(':'.$user->fullcloak.' '.join(' ',$type,$channel->name,':'.$msg),$user);
+	$channel->allsend(':%s %s %s :%s',$user,$user->fullcloak,$type,$channel->name,$msg);
 }
 sub handlemaskmode {
   my ($channel,$user,$state,$mode,$mask) = @_;
@@ -442,7 +441,7 @@ sub kick {
   return if ($channel->has($target,'admin') && !$channel->has($user,'owner') && !$channel->has($user,'admin'));
   return if ($channel->has($target,'op') && !$channel->has($user,'owner') && !$channel->has($user,'admin') && !$channel->has($user,'op'));
   return if ($channel->has($target,'halfop') && !$channel->has($user,'owner') && !$channel->has($user,'admin') && !$channel->has($user,'op'));
-  $channel->allsend(':%s KICK %s %s :%s',$user->fullcloak,$channel->name,$target->nick,$reason);
+  $channel->allsend(':%s KICK %s %s :%s',0,$user->fullcloak,$channel->name,$target->nick,$reason);
   $channel->remove($target);
   return 1;
 }

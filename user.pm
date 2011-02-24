@@ -70,8 +70,9 @@ my %numerics = (
 	353 => '= %s :%s',
 	441 => '%s :User is already on channel',
 	404 => '%s :Cannot send to channel',
-	
-	
+	332 => '%s %s :%s',
+	333 => '%s %s %s',
+	331 => '%s :No topic is set',	
 );
 sub new {
 	my($ssl,$peer) = @_;
@@ -518,7 +519,7 @@ sub handle_part {
       my $channel = channel::chanexists($_);
       if ($channel) {
         if ($user->ison($channel)) {
-          $channel->allsend(':'.$user->fullcloak.' PART '.$channel->name.(defined $reason?' :'.$reason:''),undef);
+					$channel->allsend(':%s PART %s%s',0,$channel->name,(defined $reason?' :'.$reason:''));
           $channel->remove($user);
         } else { $user->numeric(422,$channel->name); }
       } else {

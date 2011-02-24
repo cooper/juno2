@@ -28,21 +28,21 @@ sub new {
   $channels{lc($name)} = $this;
   $this->dojoin($user);
   $this->{'mode'}->{$_} = {time => time, params => undef} foreach (split //, ::conf('channel','automodes'));
-	$this->allsend(':%s MODE %s +%s',::conf('server','name'),$name,::conf('channel','automodes')) if ::conf('channel','automodes');
+  $this->allsend(':%s MODE %s +%s',::conf('server','name'),$name,::conf('channel','automodes')) if ::conf('channel','automodes');
   ::snotice('channel '.$name.' created by '.$user->fullhost);
   return $this;
 }
 sub dojoin {
   my ($channel,$user) = @_;
   if (!::hostmatch($user->fullcloak,keys %{$channel->{'bans'}}) && !::hostmatch($user->fullcloak,keys %{$channel->{'exempts'}}) &&
-	!::hostmatch($user->fullhost,keys %{$channel->{'bans'}}) && !::hostmatch($user->fullhost,keys %{$channel->{'exempts'}})) {
+  !::hostmatch($user->fullhost,keys %{$channel->{'bans'}}) && !::hostmatch($user->fullhost,keys %{$channel->{'exempts'}})) {
     if ($channel->ismode('i') && !$channel->{'invites'}->{$user->{'id'}} && !::hostmatch($user->fullcloak,keys %{$channel->{'invexes'}})) {
-			$user->numeric(473,$channel->name);
+      $user->numeric(473,$channel->name);
       return
     }
     delete $channel->{'invites'}->{$user->{'id'}};
     $channel->{'users'}->{$user->{'id'}} = time;
-		$channel->allsend(':%s JOIN :%s',$user->fullcloak,$channel->name);
+    $channel->allsend(':%s JOIN :%s',$user->fullcloak,$channel->name);
     $channel->showtopic($user,1);
     $channel->names($user);
   } else { $user->numeric(474,$channel->name); }
@@ -61,7 +61,7 @@ sub opsend {
   foreach (keys %{$channel->{'users'}}) {
     $halt = 0;
     my $u = user::lookupbyid($_);
-		next unless $channel->basicstatus($u,1);
+    next unless $channel->basicstatus($u,1);
     $halt = 1 if defined $nou && $nou == $u;
     $u->send($data) unless $halt;
   }
@@ -90,10 +90,10 @@ sub who {
 sub check {
   my $channel = shift;
   my @c = keys %{$channel->{'users'}};
-	if($#c < 0) {
-  	delete $channels{lc($channel->name)};
-  	::snotice('dead channel: '.$channel->name)
-	}
+  if($#c < 0) {
+    delete $channels{lc($channel->name)};
+    ::snotice('dead channel: '.$channel->name)
+  }
 }
 sub has {
   my ($channel,$user,$status) = @_;
@@ -114,7 +114,7 @@ sub names {
     $u->nick.' ';
   }
   $user->numeric(353,$channel->name,$names) unless $names eq '';
-	$user->numeric(366,$channel->name);
+  $user->numeric(366,$channel->name);
 }
 sub chanexists {
   my $name = lc shift;
@@ -123,8 +123,8 @@ sub chanexists {
 }
 sub basicstatus {
   my ($channel,$user,$HOP) = @_;
-	my $halfop = $channel->has($user,'halfop');
-	$halfop = 0 if $HOP;
+  my $halfop = $channel->has($user,'halfop');
+  $halfop = 0 if $HOP;
   if(!$channel->has($user,'owner') && !$channel->has($user,'admin') && !$channel->has($user,'op') && !$halfop) {
     return;
   } return 1;
@@ -151,8 +151,8 @@ sub unsetmode {
 sub name { return shift->{'name'}; }
 sub handlemode {
   my ($channel,$user,$str) = @_;
-	my @s = split(' ',$str,2);
-	my @args = split(' ',$s[1]) if defined $s[1];
+  my @s = split(' ',$str,2);
+  my @args = split(' ',$s[1]) if defined $s[1];
   if (!$str || $str eq '') {
     my ($all,$params) = ('','');
     foreach (keys %{$channel->{'mode'}}) {
@@ -163,12 +163,12 @@ sub handlemode {
     $user->sendservj(329,$user->nick,$channel->name,$channel->{'first'});
   } else {
     unless ($channel->basicstatus($user)) {
-			if ($s[0] =~ m/(b|Z)/) {
-				$channel->sendmasklist($user,$s[0]);
-			} else {
+      if ($s[0] =~ m/(b|Z)/) {
+        $channel->sendmasklist($user,$s[0]);
+      } else {
 
-				$user->numeric(482,$channel->name);
-			}
+        $user->numeric(482,$channel->name);
+      }
       return;
     }
     my ($state,$cstate,$i) = (1,1,1);
@@ -214,13 +214,13 @@ sub handlemode {
           push(@par,$suc);
         }
       } else {
-				$user->numeric(472,$_);
+        $user->numeric(472,$_);
       }
     }
     unshift(@final,'+');
     my $finished = join('',@final);
     $finished =~ s/\+-/-/g;
-		$channel->allsend(':%s MODE %s %s %s',$user->fullcloak,$channel->name,$finished,join(' ',@par)) unless $finished eq '+';
+    $channel->allsend(':%s MODE %s %s %s',$user->fullcloak,$channel->name,$finished,join(' ',@par)) unless $finished eq '+';
   }
 }
 sub handlestatus { #TODO this is buggy and will be rewritten ASAP.
@@ -235,11 +235,11 @@ sub handlestatus { #TODO this is buggy and will be rewritten ASAP.
             delete $channel->{'owners'}->{$target->{'id'}} unless $state;
             return $target->nick;
           } else {
-						$user->numeric(441,$target->nick,$channel->name);
+            $user->numeric(441,$target->nick,$channel->name);
             return;
           }
         } else {
-					$user->numeric(401,$tuser);
+          $user->numeric(401,$tuser);
           return;
         }
       } else {
@@ -350,7 +350,7 @@ sub settopic {
       'time' => time,
       'setby' => (::conf('main','fullmasktopic')?$user->fullcloak:$user->nick)
     };
-		$channel->allsend('%s TOPIC %s :%s',$user->fullcloak,$channel->name,$topic);
+    $channel->allsend('%s TOPIC %s :%s',$user->fullcloak,$channel->name,$topic);
   } else { $user->numeric(482,$channel->name); }
 }
 sub canspeakwithstatus {
@@ -369,31 +369,31 @@ sub privmsgnotice {
   ::hostmatch($user->fullcloak,keys %{$channel->{'mutes'}}) ||
   ::hostmatch($user->fullhost,keys %{$channel->{'mutes'}})) && 
   !$channel->canspeakwithstatus($user) && !::hostmatch($user->fullcloak,keys %{$channel->{'exempts'}}))) {
-		if ($channel->ismode('z')) {
-			$channel->opsend(':'.$user->fullcloak.' '.join(' ',$type,$channel->name,':'.$msg),$user);
-			return 1;
-		} else {
-			$user->numeric(404,$channel->name);
-		  return;
-		}
+    if ($channel->ismode('z')) {
+      $channel->opsend(':'.$user->fullcloak.' '.join(' ',$type,$channel->name,':'.$msg),$user);
+      return 1;
+    } else {
+      $user->numeric(404,$channel->name);
+      return;
+    }
   }
   $channel->allsend(':'.$user->fullcloak.' '.join(' ',$type,$channel->name,':'.$msg),$user);
 }
 sub handlemaskmode {
   my ($channel,$user,$state,$mode,$mask) = @_;
- 	if ($mask =~ m/\@/) {
-		if ($mask =~ m/\!/) {
-			$mask = $mask;
-		}	else {
-			$mask = '*!'.$mask;
-		}
-	}	else {
-		if ($mask =~ m/\!/) {
-			$mask = $mask.'@*';
-		} else {
-			$mask = $mask.'!*@*';
-		}
-	}
+   if ($mask =~ m/\@/) {
+    if ($mask =~ m/\!/) {
+      $mask = $mask;
+    }  else {
+      $mask = '*!'.$mask;
+    }
+  }  else {
+    if ($mask =~ m/\!/) {
+      $mask = $mask.'@*';
+    } else {
+      $mask = $mask.'!*@*';
+    }
+  }
   my $modename;
   $modename = 'bans' if $mode eq 'b';
   $modename = 'mutes' if $mode eq 'Z';
@@ -408,32 +408,32 @@ sub handlemaskmode {
 }
 sub sendmasklist { #TODO this is buggy and will be rewritten ASAP.
   my ($channel,$user,$mode) = @_;
-	# TODO only ops can see I and e.
-	foreach (split //, $mode) {
-		given($_) {
-		  when('b') {
-		    foreach (keys %{$channel->{'bans'}}) {
-		      $user->sendserv(join(' ',367,$user->nick,$channel->name,$_,$channel->{'bans'}->{$_}->[0],$channel->{'bans'}->{$_}->[1]));
-		    }
-		    $user->sendserv('368 '.$user->nick.' '.$channel->name.' :End of channel ban list');
-		  } when('Z') {
-		    foreach (keys %{$channel->{'mutes'}}) {
-		      $user->sendserv(join(' ',728,$user->nick,$channel->name,$_,$channel->{'mutes'}->{$_}->[0],$channel->{'mutes'}->{$_}->[1]));
-		    }
-		    $user->sendserv('368 '.$user->nick.' '.$channel->name.' :End of channel mute list');
-		  } when('e') {
-		    foreach (keys %{$channel->{'exempts'}}) {
-		      $user->sendserv(join(' ',348,$user->nick,$channel->name,$_,$channel->{'exempts'}->{$_}->[0],$channel->{'exempts'}->{$_}->[1]));
-		    }
-		    $user->sendserv('349 '.$user->nick.' '.$channel->name.' :End of channel exception list');
-		  } when('I') {
-		    foreach (keys %{$channel->{'invexes'}}) {
-		      $user->sendserv(join(' ',346,$user->nick,$channel->name,$_,$channel->{'invexes'}->{$_}->[0],$channel->{'invexes'}->{$_}->[1]));
-		    }
-		    $user->sendserv('347 '.$user->nick.' '.$channel->name.' :End of channel invite list');
-		  }
-		}
-	}
+  # TODO only ops can see I and e.
+  foreach (split //, $mode) {
+    given($_) {
+      when('b') {
+        foreach (keys %{$channel->{'bans'}}) {
+          $user->sendserv(join(' ',367,$user->nick,$channel->name,$_,$channel->{'bans'}->{$_}->[0],$channel->{'bans'}->{$_}->[1]));
+        }
+        $user->sendserv('368 '.$user->nick.' '.$channel->name.' :End of channel ban list');
+      } when('Z') {
+        foreach (keys %{$channel->{'mutes'}}) {
+          $user->sendserv(join(' ',728,$user->nick,$channel->name,$_,$channel->{'mutes'}->{$_}->[0],$channel->{'mutes'}->{$_}->[1]));
+        }
+        $user->sendserv('368 '.$user->nick.' '.$channel->name.' :End of channel mute list');
+      } when('e') {
+        foreach (keys %{$channel->{'exempts'}}) {
+          $user->sendserv(join(' ',348,$user->nick,$channel->name,$_,$channel->{'exempts'}->{$_}->[0],$channel->{'exempts'}->{$_}->[1]));
+        }
+        $user->sendserv('349 '.$user->nick.' '.$channel->name.' :End of channel exception list');
+      } when('I') {
+        foreach (keys %{$channel->{'invexes'}}) {
+          $user->sendserv(join(' ',346,$user->nick,$channel->name,$_,$channel->{'invexes'}->{$_}->[0],$channel->{'invexes'}->{$_}->[1]));
+        }
+        $user->sendserv('347 '.$user->nick.' '.$channel->name.' :End of channel invite list');
+      }
+    }
+  }
 }
 sub kick {
   my ($channel,$user,$target,$reason) = @_;
@@ -442,14 +442,14 @@ sub kick {
   return if ($channel->has($target,'admin') && !$channel->has($user,'owner') && !$channel->has($user,'admin'));
   return if ($channel->has($target,'op') && !$channel->has($user,'owner') && !$channel->has($user,'admin') && !$channel->has($user,'op'));
   return if ($channel->has($target,'halfop') && !$channel->has($user,'owner') && !$channel->has($user,'admin') && !$channel->has($user,'op'));
-	$channel->allsend(':%s KICK %s %s :%s',$user->fullcloak,$channel->name,$target->nick,$reason);
+  $channel->allsend(':%s KICK %s %s :%s',$user->fullcloak,$channel->name,$target->nick,$reason);
   $channel->remove($target);
   return 1;
 }
 sub list {
-	my $channel = shift;
-	my $user = shift;
+  my $channel = shift;
+  my $user = shift;
   my @users = keys %{$channel->{'users'}};
-	$user->numeric(322,$channel->name,$#users+1,$channel->{'topic'}?$channel->{'topic'}->{'topic'}:'');
+  $user->numeric(322,$channel->name,$#users+1,$channel->{'topic'}?$channel->{'topic'}->{'topic'}:'');
 }
 1

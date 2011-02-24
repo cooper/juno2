@@ -78,11 +78,11 @@ for(;;) {
     if(($sent <= length($outbuffer{$client})) || ($! == POSIX::EWOULDBLOCK)) {
         substr($outbuffer{$client},0,$sent) = '';
       if(!length($outbuffer{$client})) {
-      	delete($outbuffer{$client});
+        delete($outbuffer{$client});
       }
     } else {
-	    my $user = user::lookup($client);
-	    $user->quit('Write error',1);
+      my $user = user::lookup($client);
+      $user->quit('Write error',1);
       next;
     }
   }
@@ -163,17 +163,17 @@ sub confparse {
     }
     $_->checkkline foreach values %user::connection;
   }
-	&loadmotd;
+  &loadmotd;
   close $CONF;
 }
 sub loadmotd {
-	open my $MOTD, conf('server','motd') or $GV{'motd'} = 'MOTD file is missing.', return;
-	while (my $line = <$MOTD>) {
-		chomp $line;
-		$GV{'motd'} .= $line.$/;
-	}
-	close $MOTD;
-	return 1;
+  open my $MOTD, conf('server','motd') or $GV{'motd'} = 'MOTD file is missing.', return;
+  while (my $line = <$MOTD>) {
+    chomp $line;
+    $GV{'motd'} .= $line.$/;
+  }
+  close $MOTD;
+  return 1;
 }
 sub validnick {
   my ($str,$limit,$i) = @_;
@@ -259,10 +259,10 @@ sub loadrequirements {
     require IO::Socket::SSL;
     IO::Socket::SSL->import('inet6') if (conf('enabled','ipv6'));
   }
-	if (conf('enabled','cloaking')) {
-		require Digest::SHA;
-		Digest::SHA->import('sha256_hex');
-	}
+  if (conf('enabled','cloaking')) {
+    require Digest::SHA;
+    Digest::SHA->import('sha256_hex');
+  }
 }
 sub handleargs {
 print <<EOF;
@@ -291,8 +291,8 @@ EOF
         $CONFIG = $s[1] if $s[0] eq '--config';
       } when('--nofork') {
         $NOFORK = 1 if $s[0] eq '--nofork';
-			} when('--version') {
-				say $VERSION;
+      } when('--version') {
+        say $VERSION;
       } default {
 print <<EOF;
 usage: perl juno.pl

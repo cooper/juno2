@@ -297,7 +297,7 @@ EOF
         say $VERSION;
       } default {
 print <<EOF;
-usage: perl juno.pl
+usage: juno
 \t[--config=/path/to/config]
 \t[--rehash]
 \t[--nofork]

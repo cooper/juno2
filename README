@@ -57,7 +57,7 @@ directory is readable and writable, you should be ready to enjoy juno, that is, 
 you edit etc/ircd.conf.example and read the comments. the configuration is setup very simply.
 the first word of a line is the value you're setting, and everything beyond it is the value
 you are setting it to (except for in oper, listen, etc blocks.) when you finish configuring,
-just start juno.pl.
+just run ./juno
 --config=/path/to/config # use a configuration other than etc/ircd.conf
 --nofork # prevent the IRCd from running in the background
 

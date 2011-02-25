@@ -7,7 +7,7 @@
 # following layout:
 
 # sec <section> # set the section
-#	  <key> <value> [...] # set a value
+#    <key> <value> [...] # set a value
 # inc <file> # include a file
 # die <reason> [...] # execute perl die
 # oper <name>
@@ -37,8 +37,8 @@ sec enabled
   ssl 1
   # enable IPv6 (requires IO::Socket::INET6)
   ipv6 1
-	# enable cloaking (requires Digest::SHA (core))
-	cloaking 0
+  # enable cloaking (requires Digest::SHA (core))
+  cloaking 0
 
 sec ssl
   #### ignore this block if you have SSL disabled ###
@@ -76,37 +76,37 @@ listen 127.456.789
 
 sec server
   # SID (used for global identification)
-	id 0
+  id 0
   # the name of the server
-	name cooper.on.fgtb.us
+  name cooper.on.fgtb.us
   # the name of the network
-	network coopernet
+  network coopernet
   # the MOTD file location
-	motd etc/motd.conf
+  motd etc/motd.conf
   # the server description
-	desc some server
+  desc some server
 
 sec ping
   # the frequency of pinging users
-	freq 30
+  freq 30
   # how long to wait before dropping an unresponsive client
-	timeout 120
+  timeout 120
   # the quit message for a timeout
-	msg Ping timeout: %s seconds
+  msg Ping timeout: %s seconds
 
 sec limit
   # the maximum chars in a nickname
-	nick 32
+  nick 32
   # the maximum chars in a topic
-	topic 500
+  topic 500
   # the maximum chars in a username
-	ident 15
+  ident 15
   # the maximum number of channel modes set at once
   chanmodes 5
-	# the maximum number of clients this server will host
-	clients 50
-	# the maximum number of clients from a single IP address
-	perip 3
+  # the maximum number of clients this server will host
+  clients 50
+  # the maximum number of clients from a single IP address
+  perip 3
 
 sec cloak
   # the "cloak key"

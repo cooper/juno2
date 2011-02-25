@@ -85,16 +85,16 @@ my %numerics = (
 );
 sub new {
   my($ssl,$peer) = @_;
-	if (!&acceptcheck) {
-		$peer->close;
-		return;
-	}
-	my @ip_accept = ip_accept($peer->peerhost);
-	if (!$ip_accept[0]) {
-		$peer->syswrite('ERROR :Closing Link: (*@'.$peer->peerhost.') ['.$ip_accept[1].']'."\r\n",POSIX::BUFSIZ);
-		$peer->close;
-		return;
-	}
+  if (!&acceptcheck) {
+    $peer->close;
+    return;
+  }
+  my @ip_accept = ip_accept($peer->peerhost);
+  if (!$ip_accept[0]) {
+    $peer->syswrite('ERROR :Closing Link: (*@'.$peer->peerhost.') ['.$ip_accept[1].']'."\r\n",POSIX::BUFSIZ);
+    $peer->close;
+    return;
+  }
   return unless $peer;
   $::select->add($peer);
   ::sendpeer($peer,':'.::conf('server','name').' NOTICE * :*** Looking up your hostname...');
@@ -236,7 +236,7 @@ sub quit {
   delete $::timer{$user->obj};
   $user->obj->close;
   undef $user;
-	&acceptcheck;
+  &acceptcheck;
 }
 sub servernotice {
   my $user = shift;
@@ -349,24 +349,24 @@ sub checkkline {
 sub acceptcheck {
   my $i = 0;
   $i++ foreach (values %connection);
-	if ($i == ::conf('limit','clients')) {
-		::snotice('No new clients are being accepted. ('.$i.' users)') if $::ACCEPTING != 0;
-		$::ACCEPTING = 0;
-		return
-	} else {
-		::snotice('Clients are now being accepted. ('.$i.' users)') if $::ACCEPTING != 1;
-		$::ACCEPTING = 1;
-		return 1
-	}
+  if ($i == ::conf('limit','clients')) {
+    ::snotice('No new clients are being accepted. ('.$i.' users)') if $::ACCEPTING != 0;
+    $::ACCEPTING = 0;
+    return
+  } else {
+    ::snotice('Clients are now being accepted. ('.$i.' users)') if $::ACCEPTING != 1;
+    $::ACCEPTING = 1;
+    return 1
+  }
 }
 sub ip_accept {
-	my $ip = shift;
-	my $count = 0;
-	foreach (values %connection) {
-		$count++ if $_->{'ip'} eq $ip;
-	}
-	return (undef,'Too many connections from this host') if ($count >= ::conf('limit','perip'));
-	return 1;
+  my $ip = shift;
+  my $count = 0;
+  foreach (values %connection) {
+    $count++ if $_->{'ip'} eq $ip;
+  }
+  return (undef,'Too many connections from this host') if ($count >= ::conf('limit','perip'));
+  return 1;
 }
 # HANDLERS
 sub handle_lusers {

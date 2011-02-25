@@ -46,7 +46,7 @@ for(;;) {
   foreach my $peer ($select->can_read(conf('main','timeout'))) {
     $timer{$peer} = 0 unless $timer{$peer};
     if ($listensockets{$peer}) {
-	 		user::new(($SSL{$peer}?1:0),$peer->accept);
+      user::new(($SSL{$peer}?1:0),$peer->accept);
     } else {
       my $data;
       $time = time;

@@ -96,8 +96,7 @@ for(;;) {
     }
     my $last = time-$client->{'last'};
     if ($last > conf('ping','timeout')) {
-      my $ping = conf('ping','msg');
-      $ping =~ s/\%s/$last/g;
+      my $ping = sprintf(conf('ping','msg'),$last);
       $client->quit($ping,undef);
     }
   }
@@ -109,9 +108,11 @@ sub sendpeer {
   }
 }
 sub sigint {
-  say 'exiting by signal';
+  say 'preparing to exit by SIGINT';
   sleep 1;
-  die;
+  $_->quit('Server shutdown'), say 'removing user '.$_->{'id'} foreach values %user::connection;
+  sleep 1;
+  die 'exiting by signal';
 }
 sub sighup {
   snotice('Receieved SIGHUP, rehashing server configuration file.');

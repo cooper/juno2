@@ -103,6 +103,10 @@ sec limit
 	ident 15
   # the maximum number of channel modes set at once
   chanmodes 5
+	# the maximum number of clients this server will host
+	clients 50
+	# the maximum number of clients from a single IP address
+	perip 3
 
 sec cloak
   # the "cloak key"

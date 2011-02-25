@@ -76,7 +76,7 @@ sub who {
   my $user = shift;
   foreach (keys %{$channel->{'users'}}) {
     my $u = user::lookupbyid($_);
-    my $flags = (defined $u->{'away'}?'S':'H').
+    my $flags = (defined $u->{'away'}?'G':'H').
     (defined $u->{'oper'}?'*':'').
     (defined $channel->{'owners'}->{$_}?'~':'').
     (defined $channel->{'admins'}->{$_}?'&':'').

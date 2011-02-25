@@ -11,12 +11,13 @@ use handle;
 use channel;
 use easyedit;
 local $0 = 'juno';
-our $VERSION = 'dev-0.6.0';
+our $VERSION = 'dev-0.6.1';
 our $TIME = time;
 our $CONFIG = './etc/ircd.conf';
 my $NOFORK = 0;
 my $PID = 0;
 our %GV;
+our $ACCEPTING = 1;
 $SIG{'INT'} = \&sigint;
 $SIG{'HUP'} = \&sighup;
 our (%config,%oper,%kline,%listen,%outbuffer,%inbuffer,%timer);
@@ -45,7 +46,7 @@ for(;;) {
   foreach my $peer ($select->can_read(conf('main','timeout'))) {
     $timer{$peer} = 0 unless $timer{$peer};
     if ($listensockets{$peer}) {
-      user::new(($SSL{$peer}?1:0),$peer->accept);
+	 		user::new(($SSL{$peer}?1:0),$peer->accept);
     } else {
       my $data;
       $time = time;

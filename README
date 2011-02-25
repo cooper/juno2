@@ -120,7 +120,6 @@ channel names may not contain ASCII character 7
 create a script to start, stop, and rehash.
 add a channel mode similar to inspircd's +J - you may not rejoin after being kicked until it has been x seconds
 fix "no text to send"
-ADD MAX-PER-IP AND MAXIMUM CLIENTS!
 add a KLINE command and store K-Lines in a database of some sort
 
 user commands

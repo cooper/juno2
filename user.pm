@@ -81,7 +81,17 @@ my %numerics = (
   346 => '%s %s %s %s',
   347 => '%s :End of channel invite list',
   324 => '%s %s %s',
-  329 => '%s %s'
+  329 => '%s %s',
+  375 => '%s message of the day',
+  311 => '%s %s %s * :%s',
+  312 => '%s %s :%s',
+  641 => '%s :is using a secure connection',
+  301 => '%s :%s',
+  313 => '%s :is an IRC operator',
+  379 => '%s :is using modes +%s',
+  378 => '%s :is connecting from *@%s %s',
+  317 => '%s %s %s :seconds idle, signon time',
+  318 => '%s :End of /WHOIS list',
 );
 sub new {
   my($ssl,$peer) = @_;
@@ -384,7 +394,7 @@ sub handle_lusers {
 }
 sub handle_motd {
   my $user = shift;
-  $user->sendnum(375,':'.::conf('server','name').' message of the day');
+  $user->numeric(375,::conf('server','name'));
   foreach my $line (split($/,$::GV{'motd'})) {
     $user->numeric(372,$line);
   }
@@ -424,16 +434,15 @@ sub handle_whois {
     my $target = nickexists($nick);
     if ($target) {
       $modes .= $_ foreach (keys %{$target->{'mode'}});
-      $user->sendserv('311 '.$user->nick.' '.$target->nick.' '.$target->{'ident'}.' '.$target->{'cloak'}.' * :'.$target->{'gecos'});
+      $user->numeric(311,$target->nick,$target->{'ident'},$target->{'cloak'},$target->{'gecos'});
       #>> :server 319 nick targetnick :~#chat @#halp
-      $user->sendserv('312 '.$user->nick.' '.$target->nick.' '.::conf('server','name').' :'.::conf('server','desc')); # only until linking
-      $user->sendserv('641 '.$user->nick.' '.$target->nick.' :is using a secure connection') if $target->{'ssl'};
-      $user->sendserv('301 '.$user->nick.' '.$target->nick.' :'.$target->{'away'}) if defined $target->{'away'};
-      $user->sendserv('313 '.$user->nick.' '.$target->nick.' :is an IRC operator') if $target->ismode('o');
-      $user->sendserv('379 '.$user->nick.' '.$target->nick.' :is using modes +'.$modes) if $user->ismode('o');
-      $user->sendserv('378 '.$user->nick.' '.$target->nick.' :is connecting from *@'.$target->{'host'}.' '.$target->{'ip'}) if (!$user->{'mode'}->{'x'} || $user->ismode('o')); 
-      $user->sendserv('317 '.$user->nick.' '.$target->nick.' '.(time-$target->{'idle'}).' '.$target->{'time'}.' :seconds idle, signon time');
-
+      $user->numeric(312,$target->nick,::conf('server','name'),::conf('server','desc'));
+      $user->numeric(641,$target->nick) if defined $target->{'ssl'};
+      $user->numeric(301,$target->nick,$target->{'away'}) if defined $target->{'away'};
+      $user->numeric(313,$target->nick) if $target->ismode('o');
+      $user->numeric(379,$target->nick,$modes) if $user->ismode('o');
+      $user->numeric(378,$target->nick,$target->{'host'},$target->{'ip'}) if (!$user->{'mode'}->{'x'} || $user->ismode('o'));
+      $user->numeric(317,$target->nick,(time-$target->{'idle'}),$target->{'time'});
     } else {
       $user->numeric(401,$nick);
     }

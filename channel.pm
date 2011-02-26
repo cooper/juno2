@@ -170,51 +170,54 @@ sub handlemode {
     foreach (split //,$s[0]) {
       last if $i > ::conf('limit','chanmodes');
       $i++ if $_ !~ m/(\+|-)/; 
-      if ($_ eq '+') { $state = 1; }
-      elsif ($_ eq '-') { $state = 0; }
-      elsif ($_ =~ m/(n|t|m|i|z)/) {
-        $failed = 1, next unless $channel->basicstatus($user);
-        $channel->setmode($_) if $state;
-        $channel->unsetmode($_) unless $state;
-        if ($cstate == $state) {
-          push(@final,$_);
-        } else {
-          push(@final,($state?'+':'-').$_);
-        }
-        $cstate = $state;
-      } elsif ($_ =~ m/(q|a|o|h|v)/) {
-        $failed = 1, next unless $channel->basicstatus($user);
-        my $target = shift(@args);
-        $failed = 1, next unless defined $target;
-        my $success = $channel->handlestatus($user,$state,$_,$target);
-        if ($success) {
-          if ($cstate == $state) {
-            push(@final,$_);
-          } else {
-            push(@final,($state?'+':'-').$_);
-          }
-          $cstate = $state;
-          push(@par,$success);
-        }
-      } elsif ($_ =~ m/(b|Z|e|I)/) {
-        my $target = shift(@args);
-        if(!defined $target) {
-          $channel->sendmasklist($user,$_); 
-          next;
-        }
-        my $success = $channel->handlemaskmode($user,$state,$_,$target);
-        if ($success) {
-          if ($cstate == $state) {
-            push(@final,$_);
-          } else {
-            push(@final,($state?'+':'-').$_);
-          }
-          $cstate = $state;
-          push(@par,$success);
-        }
-      } else {
-        $user->numeric(472,$_);
-      }
+			given($_) {
+		    when('+') {
+					$state = 1;
+				} when('-') {
+		    	$state = 0;
+				} when(/(n|t|m|i|z)/) {
+		      $failed = 1, next unless $channel->basicstatus($user);
+		      $channel->setmode($_) if $state;
+		      $channel->unsetmode($_) unless $state;
+		      if ($cstate == $state) {
+		        push(@final,$_);
+		      } else {
+		        push(@final,($state?'+':'-').$_);
+		      }
+		      $cstate = $state;
+		    } when(/(q|a|o|h|v)/) {
+		      my $target = shift(@args);
+		      $failed = 1, next unless defined $target;
+		      my $success = $channel->handlestatus($user,$state,$_,$target);
+		      if ($success) {
+		        if ($cstate == $state) {
+		          push(@final,$_);
+		        } else {
+		          push(@final,($state?'+':'-').$_);
+		        }
+		        $cstate = $state;
+		        push(@par,$success);
+		      }
+		    } when(/(b|Z|e|I)/) {
+		      my $target = shift(@args);
+		      if(!defined $target) {
+		        $channel->sendmasklist($user,$_); 
+		        next;
+		      }
+		      my $success = $channel->handlemaskmode($user,$state,$_,$target);
+		      if ($success) {
+		        if ($cstate == $state) {
+		          push(@final,$_);
+		        } else {
+		          push(@final,($state?'+':'-').$_);
+		        }
+		        $cstate = $state;
+		        push(@par,$success);
+		      }
+		    } default {
+		      $user->numeric(472,$_);
+		    }
+			}
     }
     unshift(@final,'+');
     my $finished = join('',@final);
@@ -225,18 +228,28 @@ sub handlemode {
 }
 sub handlestatus {
   my($channel,$user,$state,$mode,$tuser) = @_;
-  my($requiredstatus,@needs,$modename,$longname);
+  my(@needs,$modename,$longname);
   given($mode) {
     when('q') {
-      ($modename,@needs) = ('owner','owner','owner');
+			$modename = 'owners';
+			@needs = 'owner';
+			$longname = 'owner'
     } when('a') {
-      ($modename,@needs) = ('admin',('owner','admin'),'administrator');
+			$modename = 'admins';
+			@needs = ('owner','admin');
+			$longname = 'administrator'
     } when('o') {
-      ($modename,@needs) = ('op',('owner','admin','op'),'operator');
+			$modename = 'ops';
+			@needs = ('owner','admin','op');
+			$longname = 'operator'
     } when('h') {
-      ($modename,@needs) = ('halfop',('owner','admin','op'),'operator');
+			$modename = 'halfops';
+			@needs = ('owner','admin','op');
+			$longname = 'operator'
     } when('v') {
-      ($modename,@needs) = ('voice',('owner','admin','op','halfop'),'half-operator');
+			$modename = 'voices';
+			@needs = ('owner','admin','op','halfop');
+			$longname = 'half-operator'
     }
   }
   if ($channel->has($user,@needs)) {
@@ -244,9 +257,9 @@ sub handlestatus {
     if ($target) {
       if ($target->ison($channel)) {
         if ($state) {
-          $channel->{$modename.'s'}->{$target->{'id'}} = time;
+          $channel->{$modename}->{$target->{'id'}} = time;
         } else {
-          delete $channel->{$modename.'s'}->{$target->{'id'}};
+          delete $channel->{$modename}->{$target->{'id'}};
         }
         return $target->nick;
       } else {
@@ -314,6 +327,7 @@ sub privmsgnotice {
 }
 sub handlemaskmode {
   my ($channel,$user,$state,$mode,$mask) = @_;
+	$user->numeric(482,$channel->name,'half-operator'), return unless $channel->basicstatus($user);
    if ($mask =~ m/\@/) {
     if ($mask =~ m/\!/) {
       $mask = $mask;

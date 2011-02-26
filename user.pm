@@ -80,7 +80,7 @@ my %numerics = (
   349 => '%s :End of channel exception list',
   346 => '%s %s %s %s',
   347 => '%s :End of channel invite list',
-  324 => '%s %s %s',
+  324 => '%s +%s %s',
   329 => '%s %s',
   375 => '%s message of the day',
   311 => '%s %s %s * :%s',
@@ -570,7 +570,7 @@ sub handle_part {
       my $channel = channel::chanexists($_);
       if ($channel) {
         if ($user->ison($channel)) {
-          $channel->allsend(':%s PART %s%s',0,$channel->name,(defined $reason?' :'.$reason:''));
+          $channel->allsend(':%s PART %s%s',0,$user->nick,$channel->name,(defined $reason?' :'.$reason:''));
           $channel->remove($user);
         } else { $user->numeric(422,$channel->name); }
       } else {

@@ -16,6 +16,8 @@
 #   <priv> <value> [...] # set a privilege
 # kline <mask>
 #   reason <reason>
+# zline <ip> (accepts wildcards)
+#   reason <reason>
 # listen <address>
 #   port <port> [<port>] [...]
 #   ssl <port> [<port>] [...]
@@ -27,6 +29,8 @@ sec main
   dns 8.8.8.8 8.8.4.4
   # show K-Line reason in quit
   showkline 0
+  # show Z-Line reason in quit
+  showzline 0
   # show full mask in topic "set by"
   fullmasktopic 0
 
@@ -149,3 +153,7 @@ oper cooper
 kline *@*.mx
   # the reason for the K-Line
   reason Mexico is prohibited
+
+zline 127.0.0.*
+  # the reason for the Z-Line
+  reason Please do not connect from localhost.

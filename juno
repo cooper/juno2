@@ -11,7 +11,7 @@ use handle;
 use channel;
 use easyedit;
 local $0 = 'juno';
-our $VERSION = 'dev-0.6.2';
+our $VERSION = 'dev-0.6.3';
 our $TIME = time;
 our $CONFIG = './etc/ircd.conf';
 my $NOFORK = 0;
@@ -20,7 +20,7 @@ our %GV;
 our $ACCEPTING = 1;
 $SIG{'INT'} = \&sigint;
 $SIG{'HUP'} = \&sighup;
-our (%config,%oper,%kline,%listen,%outbuffer,%inbuffer,%timer);
+our (%config,%oper,%kline,%zline,%listen,%outbuffer,%inbuffer,%timer);
 my (%listensockets,%SSL,@sel,$ipv6);
 &handleargs;
 confparse($CONFIG);
@@ -121,7 +121,7 @@ sub sighup {
 sub conf {
   my ($key,$val) = @_;
   return $config{$key}{$val} if exists $config{$key}{$val};
-  print 'configuration option missing: '.$key.':'.$val."\n";
+  return
 }
 sub oper {
   my ($key,$val) = @_;
@@ -132,6 +132,7 @@ sub confparse {
   my $file = shift;
   open(my $CONF,'<',$file) or die 'can not open configuration file '.$file;
   my @sections;
+  (%kline,%zline,%config,%oper) = ((),(),(),());
   while (my $line = <$CONF>) {
     $line =~ s/\t//g;
     $line =~ s/^\s+//;
@@ -141,16 +142,18 @@ sub confparse {
     my @s = split(' ',$line,2);
     given($s[0]) {
       when('sec') {
-        @sections = ($s[1],0,0,0);
+        @sections = ($s[1],0,0,0,0);
       } when('inc') {
-        @sections = (0,0,0,0);
+        @sections = (0,0,0,0,0);
         confparse($s[1]);
       } when('oper') {
-        @sections = (0,$s[1],0,0);
+        @sections = (0,$s[1],0,0,0);
       } when('kline') {
-        @sections = (0,0,$s[1],0);
+        @sections = (0,0,$s[1],0,0);
       } when('listen') {
-        @sections = (0,0,0,$s[1]);
+        @sections = (0,0,0,$s[1],0);
+      } when('zline') {
+        @sections = (0,0,0,0,$s[1]);
       } default {
         if ($sections[0]) {
           $config{$sections[0]}{$s[0]} = $s[1];
@@ -160,10 +163,20 @@ sub confparse {
           $kline{$sections[2]}{$s[0]} = $s[1];
         } elsif ($sections[3]) {
           $listen{$sections[3]}{$s[0]} = $s[1];
+        } elsif ($sections[4]) {
+          $zline{$sections[4]}{$s[0]} = $s[1];
         } else { die 'no section set in configuration'; }
       }
     }
-    $_->checkkline foreach values %user::connection;
+  }
+  usercheck: foreach my $user (values %user::connection) {
+    foreach (keys %zline) {
+      if (hostmatch($user->{'ip'},$_)) {
+        $user->quit('Z-Lined: '.$zline{$_}{'reason'},undef,'Z-Lined'.(::conf('main','showzline')?': '.$zline{$_}{'reason'}:''));
+        next usercheck;
+      }
+    }
+    $user->checkkline;
   }
   &loadmotd;
   close $CONF;

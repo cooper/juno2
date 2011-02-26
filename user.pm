@@ -375,7 +375,10 @@ sub ip_accept {
   foreach (values %connection) {
     $count++ if $_->{'ip'} eq $ip;
   }
-  return (undef,'Too many connections from this host') if ($count >= ::conf('limit','perip'));
+  return (undef,'Too many connections from this host') if $count >= ::conf('limit','perip');
+  foreach (keys %::zline) {
+      return (undef,'Z-Lined: '.$::zline{$_}{'reason'}) if ::hostmatch($ip,$_);
+  }
   return 1;
 }
 # HANDLERS

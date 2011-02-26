@@ -299,19 +299,28 @@ b*
 Z
   The Z channel mode is used exactly as the b channel mode.
   It is the same as a channel ban except users may join the channel when the ban matches their mask.
+  Parameters: <mask>
 I*
   The I channel mode is used exactly as the b channel mode.
   If a user's mask matches, they my join a +i (invite only) channel.
+  Parameters: <mask>
 e
   The e channel mode is used exactly as the b channel mode.
   If a user's mask matches, they completely override a channel ban (+b) or a channel mute (+Z).
+  Parameters: <mask>
 i
   The i channel mode prohibits users from joining the channel unless they were invited.
   This mode may be overseen by an invite exception, channel mode I.
+  Parameters: none
 z
   The z channel mode allows operators to see what a user is saying if the user is incapable of NOTICEing or PRIVMSGing a channel.
   If set, it appears to the user as if they were actually capable of messaging the channel, and no error is displayed.
   In actuality, only owners, protected users, and operators are capable of seeing these messages.
+  Parameters: none
+l
+  The l channel mode prevents users from joining a channel if the limit is reached.
+  All users with half-operator status or above by set this mode.
+  Parameters: limit (only when setting, not unsetting)
 
 oper flags
 -----------------------

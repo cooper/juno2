@@ -63,6 +63,7 @@ my %numerics = (
   421 => '%s :Unknown command',
   396 => '%s :is now your displayed host',
   321 => 'Channel :Users  Name',
+  471 => '%s :Cannot join channel (channel limit reached)',
   473 => '%s :Cannot join channel (channel is invite only)',
   474 => '%s :Cannot join channel (you\'re banned)',
   366 => '%s :End of /NAMES list',
@@ -305,7 +306,7 @@ sub start {
   $user->sendnum('002',':Your host is '.::conf('server','name').', running version juno-'.$::VERSION);
   $user->sendnum('003',':This server was created '.POSIX::strftime('%a %b %d %Y at %H:%M:%S %Z',localtime $::TIME));
   $user->sendnum('004',::conf('server','name').' juno-'.$::VERSION.' ix o bei');
-  $user->sendnum('005','CHANTYPES=# EXCEPTS INVEX CHANMODES=eIbZ,,,mntz PREFIX=(qaohv)~&@%+ NETWORK='.::conf('server','network').' MODES='.::conf('limit','chanmodes').' NICKLEN='.::conf('limit','nick').' TOPICLEN='.::conf('limit','topic').' :are supported by this server');
+  $user->sendnum('005','CHANTYPES=# EXCEPTS INVEX CHANMODES=eIbZ,,l,mntz PREFIX=(qaohv)~&@%+ NETWORK='.::conf('server','network').' MODES='.::conf('limit','chanmodes').' NICKLEN='.::conf('limit','nick').' TOPICLEN='.::conf('limit','topic').' :are supported by this server');
   $user->handle_lusers;
   $user->handle_motd;
   $user->setmode(::conf('user','automodes').($user->{'ssl'}?'Z':''));

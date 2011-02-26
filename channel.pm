@@ -34,11 +34,18 @@ sub new {
 }
 sub dojoin {
   my ($channel,$user) = @_;
-  if (!::hostmatch($user->fullcloak,keys %{$channel->{'bans'}}) && !::hostmatch($user->fullcloak,keys %{$channel->{'exempts'}}) &&
-  !::hostmatch($user->fullhost,keys %{$channel->{'bans'}}) && !::hostmatch($user->fullhost,keys %{$channel->{'exempts'}})) {
-    if ($channel->ismode('i') && !$channel->{'invites'}->{$user->{'id'}} && !::hostmatch($user->fullcloak,keys %{$channel->{'invexes'}})) {
-      $user->numeric(473,$channel->name);
-      return
+  my @users = keys %{$channel->{'users'}};
+  if (!$channel->{'invites'}->{$user->{'id'}}) {
+    if (!::hostmatch($user->fullcloak,keys %{$channel->{'bans'}}) && !::hostmatch($user->fullcloak,keys %{$channel->{'exempts'}}) &&
+    !::hostmatch($user->fullhost,keys %{$channel->{'bans'}}) && !::hostmatch($user->fullhost,keys %{$channel->{'exempts'}})) {
+      if ($channel->ismode('i') && !::hostmatch($user->fullcloak,keys %{$channel->{'invexes'}})) {
+        $user->numeric(473,$channel->name);
+        return
+      }
+      if ($channel->ismode('l') && $#users+1 >= $channel->{'mode'}->{'l'}->{'params'}) {
+        $user->numeric(471,$channel->name);
+        return
+      }
     }
     delete $channel->{'invites'}->{$user->{'id'}};
     $channel->{'users'}->{$user->{'id'}} = time;
@@ -187,7 +194,7 @@ sub handlemode {
           $cstate = $state;
         } when(/(q|a|o|h|v)/) {
           my $target = shift(@args);
-          $failed = 1, next unless defined $target;
+          next unless defined $target;
           my $success = $channel->handlestatus($user,$state,$_,$target);
           if ($success) {
             if ($cstate == $state) {
@@ -213,6 +220,29 @@ sub handlemode {
             }
             $cstate = $state;
             push(@par,$success);
+          }
+        } when(/l/) { #modes that require parameters
+          $failed = 1, next unless $channel->basicstatus($user);
+          my $target = shift(@args);
+          if (defined $target) {
+            my $success = $channel->handleparmode($user,$_,$target);
+            if (defined $success) {
+              if ($cstate == $state) {
+                push(@final,$_);
+              } else {
+                push(@final,($state?'+':'-').$_);
+              }
+              $cstate = $state;
+              push(@par,$success);
+            }
+          } else {
+            $channel->unsetmode($_);
+            if ($cstate == $state) {
+              push(@final,$_);
+            } else {
+              push(@final,($state?'+':'-').$_);
+            }
+            $cstate = $state;
           }
         } default {
           $user->numeric(472,$_);
@@ -403,5 +433,25 @@ sub list {
   my $user = shift;
   my @users = keys %{$channel->{'users'}};
   $user->numeric(322,$channel->name,$#users+1,$channel->{'topic'}?$channel->{'topic'}->{'topic'}:'');
+}
+sub handlelimit {
+  my ($channel,$user,$target) = @_;
+  if ($target =~ m/^\d$/ && $target != 0) {
+    $target = 9001 if int $target > 9000;
+    $channel->setmode('l',$target);
+    return $target
+  } return
+}
+sub handleparmode {
+  my ($channel,$user,$mode,$parameter) = @_;
+  given($mode) {
+    when('l') {
+      if ($parameter !~ m/[^0-9]/ && $parameter != 0) {
+        $parameter = 9001 if int $parameter > 9000;
+        $channel->setmode('l',$parameter);
+        return $parameter
+      } return
+    }
+  }
 }
 1

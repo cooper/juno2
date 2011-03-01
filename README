@@ -116,7 +116,6 @@ USERHOST command
 VERSION command
 WHO user
 channel names may not contain ASCII character 7
-create a script to start, stop, and rehash.
 add a channel mode similar to inspircd's +J - you may not rejoin after being kicked until it has been x seconds
 fix "no text to send"
 add a KLINE command and store K-Lines in a database of some sort
@@ -291,7 +290,7 @@ v
 m
   The m channel mode is used to restrict speaking to users with voiced status or greater.
   Parameters: none
-b*
+b
   The b channel mode is used to ban a mask from a channel.
   Users matching this mask may not join or speak in the channel.
   Parameters: <mask>
@@ -299,7 +298,7 @@ Z
   The Z channel mode is used exactly as the b channel mode.
   It is the same as a channel ban except users may join the channel when the ban matches their mask.
   Parameters: <mask>
-I*
+I
   The I channel mode is used exactly as the b channel mode.
   If a user's mask matches, they my join a +i (invite only) channel.
   Parameters: <mask>

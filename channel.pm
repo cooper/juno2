@@ -35,24 +35,24 @@ sub new {
 sub dojoin {
   my ($channel,$user) = @_;
   my @users = keys %{$channel->{'users'}};
-  if (!$channel->{'invites'}->{$user->{'id'}}) {
-    if (!::hostmatch($user->fullcloak,keys %{$channel->{'bans'}}) && !::hostmatch($user->fullcloak,keys %{$channel->{'exempts'}}) &&
-    !::hostmatch($user->fullhost,keys %{$channel->{'bans'}}) && !::hostmatch($user->fullhost,keys %{$channel->{'exempts'}})) {
-      if ($channel->ismode('i') && !::hostmatch($user->fullcloak,keys %{$channel->{'invexes'}})) {
-        $user->numeric(473,$channel->name);
-        return
-      }
-      if ($channel->ismode('l') && $#users+1 >= $channel->{'mode'}->{'l'}->{'params'}) {
-        $user->numeric(471,$channel->name);
-        return
-      }
+    if ((::hostmatch($user->fullcloak,keys %{$channel->{'bans'}}) || ::hostmatch($user->fullhost,keys %{$channel->{'bans'}})) &&
+    (!::hostmatch($user->fullcloak,keys %{$channel->{'exempts'}}) && !::hostmatch($user->fullhost,keys %{$channel->{'exempts'}}))) {
+      $user->numeric(474,$channel->name);
+      return
+    }
+    if ($channel->ismode('i') && !::hostmatch($user->fullcloak,keys %{$channel->{'invexes'}}) && !$channel->{'invites'}->{$user->{'id'}}) {
+      $user->numeric(473,$channel->name);
+      return
+    }
+    if ($channel->ismode('l') && $#users+1 >= $channel->{'mode'}->{'l'}->{'params'}) {
+      $user->numeric(471,$channel->name);
+      return
     }
     delete $channel->{'invites'}->{$user->{'id'}};
     $channel->{'users'}->{$user->{'id'}} = time;
     $channel->allsend(':%s JOIN :%s',0,$user->fullcloak,$channel->name);
     $channel->showtopic($user,1);
     $channel->names($user);
-  } else { $user->numeric(474,$channel->name); }
 }
 sub allsend {
   my ($channel,$data) = (shift,shift);

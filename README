@@ -320,7 +320,7 @@ z
 l
   The l channel mode prevents users from joining a channel if the limit is reached.
   All users with half-operator status or above by set this mode.
-  Parameters: limit (only when setting, not unsetting)
+  Parameters: <limit> (only when setting, not unsetting)
 
 oper flags
 -----------------------

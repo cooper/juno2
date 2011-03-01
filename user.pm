@@ -31,7 +31,7 @@ my %commands = (
   KICK => \&handle_kick,
   INVITE => \&handle_invite,
   LIST => \&handle_list,
-  ISON => \&handle_ison
+  ISON => \&handle_ison,
 );
 my %numerics = (
   461 => '%s :Not enough parameters', 
@@ -93,6 +93,7 @@ my %numerics = (
   378 => '%s :is connecting from *@%s %s',
   317 => '%s %s %s :seconds idle, signon time',
   318 => '%s :End of /WHOIS list',
+  345 => '%s %s :Cannot change nickname while banned on channel'
 );
 sub new {
   my($ssl,$peer) = @_;
@@ -413,10 +414,14 @@ sub handle_nick {
       if(!user::nickexists($s[1]) || lc($s[1]) eq lc($user->nick)) {
         my %sent;
         my @users = $user;
-        foreach (values %channel::channels) {
-          if ($user->ison($_)) {
-            $_->check;
-            foreach (keys %{$_->{'users'}}) {
+        foreach my $channel (values %channel::channels) {
+          if ($user->ison($channel)) {
+            if (::hostmatch($user->fullcloak,keys %{$channel->{'bans'}}) || ::hostmatch($user->fullhost,keys %{$channel->{'bans'}}) &&
+            !::hostmatch($user->fullhost,keys %{$channel->{'exempts'}})) {
+              $user->numeric(345,$s[1],$channel->name), return unless $channel->canspeakwithstatus($user);
+            }
+            $channel->check;
+            foreach (keys %{$channel->{'users'}}) {
               next if $sent{$_};
               push(@users,lookupbyid($_));
               $sent{$_} = 1;

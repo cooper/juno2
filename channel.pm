@@ -471,7 +471,7 @@ sub doauto {
   foreach (keys %{$channel->{'autoops'}}) {
     my @s = split(':',$_,2);
     next if $done{$s[1]};
-    if (::hostmatch($user->fullcloak,$s[1])) {
+    if (::hostmatch(($user->fullcloak,$user->fullhost),$s[1])) {
       $modes .= $s[0];
       $done{$s[0]} = 1;
       push(@pars,$user->nick);

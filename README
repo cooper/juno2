@@ -319,6 +319,13 @@ l
   The l channel mode prevents users from joining a channel if the limit is reached.
   All users with half-operator status or above by set this mode.
   Parameters: <limit> (only when setting, not unsetting)
+A
+  The A channel mode allows a channel access list to be managed without IRC services.
+  The format is mode:mask.
+  Upon joining, any users matching the mask(s) will receive the status that applies to them.
+  For example, +A q:*!*@* grants owner status to all users.
+  A user who does not have the status being set will receive an error, and the mode query will be ignored.
+  Parameters: <mode>:<mask>
 
 oper flags
 -----------------------

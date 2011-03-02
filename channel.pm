@@ -22,7 +22,8 @@ sub new {
     'mutes' => {},
     'invexes' => {},
     'exempts' => {},
-    'invites' => {}
+    'invites' => {},
+    'autoops' => {}
   };
   bless $this;
   $channels{lc($name)} = $this;
@@ -53,6 +54,7 @@ sub dojoin {
     $channel->allsend(':%s JOIN :%s',0,$user->fullcloak,$channel->name);
     $channel->showtopic($user,1);
     $channel->names($user);
+    $channel->doauto($user);
 }
 sub allsend {
   my ($channel,$data) = (shift,shift);
@@ -205,7 +207,7 @@ sub handlemode {
             $cstate = $state;
             push(@par,$success);
           }
-        } when(/(b|Z|e|I)/) {
+        } when(/(b|Z|e|I|A)/) {
           my $target = shift(@args);
           if(!defined $target) {
             $channel->sendmasklist($user,$_); 
@@ -221,7 +223,7 @@ sub handlemode {
             $cstate = $state;
             push(@par,$success);
           }
-        } when(/l/) { #modes that require parameters
+        } when('l') { #modes that require parameters
           $failed = 1, next unless $channel->basicstatus($user);
           my $target = shift(@args);
           if (defined $target) {
@@ -358,17 +360,21 @@ sub privmsgnotice {
 sub handlemaskmode {
   my ($channel,$user,$state,$mode,$mask) = @_;
   $user->numeric(482,$channel->name,'half-operator'), return unless $channel->basicstatus($user);
-   if ($mask =~ m/\@/) {
-    if ($mask =~ m/\!/) {
-      $mask = $mask;
+  if ($mode ne 'A') {
+     if ($mask =~ m/\@/) {
+      if ($mask !~ m/\!/) {
+        $mask = '*!'.$mask;
+      }
     }  else {
-      $mask = '*!'.$mask;
+      if ($mask =~ m/\!/) {
+        $mask = $mask.'@*';
+      } else {
+        $mask = $mask.'!*@*';
+      }
     }
-  }  else {
-    if ($mask =~ m/\!/) {
-      $mask = $mask.'@*';
-    } else {
-      $mask = $mask.'!*@*';
+  } else {
+    if ($mask !~ m/^(q|a|o|h|v):/) {
+      $mask = 'o:'.$mask; 
     }
   }
   my $modename;
@@ -379,6 +385,9 @@ sub handlemaskmode {
       $modename = 'mutes'
     } when('I') {
       $modename = 'invexes'
+    } when('A') {
+      $modename = 'autoops';
+      return unless $channel->canAmode($user,(split(':',$mask))[0]);
     } when('e') {
       $modename = 'exempts'
     }
@@ -393,7 +402,7 @@ sub handlemaskmode {
 sub sendmasklist {
   my ($channel,$user,$modes) = @_;
   MODES: foreach (split //,$modes) {
-    next unless $_ =~ m/^(b|Z|e|I)$/;
+    next unless $_ =~ m/^(b|Z|e|I|A)$/;
     my @list;
     given($_) {
       when('b') {
@@ -402,6 +411,8 @@ sub sendmasklist {
         @list = (728,729,'mutes',0);
       } when('e') {
         @list = (348,349,'exempts',1);
+      } when('A') {
+        @list = (388,389,'autoops',1);
       } when('I') {
         @list = (346,347,'invexes',1);
       }
@@ -453,5 +464,52 @@ sub handleparmode {
       } return
     }
   }
+}
+sub doauto {
+  my($channel,$user) = @_;
+  my ($modes,@pars,%done) = ('',(),());
+  foreach (keys %{$channel->{'autoops'}}) {
+    my @s = split(':',$_,2);
+    next if $done{$s[1]};
+    if (::hostmatch($user->fullcloak,$s[1])) {
+      $modes .= $s[0];
+      $done{$s[0]} = 1;
+      push(@pars,$user->nick);
+      given($s[0]) {
+        when('q') {
+          $channel->{'owners'}->{$user->{'id'}} = time;
+        } when('a') {
+          $channel->{'admins'}->{$user->{'id'}} = time;
+        } when('o') {
+          $channel->{'ops'}->{$user->{'id'}} = time;
+        } when('h') {
+          $channel->{'halfops'}->{$user->{'id'}} = time;
+        } when('v') {
+          $channel->{'voices'}->{$user->{'id'}} = time;
+        }
+      }
+    }
+  }
+  $channel->allsend(':%s MODE %s +%s %s',0,::conf('server','name'),$channel->name,$modes,join(' ',@pars)) unless $modes eq '';
+}
+sub canAmode {
+  my ($channel,$user,$Amode) = @_;
+  if ($Amode eq 'q' && !$channel->has($user,'owner')) {
+    $user->numeric(482,$channel->name,'owner');
+    return;
+  }
+  if ($Amode eq 'a' && !$channel->has($user,('owner','admin'))) {
+    $user->numeric(482,$channel->name,'administrator');
+    return;
+  }
+  if ($Amode eq 'o' && !$channel->has($user,('owner','admin','op'))) {
+    $user->numeric(482,$channel->name,'operator');
+    return;
+  }
+  if ($Amode eq 'h' && !$channel->has($user,('owner','admin','op'))) {
+    $user->numeric(482,$channel->name,'operator');
+    return;
+  }
+  return 1;
 }
 1

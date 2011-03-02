@@ -139,7 +139,7 @@ sub setmode {
     $user->{'mode'}->{$_} = time;
     next if $_ =~ m/i/;
     if ($_ eq 'x' && ::conf('enabled','cloaking')) {
-      $user->{'cloak'} = $user->setcloak;
+      $user->setcloak(host2cloak($user->{'ipv'}==6?1:0,$user->{'host'}));
     }
   }
 }
@@ -155,7 +155,7 @@ sub unsetmode {
     delete $user->{'mode'}->{$_};
     next if $_ =~ m/(i|S)/;
     if ($_ eq 'x' && ::conf('enabled','cloaking')) {
-      $user->{'cloak'} = $user->unsetcloak;
+      $user->unsetcloak;
     } elsif ($_ eq 'o') {
       delete $user->{'oper'};
       $user->unsetmode('S') if $user->ismode('S');
@@ -192,8 +192,9 @@ sub handle {
 }
 sub setcloak {
   my $user = shift;
-  my $cloak = host2cloak($user->{'ipv'}==6?1:0,$user->{'host'});
+  my $cloak = shift;
   $user->numeric(396,$cloak);
+  $user->{'cloak'} = $cloak;
   return $cloak;
 }
 sub host2cloak {
@@ -208,6 +209,7 @@ sub host2cloak {
 sub unsetcloak {
   my $user = shift;
   $user->numeric(396,$user->host);
+  $user->{'cloak'} = $user->host;
   return $user->host;
 }
 sub lookup {

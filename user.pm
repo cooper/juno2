@@ -582,7 +582,7 @@ sub handle_part {
       my $channel = channel::chanexists($_);
       if ($channel) {
         if ($user->ison($channel)) {
-          $channel->allsend(':%s PART %s%s',0,$user->nick,$channel->name,(defined $reason?' :'.$reason:''));
+          $channel->allsend(':%s PART %s%s',0,$user->fullcloak,$channel->name,(defined $reason?' :'.$reason:''));
           $channel->remove($user);
         } else { $user->numeric(422,$channel->name); }
       } else {

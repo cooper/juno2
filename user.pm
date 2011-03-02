@@ -70,7 +70,7 @@ my %numerics = (
   353 => '= %s :%s',
   441 => '%s :User is already on channel',
   404 => '%s :Cannot send to channel',
-  332 => '%s %s :%s',
+  332 => '%s :%s',
   333 => '%s %s %s',
   331 => '%s :No topic is set',
   367 => '%s %s %s %s',

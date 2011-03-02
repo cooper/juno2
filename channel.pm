@@ -326,7 +326,7 @@ sub settopic {
       'time' => time,
       'setby' => (::conf('main','fullmasktopic')?$user->fullcloak:$user->nick)
     };
-    $channel->allsend('%s TOPIC %s :%s',0,$user->fullcloak,$channel->name,$topic);
+    $channel->allsend(':%s TOPIC %s :%s',0,$user->fullcloak,$channel->name,$topic);
   } else { $user->numeric(482,$channel->name,'half-operator'); }
 }
 sub canspeakwithstatus {

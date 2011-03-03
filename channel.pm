@@ -10,20 +10,9 @@ sub new {
     'name' => $name,
     'time' => time,
     'first' => time,
-    'mode' => {}, # (time => time, params => something or undef), qaohvbieIZ don't count
     'creator' => $user->nick,
-    'users' => {},
     'owners' => {$user->{'id'}=>time},
-    'admins' => {},
-    'ops' => {$user->{'id'}=>time},
-    'halfops' => {},
-    'voices' => {},
-    'bans' => {}, # array ref [setby,time]
-    'mutes' => {},
-    'invexes' => {},
-    'exempts' => {},
-    'invites' => {},
-    'autoops' => {}
+    'ops' => {$user->{'id'}=>time}
   };
   bless $this;
   $channels{lc($name)} = $this;
@@ -393,9 +382,9 @@ sub handlemaskmode {
     }
   }
   if ($state) {
-    $channel->{$modename}->{$mask} = [$user->fullcloak,time];
+    $channel->{$modename}->{lc $mask} = [$user->fullcloak,time,$mask];
   } else {
-    delete $channel->{$modename}->{$mask} if exists $channel->{$modename}->{$mask};
+    delete $channel->{$modename}->{lc $mask} if exists $channel->{$modename}->{lc $mask};
   }
   return $mask;
 }
@@ -422,7 +411,12 @@ sub sendmasklist {
       next MODES;
     }
     foreach (keys %{$channel->{$list[2]}}) {
-      $user->numeric($list[0],$channel->name,$_,$channel->{$list[2]}->{$_}->[0],$channel->{$list[2]}->{$_}->[1]);
+      $user->numeric($list[0],
+        $channel->name,
+        $channel->{$list[2]}->{$_}->[2],
+        $channel->{$list[2]}->{$_}->[0],
+        $channel->{$list[2]}->{$_}->[1]
+      );
     }
     $user->numeric($list[1],$channel->name);
   }

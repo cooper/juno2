@@ -206,9 +206,9 @@ sub hostmatch {
     $regexp =~ s/\?/\./g;
     $regexp =~ s/\*/\.\*/g;
     $regexp = '^'.$regexp.'$';
-    push(@aregexps,$regexp);
+    push(@aregexps,lc $regexp);
   }
-  return 1 if (grep {$mask =~ /$_/} @aregexps);
+  return 1 if (grep {lc $mask =~ /$_/} @aregexps);
   return;
 }
 sub snotice {

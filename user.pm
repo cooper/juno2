@@ -519,6 +519,8 @@ sub handle_oper {
     my $oper = $user->canoper($s[1],$s[2]);
     if ($oper) {
       $user->{'oper'} = $oper;
+      my $vhost = ::oper($oper,'vhost');
+      $user->setcloak($vhost) if defined $vhost;
       $user->setmode('o'.(::oper($oper,'snotice')?'S':''));
       ::snotice($user->fullhost.' is now an IRC operator using name '.$oper);
       ::snotice('user '.$user->nick.' now has oper privs: '.::oper($oper,'privs'));

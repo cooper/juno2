@@ -13,7 +13,9 @@
 # oper <name>
 #   password <password>
 #   hosts <host> [<host>] [...]
-#   <priv> <value> [...] # set a privilege
+#   privs <priv> [<priv>] [...]
+#   snotice 0|1
+#   vhost <vhost>
 # kline <mask>
 #   reason <reason>
 # zline <ip> (accepts wildcards)
@@ -149,6 +151,9 @@ oper cooper
   privs rehash kill globops
   # enable snotices
   snotice 1
+  # virtual host set upon opering
+  # (comment to disable)
+  vhost is.an.oper
 
 kline *@*.mx
   # the reason for the K-Line

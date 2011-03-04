@@ -98,6 +98,7 @@ my %numerics = (
 );
 sub new {
   my($ssl,$peer) = @_;
+  return unless $peer;
   if (!&acceptcheck) {
     $peer->close;
     return;
@@ -108,7 +109,6 @@ sub new {
     $peer->close;
     return;
   }
-  return unless $peer;
   $::select->add($peer);
   ::sendpeer($peer,':'.::conf('server','name').' NOTICE * :*** Looking up your hostname...');
   my ($ip,$ipv) = ($peer->peerhost,4);
@@ -122,7 +122,6 @@ sub new {
     'ipv' => $ipv,
     'host' => $ip,
     'cloak' => $ip,
-    'mode' => {},
     'time' => time,
     'idle' => time,
     'ping' => time,

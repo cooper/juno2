@@ -14,6 +14,7 @@ our $VERSION = 'dev-0.7.5';
 our $TIME = time;
 our $CONFIG = './etc/ircd.conf';
 my $NOFORK = 0;
+my $API = 0;
 my $PID = 0;
 our %GV;
 our $ACCEPTING = 1;
@@ -24,7 +25,6 @@ my (%listensockets,%SSL,@sel,$ipv6);
 &handleargs;
 confparse($CONFIG);
 &loadrequirements;
-&API::load_modules;
 &createsockets;
 unless ($NOFORK) {
   say 'Becoming a daemon...';
@@ -98,6 +98,14 @@ for(;;) {
     if ($last > conf('ping','timeout')) {
       my $ping = sprintf(conf('ping','msg'),$last);
       $client->quit($ping,undef);
+    }
+  }
+  next unless $API;
+  foreach (keys %API::timers) {
+    my $timer = $API::timers{$_};
+    if ($timer->[0]-1 <= time) {
+      $timer->[1]();
+      delete $API::timers{$_};
     }
   }
 }
@@ -267,6 +275,8 @@ sub col {
 sub loadrequirements {
   if (conf('enabled','API')) {
     require API;
+    $API = 1;
+    &API::load_modules;
   }
   if (conf('enabled','ipv6')) {
     $ipv6 = 1;

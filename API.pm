@@ -6,6 +6,7 @@ use less 'mem';
 use feature qw(say switch);
 use Class::Unload;
 our %modules; # name (version,desc,loadref,unloadref)
+our %timers;
 sub load_modules {
   my $modules = ::conf('main','modules') or return;
   foreach (split ',', $modules) {
@@ -49,6 +50,14 @@ sub register_alias {
     shift->handle($command,$command.' '.join(' ',@args));
   });
 }
+sub register_timer {
+  my $name = shift;
+  if(defined $timers{$name}) {
+    say 'API timer '.$name.' already exists; ignoring register.';
+  }
+  $timers{$name} = [shift()+time,shift];
+  say 'Registered API timer '.$name;
+}
 sub delete_module {
   my $name = uc shift;
   if ($modules{$name}[3]()) {
@@ -91,7 +100,7 @@ sub handle_modload {
   $user->numeric(461,'MODLOAD'), return if !defined $name;
   if ($user->can('modload')) {
     ::snotice($user->nick.' is attempting to load API module '.$name);
-    if (-e 'modules/'.$name) {
+    if (-e 'modules/'.$name.'.pm') {
       if(API::do_module($name)) {
         ::snotice('do_module succeeded, attempting to register module '.$name);
         $user->sendserv('NOTICE %s :do_module succeeded, attempting to register module.',$user->nick);

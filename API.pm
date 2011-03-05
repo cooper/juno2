@@ -14,7 +14,7 @@ sub load_modules {
 }
 sub do_module {
   my $name = shift;
-  do 'modules/'.$name'.pm' or return;
+  do 'modules/'.$name.'.pm' or return;
 }
 sub register_module {
   # $module,$version,$desc,$loadref,$unloadref

@@ -9,12 +9,12 @@ our %modules; # name (version,desc,loadref,unloadref)
 sub load_modules {
   my $modules = ::conf('main','modules') or return;
   foreach (split ',', $modules) {
-    require 'modules/'.$_ or die 'could not load module '.$_;
+    require 'modules/'.$_.'.pm' or die 'could not load module '.$_;
   }
 }
 sub do_module {
   my $name = shift;
-  do 'modules/'.$name or return;
+  do 'modules/'.$name'.pm' or return;
 }
 sub register_module {
   # $module,$version,$desc,$loadref,$unloadref

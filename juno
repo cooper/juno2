@@ -9,8 +9,9 @@ use IO::Socket;
 use user;
 use handle;
 use channel;
+use API;
 local $0 = 'juno';
-our $VERSION = 'dev-0.7.2';
+our $VERSION = 'dev-0.7.3';
 our $TIME = time;
 our $CONFIG = './etc/ircd.conf';
 my $NOFORK = 0;
@@ -24,6 +25,7 @@ my (%listensockets,%SSL,@sel,$ipv6);
 &handleargs;
 confparse($CONFIG);
 &loadrequirements;
+&API::load_modules;
 &createsockets;
 unless ($NOFORK) {
   say 'Becoming a daemon...';
@@ -108,9 +110,7 @@ sub sendpeer {
 }
 sub sigint {
   say 'preparing to exit by SIGINT';
-  sleep 1;
   $_->quit('Server shutdown'), say 'removing user '.$_->{'id'} foreach values %user::connection;
-  sleep 1;
   die 'exiting by signal';
 }
 sub sighup {

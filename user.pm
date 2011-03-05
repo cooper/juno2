@@ -1,12 +1,12 @@
 #!/usr/bin/perl -w
+package user;
 use warnings;
 use strict;
 use less 'mem';
-package user;
 $::GV{'cid'} = 0;
 $::GV{'max'} = 0;
 our %connection;
-my %commands = (
+our %commands = (
   PONG => sub{},
   USER => sub{ shift->numeric(462); },
   LUSERS => \&handle_lusers,
@@ -33,7 +33,7 @@ my %commands = (
   LIST => \&handle_list,
   ISON => \&handle_ison,
 );
-my %numerics = (
+our %numerics = (
   301 => '%s :%s',
   303 => ':%s',
   305 => ':You are no longer marked as being away',

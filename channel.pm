@@ -1,8 +1,8 @@
 #!/usr/bin/perl -w
+package channel;
 use warnings;
 use strict;
 use less 'mem';
-package channel;
 our %channels;
 sub new {
   my ($user,$name) = @_;

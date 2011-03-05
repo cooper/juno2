@@ -123,7 +123,7 @@ sec user
   # do not prepend the modes with +
   # do not use nonexistent modes; they are not ignored.
   # do not use x if cloaking is disabled.
-  automodes ix
+  automodes i
 
 sec channel
   # modes to be set upon channel creation

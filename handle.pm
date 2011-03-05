@@ -1,8 +1,8 @@
 #!/usr/bin/perl -w
+package handle;
 use warnings;
 use strict;
 use less 'mem';
-package handle;
 sub new {
   my $user = user::lookup(shift);
   my $all = shift;

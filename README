@@ -120,6 +120,7 @@ add a channel mode similar to inspircd's +J - you may not rejoin after being kic
 fix "no text to send"
 add a KLINE command and store K-Lines in a database of some sort
 add a ZLINE command and store Z-Lines in a database of some sort
+fix bug: x can be set/unset even if cloaking is disabled
 
 user commands
 -----------------------
@@ -335,5 +336,8 @@ rehash - rehash config
   The kill flag grants use of the REHASH command to an IRC operator.
 globops - send globops to all opers
   The kill flag grants use of the GLOBOPS command to an IRC operator.
+
+API
+-----------------------
 
 * unfinished

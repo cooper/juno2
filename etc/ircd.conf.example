@@ -16,7 +16,7 @@
 #   privs <priv> [<priv>] [...]
 #   snotice 0|1
 #   vhost <vhost>
-# kline <mask>
+# kline <mask> (accepts wildcards)
 #   reason <reason>
 # zline <ip> (accepts wildcards)
 #   reason <reason>

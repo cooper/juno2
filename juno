@@ -9,7 +9,6 @@ use IO::Socket;
 use user;
 use handle;
 use channel;
-use API;
 local $0 = 'juno';
 our $VERSION = 'dev-0.7.3';
 our $TIME = time;
@@ -266,6 +265,9 @@ sub col {
   return $str;
 }
 sub loadrequirements {
+  if (conf('enabled','API')) {
+    require API;
+  }
   if (conf('enabled','ipv6')) {
     $ipv6 = 1;
     require IO::Socket::INET6;

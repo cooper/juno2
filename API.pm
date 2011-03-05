@@ -29,6 +29,18 @@ sub register_command {
   $user::commands{$command} = shift;
   return 1
 }
+sub register_alias {
+  my($name,$command) = (uc shift, uc shift);
+  my @args = @_;
+  if (!defined $user::commands{$command}) {
+    say 'API error: '.$command.' is not a registered command; ignoring alias register.';
+    return
+  }
+  say 'Registering alias '.$name.' to '.$command;
+  register_command($name,sub {
+    shift->handle($command,$command.' '.join(' ',@args));
+  });
+}
 sub delete_module {
   my $name = shift;
   say 'Unloading module '.$name;

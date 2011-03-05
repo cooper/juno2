@@ -121,6 +121,7 @@ fix "no text to send"
 add a KLINE command and store K-Lines in a database of some sort
 add a ZLINE command and store Z-Lines in a database of some sort
 fix bug: x can be set/unset even if cloaking is disabled
+add virtual variables to API aliases
 
 user commands
 -----------------------

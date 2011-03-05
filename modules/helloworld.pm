@@ -44,9 +44,12 @@ sub unload {
   # this subroutine is handled when the module is unloaded.
 
   API::delete_command('hello');
-  # this removes the hello command that we added in the register subroutine.
+  API::delete_command('sayhitotom');
+  # this removes commands that we added in the register subroutine.
   # the only parameter is the name of the command.
   # if this command does not exist, the request will be ignored.
+
+  # note: this is also used for deleting aliases.
 
   say 'Unloaded hello world module.';
 

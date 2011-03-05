@@ -110,6 +110,5 @@ sub handle_modload {
   }
 }
 sub handle_modunload {
-
 }
 1

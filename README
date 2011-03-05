@@ -243,6 +243,11 @@ ISON
   A numeric will be displayed containing those users' nicks.
   If there are no users that match, there will be no error, but only an empty numeric.
   Parameters: <nickname> [<nickname>] [...]
+API: MODLOAD
+  The MODLOAD command is used to load an API module.
+  Only users with "modload" access can use this command.
+  A numeric error will be replied if the user does not have the required privs.
+  Parameters: <module>
 
 user modes
 ----------

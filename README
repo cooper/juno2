@@ -96,17 +96,17 @@ enabling cloaking may increase resource usage when importing the module.
 
 plans
 -----------------------
-add full support for mIRCservices
-add full support for Chakora IRC services
-create an unrealIRCd-compatible linking protocol
-create an inspIRCd-compatible linking protocol
-implement WeIRCd-style built-in services
-implement SporksIRCd-style FSAY command (roleplay)
-create an Inspircd-style H channel mode to replay the last x lines spoken in x seconds
-create an ircu-compatible linking protocol
-create an ircd-compatible linking protocol
-attempt to create an equivalent to InspIRCd's SACONNECT command
-allow colors in hostnames, usernames, and nicknames.
+add full support for mIRCservices**
+add full support for Chakora IRC services**
+create an unrealIRCd-compatible linking protocol**
+create an inspIRCd-compatible linking protocol**
+implement WeIRCd-style built-in services**
+implement SporksIRCd-style FSAY command (roleplay)**
+create an Inspircd-style H channel mode to replay the last x lines spoken in x seconds**
+create an ircu-compatible linking protocol**
+create an ircd-compatible linking protocol**
+attempt to create an equivalent to InspIRCd's SACONNECT command**
+allow colors in hostnames, usernames, and nicknames**
 
 TODO
 -----------------------
@@ -122,6 +122,7 @@ add a KLINE command and store K-Lines in a database of some sort
 add a ZLINE command and store Z-Lines in a database of some sort
 fix bug: x can be set/unset even if cloaking is disabled
 add virtual variables to API aliases
+make the modules be (un)loaded on rehash
 
 user commands
 -----------------------
@@ -340,5 +341,7 @@ globops - send globops to all opers
 
 API
 -----------------------
+  The module API is explained in detail in the helloworld module.
 
 * unfinished
+** LOl!OL!OL!

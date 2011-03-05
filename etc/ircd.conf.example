@@ -35,6 +35,10 @@ sec main
   showzline 0
   # show full mask in topic "set by"
   fullmasktopic 0
+  # modules to be loaded on startup, separated by comma.
+  # (relative to modules/ dir)
+  # 0 disables.
+  modules helloworld.pm
 
 sec enabled
   # enable SSL (requires IO::Socket::SSL)

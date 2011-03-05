@@ -39,6 +39,12 @@ sub register {
 
   say 'Hello world module loaded successfully!';
 
+  return 1
+  # all load subroutines must return true for load success.
+  # if the module requires something that is not available on this system
+  # or etc, returning false will tell the API module that the module failed
+  # to load properly.
+
 }
 sub unload {
   # this subroutine is handled when the module is unloaded.
@@ -52,6 +58,10 @@ sub unload {
   # note: this is also used for deleting aliases.
 
   say 'Unloaded hello world module.';
+
+  return 1
+  # all unload subroutines must return true for unload success.
+  # if a module is not to be unloaded (permanent), return a false value.
 
 }
 sub command_hello {

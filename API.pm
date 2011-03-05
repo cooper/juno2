@@ -5,20 +5,28 @@ use strict;
 use less 'mem';
 use feature qw(say switch);
 use Class::Unload;
-our %modules; # (version,desc,loadref,unloadref)
+our %modules; # name (version,desc,loadref,unloadref)
 sub load_modules {
   my $modules = ::conf('main','modules') or return;
   foreach (split ',', $modules) {
     require 'modules/'.$_ or die 'could not load module '.$_;
   }
 }
+sub do_module {
+  my $name = shift;
+  do 'modules/'.$name or return;
+}
 sub register_module {
   # $module,$version,$desc,$loadref,$unloadref
   my $name = shift;
-  say 'Module registered: '.$name;
-  $_[2]();
-  $modules{$name} = @_;
-  return 1
+  if ($_[2]()) {
+    say 'Module registered: '.$name;
+    $modules{$name} = @_;
+    return 1
+  } else {
+    say 'Module '.$name.' refused to load.';
+    return
+  }
 }
 sub register_command {
   my $command = uc shift;
@@ -42,9 +50,14 @@ sub register_alias {
   });
 }
 sub delete_module {
-  my $name = shift;
-  say 'Unloading module '.$name;
-  Class::Unload->unload('API::'.$name);
+  my $name = uc shift;
+  if ($modules{$name}[3]()) {
+    say 'Unloading module '.$name;
+    delete $modules{$name};
+    Class::Unload->unload('API::'.$name); 
+  } else {
+    say 'Module '.$name.' refused to unload.'
+  }
 }
 sub delete_command {
   my $command = uc shift;
@@ -54,5 +67,49 @@ sub delete_command {
   }
   delete $user::commands{$command};
   return 1
+}
+1;
+package API::loadunload;
+use warnings;
+use strict;
+use less 'mem';
+use feature 'say';
+API::register_module('loadunload','0.1','Commands MODLOAD and MODUNLOAD',
+  sub{
+    API::register_command('modload',\&handle_modload);
+    API::register_command('modunload',\&handle_modunload);
+    return 1
+  },
+  sub{
+    say 'Warning: attempted to unload core MODLOAD and MODUNLOAD modules.';
+    return
+  }
+);
+sub handle_modload {
+  my $user = shift;
+  my $name = (split(' ',shift))[1];
+  $user->numeric(461,'MODLOAD'), return if !defined $name;
+  if ($user->can('modload')) {
+    ::snotice($user->nick.' is attempting to load API module '.$name);
+    if (-e 'modules/'.$name) {
+      if(API::do_module($name)) {
+        ::snotice('do_module succeeded, attempting to register module '.$name);
+        $user->sendserv('NOTICE %s :do_module succeeded, attempting to register module.',$user->nick);
+      } else {
+        ::snotice('do_module failed - probably a syntax error in '.$name);
+        $user->sendserv('NOTICE %s :do_module failed - probably a syntax error.',$user->nick);
+        return
+      }
+    } else {
+      ::snotice($name.' failed to load: no such file or directory');
+      $user->sendserv('NOTICE %s :No such file or directory',$user->nick);
+      return
+    }
+  } else {
+    $user->numeric(481);
+  }
+}
+sub handle_modunload {
+
 }
 1

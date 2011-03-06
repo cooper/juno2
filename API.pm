@@ -10,7 +10,7 @@ our %timers;
 sub load_modules {
   my $modules = ::conf('main','modules') or return;
   foreach (split ',', $modules) {
-    require 'modules/'.$_.'.pm' or die 'could not load module '.$_;
+    require 'modules/'.$_.'.pm' or ::fatal('Could not load API module '.$_);
   }
 }
 sub do_module {
@@ -21,11 +21,11 @@ sub register_module {
   # $module,$version,$desc,$loadref,$unloadref
   my $name = shift;
   if ($_[2]()) {
-    say 'Module registered: '.$name;
+    say 'API module registered: '.$name;
     $modules{$name} = @_;
     return 1
   } else {
-    say 'Module '.$name.' refused to load.';
+    say 'API module '.$name.' refused to load.';
     return
   }
 }
@@ -61,11 +61,11 @@ sub register_timer {
 sub delete_module {
   my $name = uc shift;
   if ($modules{$name}[3]()) {
-    say 'Unloading module '.$name;
+    say 'Unloading API module '.$name;
     delete $modules{$name};
     Class::Unload->unload('API::'.$name); 
   } else {
-    say 'Module '.$name.' refused to unload.'
+    say 'API module '.$name.' refused to unload.'
   }
 }
 sub delete_command {
@@ -90,7 +90,7 @@ API::register_module('loadunload','0.1','Commands MODLOAD and MODUNLOAD',
     return 1
   },
   sub{
-    say 'Warning: attempted to unload core MODLOAD and MODUNLOAD modules.';
+    say 'Warning: attempted to unload core MODLOAD and MODUNLOAD API modules.';
     return
   }
 );

@@ -10,15 +10,14 @@ use user;
 use handle;
 use channel;
 local $0 = 'juno';
-our $VERSION = 'dev-0.7.5';
+our $VERSION = 'dev-0.7.6';
 our $TIME = time;
 our $CONFIG = './etc/ircd.conf';
-my $NOFORK = 0;
-my $API = 0;
-my $PID = 0;
+my ($NOFORK,$API,$PID) = (0,0,0);
 our %GV;
 our $ACCEPTING = 1;
 $SIG{'INT'} = \&sigint;
+$SIG{'TERM'} = \&sigint;
 $SIG{'HUP'} = \&sighup;
 our (%config,%oper,%kline,%zline,%listen,%outbuffer,%inbuffer,%timer);
 my (%listensockets,%SSL,@sel,$ipv6);
@@ -28,75 +27,76 @@ confparse($CONFIG);
 &createsockets;
 unless ($NOFORK) {
   say 'Becoming a daemon...';
-  open STDIN,  '/dev/null' or die "Can't read /dev/null: $!";
+  open STDIN,  '/dev/null' or fatal('Can\'t read /dev/null: '.$!);
   open STDOUT, '>/dev/null';
   open STDERR, '>/dev/null';
-  open my $pidfile,'>','./etc/juno.pid' or die 'could not write etc/juno.pid';
+  open my $pidfile,'>','./etc/juno.pid' or fatal('Could not write etc/juno.pid');
   $PID = fork;
-  say $pidfile $PID;
+  say $pidfile $PID if $PID != 0;
   close $pidfile;
 }
-exit if ($PID != 0);
+exit if $PID != 0;
 &POSIX::setsid;
 our $id = conf('server','id');
-die 'not listening' if $#sel < 0;
+fatal('not listening') if $#sel < 0;
 our $select = new IO::Select(@sel);
 for(;;) {
   my $time;
-  foreach my $peer ($select->can_read(conf('main','timeout'))) {
-    $timer{$peer} = 0 unless $timer{$peer};
-    if ($listensockets{$peer}) {
-      user::new(($SSL{$peer}?1:0),$peer->accept);
+  foreach my $client ($select->can_read(conf('main','timeout'))) {
+    $timer{$client} = 0 unless $timer{$client};
+    if ($listensockets{$client}) {
+      user::new(($SSL{$client}?1:0),$client->accept);
     } else {
       my $data;
       $time = time;
-      $timer{$peer} = $time if $timer{$peer} < $time;
-      my $got = $peer->sysread($data,POSIX::BUFSIZ);
+      $timer{$client} = $time if $timer{$client} < $time;
+      my $got = $client->sysread($data,POSIX::BUFSIZ);
       if ($got) {
-        $inbuffer{$peer} .= $data;
+        $inbuffer{$client} .= $data;
       } else {
-        user::lookup($peer)->quit('Read error',1);
-        next;
+        user::lookup($client)->quit('Read error',1);
+        next
       }
-    } my ($theline,$therest);
-    if($inbuffer{$peer}) {
-      unless (user::lookup($peer)) { delete $inbuffer{$peer}; next }
-      while(($timer{$peer}-conf('flood','lines') <= $time) && (($theline,$therest) = $inbuffer{$peer} =~ m/([^\n]*)\n(.*)/s)) {
-        $inbuffer{$peer} = $therest;
-        $theline=~s/\r$//;
-        handle::new($peer,$theline);
-        $timer{$peer}++;
+    }
+    my ($theline,$therest);
+    if ($inbuffer{$client}) {
+      if (!user::lookup($client)) {
+        delete $inbuffer{$client};
+        next
       }
-      if(length $inbuffer{$peer} > conf('flood','bytes')) {
-        user::lookup($peer)->quit(conf('flood','msg'));
+      while(($timer{$client}-conf('flood','lines') <= $time) && (($theline,$therest) = $inbuffer{$client} =~ m/([^\n]*)\n(.*)/s)) {
+        $inbuffer{$client} = $therest;
+        $theline =~ s/\r$//;
+        handle::new($client,$theline);
+        $timer{$client}++;
+      }
+      if (length $inbuffer{$client} > conf('flood','bytes')) {
+        user::lookup($client)->quit(conf('flood','msg'));
       }
     }
   }
   foreach my $client ($select->can_write(0)) {
     next unless $outbuffer{$client};
     my $sent = $client->syswrite($outbuffer{$client},POSIX::BUFSIZ);
-    if(!defined($sent)) { next; }
-    if(($sent <= length($outbuffer{$client})) || ($! == POSIX::EWOULDBLOCK)) {
-        substr($outbuffer{$client},0,$sent) = '';
-      if(!length($outbuffer{$client})) {
-        delete($outbuffer{$client});
+    next unless defined $sent;
+    if ($sent <= length $outbuffer{$client} || $! == POSIX::EWOULDBLOCK) {
+        substr $outbuffer{$client}, 0, $sent = '';
+      if (!length $outbuffer{$client}) {
+        delete $outbuffer{$client};
       }
     } else {
-      my $user = user::lookup($client);
-      $user->quit('Write error',1);
+      user::lookup($client)->quit('Write error',1);
       next;
     }
   }
-  foreach (values %user::connection) {
-    my $client = $_;
+  foreach my $client (values %user::connection) {
     if ((time-$client->{'ping'}) > conf('ping','freq')) {
       $client->send('PING :'.conf('server','name'));
       $client->{'ping'} = time;
       $client->quit('Registration timeout') unless $client->{'ready'};
     }
-    my $last = time-$client->{'last'};
-    if ($last > conf('ping','timeout')) {
-      my $ping = sprintf(conf('ping','msg'),$last);
+    if (time-$client->{'last'} > conf('ping','timeout')) {
+      my $ping = sprintf(conf('ping','msg'),time-$client->{'last'});
       $client->quit($ping,undef);
     }
   }
@@ -110,18 +110,17 @@ for(;;) {
   }
 }
 sub sendpeer {
-  my $peer = shift;
-  foreach (@_) {
-    $outbuffer{$peer} .= $_."\r\n";
-  }
+  my $client = shift;
+  $outbuffer{$client} .= "$_\n" foreach @_;
 }
 sub sigint {
-  say 'preparing to exit by SIGINT';
-  $_->quit('Server shutdown'), say 'removing user '.$_->{'id'} foreach values %user::connection;
-  die 'exiting by signal';
+  say 'Preparing to exit...';
+  $_->quit('Server shutdown'), say '  Removing user '.$_->{'id'} foreach values %user::connection;
+  fatal('Exiting by signal.');
 }
 sub sighup {
   snotice('Receieved SIGHUP, rehashing server configuration file.');
+  say 'Receieved SIGHUP, rehashing server configuration file.';
   confparse($CONFIG);
 }
 sub conf {
@@ -136,7 +135,8 @@ sub oper {
 }
 sub confparse {
   my $file = shift;
-  open(my $CONF,'<',$file) or die 'can not open configuration file '.$file;
+  say 'Loading configuration: '.$file;
+  open(my $CONF,'<',$file) or fatal('can not open configuration file '.$file);
   my @sections;
   (%kline,%zline,%config,%oper) = ((),(),(),());
   delete $::GV{'motd'};
@@ -172,7 +172,7 @@ sub confparse {
           $listen{$sections[3]}{$s[0]} = $s[1];
         } elsif ($sections[4]) {
           $zline{$sections[4]}{$s[0]} = $s[1];
-        } else { die 'no section set in configuration'; }
+        } else { fatal('no section set in configuration'); }
       }
     }
   }
@@ -189,6 +189,7 @@ sub confparse {
   close $CONF;
 }
 sub loadmotd {
+  say 'Loading MOTD: '.conf('server','motd');
   open my $MOTD, conf('server','motd') or $GV{'motd'} = 'MOTD file is missing.', return;
   while (my $line = <$MOTD>) {
     chomp $line;
@@ -199,10 +200,10 @@ sub loadmotd {
 }
 sub validnick {
   my ($str,$limit,$i) = @_;
-  return if(length($str)<1 || length($str)>$limit);
-  return if($str=~m/^\d/ && !$i);
-  return if $str=~m/[^A-Za-z-0-9-\[\]\\\`\^\|\{\}\_]/;
-  return 1;
+  return if length $str < 1 || length $str > $limit;
+  return if $str =~ m/^\d/ && !$i;
+  return if $str =~ m/[^A-Za-z-0-9-\[\]\\\`\^\|\{\}\_]/;
+  return 1
 }
 sub hostmatch {
   my ($mask,@list) = @_;
@@ -212,10 +213,10 @@ sub hostmatch {
     $regexp =~ s/\?/\./g;
     $regexp =~ s/\*/\.\*/g;
     $regexp = '^'.$regexp.'$';
-    push(@aregexps,lc $regexp);
+    push(@aregexps,lc $regexp)
   }
   return 1 if (grep {lc $mask =~ /$_/} @aregexps);
-  return;
+  return
 }
 sub snotice {
   my $msg = shift;
@@ -223,33 +224,38 @@ sub snotice {
     $_->sendserv('NOTICE '.$_->nick.' :*** Server notice: '.$msg) if ($_->ismode('o') && $_->ismode('S'));
   }
 }
+sub fatal {
+  say 'FATAL: '.shift;
+  exit
+}
 sub createsockets {
+  say 'Opening client sockets...';
   foreach my $name (keys %listen) {
     my $socket;
     foreach my $port (split(' ',$listen{$name}{'port'})) {
       last if $port == 0;
-      say "listening on $name:$port";
+      say "  Listening on [$name]:$port";
       if ($ipv6) {
         $socket = IO::Socket::INET6->new(
           Listen => 1,
           ReuseAddr => 1,
           LocalPort => $port,
           LocalAddr => $name
-        ) or die 'could not listen: block '.$name.':'.$port.': '.$!;
+        ) or fatal('Could not listen: block ['.$name.']:'.$port.': '.$!);
       } else {
         $socket = IO::Socket::INET->new(
           Listen => 1,
           ReuseAddr => 1,
           LocalPort => $port,
           LocalAddr => $name
-        ) or die 'could not listen: block '.$name.':'.$port.': '.$!;
+        ) or fatal('Could not listen: block '.$name.':'.$port.': '.$!);
       }
       push(@sel,$socket) if $socket;
       $listensockets{$socket} = $port if $socket;
     }
     foreach my $port (split(' ',$listen{$name}{'ssl'})) {
       last if $port == 0;
-      say "listening on $name:$port";
+      say "  Listening SSL on [$name]:$port";
       $socket = IO::Socket::SSL->new(
         Listen => 1,
         ReuseAddr => 1,
@@ -257,7 +263,7 @@ sub createsockets {
         LocalAddr => $name,
         SSL_cert_file => conf('ssl','cert'),
         SSL_key_file => conf('ssl','key')
-        ) or die 'could not listen (SSL): block '.$name.':'.$port.': '.$!;
+        ) or fatal('Could not listen (SSL): block '.$name.':'.$port.': '.$!);
       if ($socket) {
         push(@sel,$socket);
         $listensockets{$socket} = $port;
@@ -273,61 +279,87 @@ sub col {
   return $str;
 }
 sub loadrequirements {
+  say 'Loading required modules...';
   if (conf('enabled','API')) {
-    require API;
+    say '  Loading API module';
+    require API or fatal('Could not load API module');
     $API = 1;
     &API::load_modules;
   }
   if (conf('enabled','ipv6')) {
+    say '  Loading IPv6 module';
     $ipv6 = 1;
-    require IO::Socket::INET6;
+    require IO::Socket::INET6 or fatal('Could not load IPv6 module. (Do you have IO::Socket::INET6 installed?)');
   }
   if (conf('enabled','ssl')) {
-    require IO::Socket::SSL;
-    IO::Socket::SSL->import('inet6') if (conf('enabled','ipv6'));
+    say '  Loading SSL module';
+    require IO::Socket::SSL or fatal('Could not load SSL module. (Do you have IO::Socket::SSL installed?)');
+    if (conf('enabled','ipv6')) {
+      say '    Importing IPv6 support to SSL module';
+      IO::Socket::SSL->import('inet6')
+    }
   }
   if (conf('enabled','cloaking')) {
-    require Digest::SHA;
-    Digest::SHA->import('sha256_hex');
+    say '  Loading cloaking module';
+    require Digest::SHA or fatal('Could not load cloaking module. (Do you have Digest::SHA installed?)');
+    say '    Importing SHA256 support to cloaking module';
+    Digest::SHA->import('sha256_hex')
   }
+  say 'All required modules have been loaded successfully.'
+}
+sub getpid {
+  open my $pidfile,'<','./etc/juno.pid' or fatal('juno-ircd is not running!');
+  my $pid = <$pidfile>;
+  chomp $pid;
+  close $pidfile;
+  return $pid unless $pid == 0;
 }
 sub handleargs {
-print <<EOF;
-\t   _                     _              _
-\t  (_)                   (_)            | |
-\t   _ _   _ _ __   ___    _ _ __ ___  __| |
-\t  | | | | | '_ \\ / _ \\  | | '__/ __|/ _` |
-\t  | | |_| | | | | (_) |-| | | | (__| (_| |
-\t  | |\\__,_|_| |_|\\___/  |_|_|  \\___|\\__,_|
-\t _/ |
-\t|__/   version $VERSION
-
+  say <<'EOF';
+       _                     _              _
+      (_)                   (_)            | |
+       _ _   _ _ __   ___    _ _ __ ___  __| |
+      | | | | | '_ \ / _ \  | | '__/ __|/ _` |
+      | | |_| | | | | (_) |-| | | | (__| (_| |
+      | |\__,_|_| |_|\___/  |_|_|  \___|\__,_|
+     _/ |
+    |__/ 
 EOF
+  say "Running version $VERSION";
   foreach (@ARGV) {
     my @s = split('=',$_);
     given($s[0]) {
       when('--rehash') {
-        open my $pidfile,'<','./etc/juno.pid' or die 'juno-ircd is not running!';
-        my $pid = <$pidfile>; chomp $pid;
-        close $pid;
+        my $pid = getpid();
         say 'Signaling '.$pid.' HUP';
+        kill 'HUP', $pid or fatal('Couldn\'t send signal');
         say 'Rehashed server configuration.';
-        kill 'HUP',$pid;
-        exit;
-      } when ('--config') {
+        exit
+      } when('--stop') {
+        my $pid = getpid();
+        say 'Signaling '.$pid.' TERM';
+        kill 'TERM', $pid or fatal('Couldn\'t send signal');
+        exit
+      } when('--restart') {
+        my $pid = getpid();
+        say 'Signaling '.$pid.' TERM';
+        kill 'TERM', $pid or fatal('Couldn\'t send signal');
+      } when('--config') {
         $CONFIG = $s[1] if $s[0] eq '--config';
+        say 'Setting configuration file: '.$CONFIG;
       } when('--nofork') {
-        $NOFORK = 1 if $s[0] eq '--nofork';
+        say 'Not becoming a daemon.';
+        $NOFORK = 1 if $s[0] eq '--nofork'
       } when('--version') {
-        say $VERSION;
+        say $VERSION
       } default {
-print <<EOF;
-usage: juno
-\t[--config=/path/to/config]
-\t[--rehash]
-\t[--nofork]
+        print <<'EOF';
+usage: juno [options]
+    --config=/path/to/config    Use a configuration file other than etc/ircd.conf
+    --rehash                    Rehash the server running from this build
+    --nofork                    Prevent the IRCd from becoming a daemon.
 EOF
-exit;
+        exit
       }
     }
   }

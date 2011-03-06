@@ -34,6 +34,9 @@ our %commands = (
   ISON => \&handle_ison,
 );
 our %numerics = (
+  251 => ':There are %s users and %s invisible on %s servers',
+  265 => '%s %s :Current local users %s, max %s',
+  267 => '%s %s :Current global users %s, max %s',
   301 => '%s :%s',
   303 => ':%s',
   305 => ':You are no longer marked as being away',
@@ -257,12 +260,12 @@ sub servernotice {
   $user->send(':'.::conf('server','name').' NOTICE '.$user->nick." :@_");
 }
 sub sendnum {
+  # deprecated
   my $user = shift;
   $user->send(':'.::conf('server','name').' '.shift().' '.$user->nick." @_");
 }
 sub numeric {
-  my $user = shift;
-  my $num = shift;
+  my ($user,$num) = @_;
   $user->send(join(' ',':'.::conf('server','name'),$num,$user->nick,sprintf($numerics{$num},@_)));
 }
 sub sendserv {
@@ -279,32 +282,30 @@ sub sendfromj {
 }
 sub fullcloak {
   my $user = shift;
-  if ($user->{'ready'}) {
-    return $user->{'nick'}.'!'.$user->{'ident'}.'@'.$user->{'cloak'};
-  } else { return '*'; }
+  return $user->{'nick'}.'!'.$user->{'ident'}.'@'.$user->{'cloak'} if $user->{'ready'};
+  return '*'
 }
 sub recvprivmsg {
   my ($user,$from,$target,$msg,$cmd) = @_;
-  $user->send(':'.$from.' '.$cmd.' '.$target.' :'.$msg);
+  $user->send(':'.join(' ',$from,$cmd,$target).' :'.$msg);
 }
 sub mode {
   return shift->{'mode'}->{shift()};
 }
 sub fullhost {
   my $user = shift;
-  if (defined $user->{'ready'}) {
-    return $user->{'nick'}.'!'.$user->{'ident'}.'@'.$user->{'host'};
-  } else { return '*'; }
+  return $user->{'nick'}.'!'.$user->{'ident'}.'@'.$user->{'host'} if defined $user->{'ready'};
+  return '*'
 }
 sub nick {
   my $user = shift;
-  if ($user->{'nick'}) {
-    return $user->{'nick'};
-  } else { return '*'; }
+  return $user->{'nick'} if $user->{'nick'};
+  return '*'
 }
 sub start {
   my $user = shift;
   return if $user->checkkline;
+  ::snotice('client connecting: '.$user->fullhost.' ['.$user->{'ip'}.']');
   $user->sendnum('001',':Welcome to the '.::conf('server','network').' Internet Relay Chat Network '.$user->nick);
   $user->sendnum('002',':Your host is '.::conf('server','name').', running version juno-'.$::VERSION);
   $user->sendnum('003',':This server was created '.POSIX::strftime('%a %b %d %Y at %H:%M:%S %Z',localtime $::TIME));
@@ -313,52 +314,59 @@ sub start {
   $user->handle_lusers;
   $user->handle_motd;
   $user->setmode(::conf('user','automodes').($user->{'ssl'}?'Z':''));
-  ::snotice('client connecting: '.$user->fullhost.' ['.$user->{'ip'}.']');
 }
 sub newid {
   $::GV{'cid'}++;
   return $::GV{'cid'}-1;
 }
-sub id { return shift->{'id'}; }
-sub obj { return shift->{'obj'}; }
-sub server { return shift->{'server'}; }
-sub host { return shift->{'host'}; }
+sub id {
+  return shift->{'id'}
+}
+sub obj {
+  return shift->{'obj'}
+}
+sub server {
+  return shift->{'server'}
+}
+sub host {
+  return shift->{'host'};
+}
 sub nickexists {
   my $nick = shift;
   foreach (values %connection) {
     return $_ if lc($_->{'nick'}) eq lc($nick);
   }
-  return;  
+  return  
 }
 sub lookupbyid {
   my $id = shift;
   foreach (values %connection) {
     return $_ if $_->{'id'} == $id;
   }
-  return;  
+  return 
 }
 sub canoper {
+  # TODO: add support for SHA encryption.
   my ($user,$oper,$password) = @_;
   return unless exists $::oper{$oper};
   if (::oper($oper,'password') eq crypt($password,::oper($oper,'salt'))) {
-        return $oper if ::hostmatch($user->fullhost,split(' ',::oper($oper,'host')));
+        return $oper if ::hostmatch($user->fullhost,split(' ',::oper($oper,'host')))
   }
-  return;
+  return
 }
 sub ison {
-  my ($user,$channel) = @_;
-  return 1 if exists $channel->{'users'}->{$user->{'id'}};
-  return;
+  return 1 if exists shift->{'users'}->{shift->{'id'}};
+  return
 }
 sub checkkline {
   my $user = shift;
   foreach (keys %::kline) {
     if (::hostmatch($user->fullhost,$_)) {
       $user->quit('K-Lined: '.$::kline{$_}{'reason'},undef,'K-Lined'.(::conf('main','showkline')?': '.$::kline{$_}{'reason'}:''));
-      return 1;
+      return 1
     }
   }
-  return;
+  return
 }
 sub acceptcheck {
   my $i = 0;
@@ -395,9 +403,9 @@ sub handle_lusers {
     } else { $i++; }
   } my $t = $i+$ii;
   $::GV{'max'} = $t if $::GV{'max'} < $t;
-  $user->sendnum(251,':There are '.$i.' users are '.$ii.' invisible on 1 servers');
-  $user->sendnum(265,$t.' '.$::GV{'max'}.' :Current local users '.$t.', max '.$::GV{'max'});
-  $user->sendnum(267,$t.' '.$::GV{'max'}.' :Current global users '.$t.', max '.$::GV{'max'});
+  $user->numeric(251,$i,$ii,1);
+  $user->numeric(265,$t,$::GV{'max'},$t,$::GV{'max'});
+  $user->numeric(267,$t,$::GV{'max'},$t,$::GV{'max'});
 }
 sub handle_motd {
   my $user = shift;
@@ -435,7 +443,7 @@ sub handle_nick {
         $user->{'nick'} = $s[1];
       } else { $user->numeric(433,$s[1]); }
     } else { $user->numeric(432,$s[1]); }
-  } else { $user->sendnum(431); }
+  } else { $user->numeric(431); }
 }
 sub handle_whois {
   my $user = shift;

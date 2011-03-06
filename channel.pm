@@ -303,7 +303,7 @@ sub settopic {
   my ($channel,$user,$topic) = @_;
   my $success = 0;
   if ($channel->ismode('t')) {
-    $success = 1 if ($channel->has($user,'owner') || $channel->has($user,'admin') || $channel->has($user,'op') || $channel->has($user,'halfop'))
+    $success = 1 if $channel->basicstatus($user);
   } else {
     $success = 1
   }

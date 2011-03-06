@@ -265,7 +265,7 @@ sub sendnum {
   $user->send(':'.::conf('server','name').' '.shift().' '.$user->nick." @_");
 }
 sub numeric {
-  my ($user,$num) = @_;
+  my ($user,$num) = (shift,shift);
   $user->send(join(' ',':'.::conf('server','name'),$num,$user->nick,sprintf($numerics{$num},@_)));
 }
 sub sendserv {
@@ -314,6 +314,7 @@ sub start {
   $user->handle_lusers;
   $user->handle_motd;
   $user->setmode(::conf('user','automodes').($user->{'ssl'}?'Z':''));
+  return 1
 }
 sub newid {
   $::GV{'cid'}++;

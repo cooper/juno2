@@ -10,7 +10,7 @@ use user;
 use handle;
 use channel;
 local $0 = 'juno';
-our $VERSION = 'dev-0.7.6';
+our $VERSION = 'dev-0.7.7';
 our $TIME = time;
 our $CONFIG = './etc/ircd.conf';
 my ($NOFORK,$API,$PID) = (0,0,0);
@@ -80,7 +80,7 @@ for(;;) {
     my $sent = $client->syswrite($outbuffer{$client},POSIX::BUFSIZ);
     next unless defined $sent;
     if ($sent <= length $outbuffer{$client} || $! == POSIX::EWOULDBLOCK) {
-        substr $outbuffer{$client}, 0, $sent = '';
+        substr($outbuffer{$client},0,$sent) = '';
       if (!length $outbuffer{$client}) {
         delete $outbuffer{$client};
       }
@@ -344,6 +344,7 @@ EOF
         my $pid = getpid();
         say 'Signaling '.$pid.' TERM';
         kill 'TERM', $pid or fatal('Couldn\'t send signal');
+        sleep 1
       } when('--config') {
         $CONFIG = $s[1] if $s[0] eq '--config';
         say 'Setting configuration file: '.$CONFIG;

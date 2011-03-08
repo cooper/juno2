@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-package API::timertest;
+package API::module::timertest;
 
 # all modules must be API::module_name_here
 

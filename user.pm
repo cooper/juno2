@@ -356,7 +356,8 @@ sub canoper {
   return
 }
 sub ison {
-  return 1 if exists shift->{'users'}->{shift->{'id'}};
+  my ($user,$channel) = @_;
+  return 1 if exists $channel->{'users'}->{$user->{'id'}};
   return
 }
 sub checkkline {

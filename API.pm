@@ -12,6 +12,7 @@ sub load_modules {
   foreach (split ',', $modules) {
     require 'modules/'.$_.'.pm' or ::fatal('Could not load API module '.$_);
   }
+  return 1
 }
 sub do_module {
   my $name = shift;
@@ -49,24 +50,29 @@ sub register_alias {
   register_command($name,sub {
     shift->handle($command,$command.' '.join(' ',@args));
   });
+  return 1
 }
 sub register_timer {
   my $name = shift;
   if(defined $timers{$name}) {
     say 'API timer '.$name.' already exists; ignoring register.';
+    return
   }
   $timers{$name} = [shift()+time,shift];
   say 'Registered API timer '.$name;
+  return 1
 }
 sub delete_module {
   my $name = uc shift;
   if ($modules{$name}[3]()) {
     say 'Unloading API module '.$name;
     delete $modules{$name};
-    Class::Unload->unload('API::'.$name); 
+    Class::Unload->unload('API::module::'.$name); 
   } else {
-    say 'API module '.$name.' refused to unload.'
+    say 'API module '.$name.' refused to unload.';
+    return
   }
+  return 1
 }
 sub delete_command {
   my $command = uc shift;
@@ -116,6 +122,7 @@ sub handle_modload {
     }
   } else {
     $user->numeric(481);
+    return
   }
 }
 sub handle_modunload {

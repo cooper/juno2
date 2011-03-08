@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-package API::helloworld;
+package API::module::helloworld;
 
 # all modules must be API::module_name_here
 

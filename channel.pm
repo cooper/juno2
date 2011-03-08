@@ -79,7 +79,7 @@ sub who {
     (defined $channel->{'owners'}->{$_}?'~':'').
     (defined $channel->{'admins'}->{$_}?'&':'').
     (defined $channel->{'ops'}->{$_}?'@':'').
-    (defined $channel->{'halfops'}->{$_}?'%%':'').
+    (defined $channel->{'halfops'}->{$_}?'%':'').
     (defined $channel->{'voices'}->{$_}?'+':'');
     $user->sendservj(352,$user->nick,$channel->name,$u->{'ident'},$u->{'cloak'},::conf('server','name'),$u->nick,$flags,':0',$u->{'gecos'});
   }
@@ -109,7 +109,7 @@ sub names {
     (defined $channel->{'owners'}->{$_}?'~':
     (defined $channel->{'admins'}->{$_}?'&':
     (defined $channel->{'ops'}->{$_}?'@':
-    (defined $channel->{'halfops'}->{$_}?'%%':
+    (defined $channel->{'halfops'}->{$_}?'%':
     (defined $channel->{'voices'}->{$_}?'+':''))))).
     $u->nick.' '
   }

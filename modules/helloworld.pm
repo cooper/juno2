@@ -96,4 +96,3 @@ sub command_hello {
 }
 
 1
-# all modules must return a true value.

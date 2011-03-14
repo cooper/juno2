@@ -5,6 +5,7 @@ use strict;
 use less 'mem';
 use feature qw(say switch);
 use Class::Unload;
+use Time::HiRes;
 our %modules; # name (version,desc,loadref,unloadref)
 our %timers;
 sub load_modules {
@@ -31,6 +32,7 @@ sub register_module {
   }
 }
 sub register_command {
+  check_or_warn(caller 0) or return;
   my $command = uc shift;
   if (defined $user::commands{$command}) {
     say 'API error: '.$command.' is already a registered command; ignoring register.';
@@ -40,6 +42,7 @@ sub register_command {
   return 1
 }
 sub register_alias {
+  check_or_warn(caller 0) or return;
   my($name,$command) = (uc shift, uc shift);
   my @args = @_;
   if (!defined $user::commands{$command}) {
@@ -53,6 +56,7 @@ sub register_alias {
   return 1
 }
 sub register_timer {
+  check_or_warn(caller 0) or return;
   my $name = shift;
   if(defined $timers{$name}) {
     say 'API timer '.$name.' already exists; ignoring register.';
@@ -63,6 +67,7 @@ sub register_timer {
   return 1
 }
 sub delete_module {
+  check_or_warn(caller 0) or return;
   my $name = uc shift;
   if ($modules{$name}[3]()) {
     say 'Unloading API module '.$name;
@@ -75,12 +80,23 @@ sub delete_module {
   return 1
 }
 sub delete_command {
+  check_or_warn(caller 0) or return;
   my $command = uc shift;
   if (!defined $user::commands{$command}) {
     say 'API error: '.$command.' is not a registered command; ignoring delete.';
     return
   }
   delete $user::commands{$command};
+  return 1
+}
+sub check_or_warn {
+  check_module(shift) or say 'API function called without module registered.';
+}
+sub check_module {
+  my $module = shift;
+  return unless $module =~ m/^API::module::/;
+  $module =~ s/^API::module:://;
+  return unless $modules{$module};
   return 1
 }
 1;

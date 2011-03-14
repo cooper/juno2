@@ -1,321 +1,7 @@
-#!/usr/bin/perl -w
-use warnings;
-use strict;
-use less 'mem';
-use feature qw(say switch);
-use POSIX;
-use IO::Select;
-use IO::Socket;
-use user;
-use handle;
-use channel;
-local $0 = 'juno';
-our $VERSION = 'dev-0.7.8';
-our $TIME = time;
-our $CONFIG = './etc/ircd.conf';
-my ($NOFORK,$API,$PID) = (0,0,0);
-our %GV;
-our $ACCEPTING = 1;
-$SIG{'INT'} = \&sigint;
-$SIG{'TERM'} = \&sigint;
-$SIG{'HUP'} = \&sighup;
-our (%config,%oper,%kline,%zline,%listen,%outbuffer,%inbuffer,%timer);
-my (%listensockets,%SSL,@sel,$ipv6);
-&handleargs;
-confparse($CONFIG);
-&loadrequirements;
-&createsockets;
-unless ($NOFORK) {
-  say 'Becoming a daemon...';
-  open STDIN,  '/dev/null' or fatal('Can\'t read /dev/null: '.$!);
-  open STDOUT, '>/dev/null';
-  open STDERR, '>/dev/null';
-  open my $pidfile,'>','./etc/juno.pid' or fatal('Could not write etc/juno.pid');
-  $PID = fork;
-  say $pidfile $PID if $PID != 0;
-  close $pidfile;
-}
-exit if $PID != 0;
-&POSIX::setsid;
-our $id = conf('server','id');
-fatal('not listening') if $#sel < 0;
-our $select = new IO::Select(@sel);
-for(;;) {
-  my $time;
-  foreach my $client ($select->can_read(conf('main','timeout'))) {
-    $timer{$client} = 0 unless $timer{$client};
-    if ($listensockets{$client}) {
-      user::new(($SSL{$client}?1:0),$client->accept);
-    } else {
-      my $data;
-      $time = time;
-      $timer{$client} = $time if $timer{$client} < $time;
-      my $got = $client->sysread($data,POSIX::BUFSIZ);
-      if ($got) {
-        $inbuffer{$client} .= $data;
-      } else {
-        user::lookup($client)->quit('Read error',1);
-        next
-      }
-    }
-    my ($theline,$therest);
-    if ($inbuffer{$client}) {
-      if (!user::lookup($client)) {
-        delete $inbuffer{$client};
-        next
-      }
-      while(($timer{$client}-conf('flood','lines') <= $time) && (($theline,$therest) = $inbuffer{$client} =~ m/([^\n]*)\n(.*)/s)) {
-        $inbuffer{$client} = $therest;
-        $theline =~ s/\r$//;
-        handle::new($client,$theline);
-        $timer{$client}++;
-      }
-      if (length $inbuffer{$client} > conf('flood','bytes')) {
-        user::lookup($client)->quit(conf('flood','msg'));
-      }
-    }
-  }
-  foreach my $client ($select->can_write(0)) {
-    next unless $outbuffer{$client};
-    my $sent = $client->syswrite($outbuffer{$client},POSIX::BUFSIZ);
-    next unless defined $sent;
-    if ($sent <= length $outbuffer{$client} || $! == POSIX::EWOULDBLOCK) {
-        substr($outbuffer{$client},0,$sent) = '';
-      if (!length $outbuffer{$client}) {
-        delete $outbuffer{$client};
-      }
-    } else {
-      user::lookup($client)->quit('Write error',1);
-      next;
-    }
-  }
-  foreach my $client (values %user::connection) {
-    if ((time-$client->{'ping'}) > conf('ping','freq')) {
-      $client->send('PING :'.conf('server','name'));
-      $client->{'ping'} = time;
-      $client->quit('Registration timeout') unless $client->{'ready'};
-    }
-    if (time-$client->{'last'} > conf('ping','timeout')) {
-      my $ping = sprintf(conf('ping','msg'),time-$client->{'last'});
-      $client->quit($ping,undef);
-    }
-  }
-  next unless $API;
-  foreach (keys %API::timers) {
-    my $timer = $API::timers{$_};
-    if ($timer->[0]-1 <= time) {
-      $timer->[1]();
-      delete $API::timers{$_};
-    }
-  }
-}
-sub sendpeer {
-  my $client = shift;
-  $outbuffer{$client} .= "$_\n" foreach @_;
-}
-sub sigint {
-  say 'Preparing to exit...';
-  $_->quit('Server shutdown'), say '  Removing user '.$_->{'id'} foreach values %user::connection;
-  fatal('Exiting by signal.');
-}
-sub sighup {
-  snotice('Receieved SIGHUP, rehashing server configuration file.');
-  say 'Receieved SIGHUP, rehashing server configuration file.';
-  confparse($CONFIG);
-}
-sub conf {
-  my ($key,$val) = @_;
-  return $config{$key}{$val} if exists $config{$key}{$val};
-  return
-}
-sub oper {
-  my ($key,$val) = @_;
-  return $oper{$key}{$val} if exists $oper{$key}{$val};
-  return;
-}
-sub confparse {
-  my $file = shift;
-  say 'Loading configuration: '.$file;
-  open(my $CONF,'<',$file) or fatal('can not open configuration file '.$file);
-  my @sections;
-  (%kline,%zline,%config,%oper) = ((),(),(),());
-  delete $::GV{'motd'};
-  while (my $line = <$CONF>) {
-    $line =~ s/\t//g;
-    $line =~ s/^\s+//;
-    $line =~ s/\s+$//;
-    next if $line eq '';
-    next if $line =~ m/^#/;
-    my @s = split(' ',$line,2);
-    given($s[0]) {
-      when('sec') {
-        @sections = ($s[1],0,0,0,0);
-      } when('inc') {
-        @sections = (0,0,0,0,0);
-        confparse($s[1]);
-      } when('oper') {
-        @sections = (0,$s[1],0,0,0);
-      } when('kline') {
-        @sections = (0,0,$s[1],0,0);
-      } when('listen') {
-        @sections = (0,0,0,$s[1],0);
-      } when('zline') {
-        @sections = (0,0,0,0,$s[1]);
-      } default {
-        if ($sections[0]) {
-          $config{$sections[0]}{$s[0]} = $s[1];
-        } elsif ($sections[1]) {
-          $oper{$sections[1]}{$s[0]} = $s[1];
-        } elsif ($sections[2]) {
-          $kline{$sections[2]}{$s[0]} = $s[1];
-        } elsif ($sections[3]) {
-          $listen{$sections[3]}{$s[0]} = $s[1];
-        } elsif ($sections[4]) {
-          $zline{$sections[4]}{$s[0]} = $s[1];
-        } else { fatal('no section set in configuration'); }
-      }
-    }
-  }
-  usercheck: foreach my $user (values %user::connection) {
-    foreach (keys %zline) {
-      if (hostmatch($user->{'ip'},$_)) {
-        $user->quit('Z-Lined: '.$zline{$_}{'reason'},undef,'Z-Lined'.(::conf('main','showzline')?': '.$zline{$_}{'reason'}:''));
-        next usercheck;
-      }
-    }
-    $user->checkkline;
-  }
-  &loadmotd;
-  close $CONF;
-}
-sub loadmotd {
-  say 'Loading MOTD: '.conf('server','motd');
-  open my $MOTD, conf('server','motd') or $GV{'motd'} = 'MOTD file is missing.', return;
-  while (my $line = <$MOTD>) {
-    chomp $line;
-    $GV{'motd'} .= $line.$/;
-  }
-  close $MOTD;
-  return 1;
-}
-sub validnick {
-  my ($str,$limit,$i) = @_;
-  return if length $str < 1 || length $str > $limit;
-  return if $str =~ m/^\d/ && !$i;
-  return if $str =~ m/[^A-Za-z-0-9-\[\]\\\`\^\|\{\}\_]/;
-  return 1
-}
-sub hostmatch {
-  my ($mask,@list) = @_;
-  my @aregexps;
-  foreach my $regexp (@list) {
-    $regexp =~ s/\./\\\./g;
-    $regexp =~ s/\?/\./g;
-    $regexp =~ s/\*/\.\*/g;
-    $regexp = '^'.$regexp.'$';
-    push(@aregexps,lc $regexp)
-  }
-  return 1 if (grep {lc $mask =~ /$_/} @aregexps);
-  return
-}
-sub snotice {
-  my $msg = shift;
-  foreach (values %user::connection) {
-    $_->sendserv('NOTICE '.$_->nick.' :*** Server notice: '.$msg) if ($_->ismode('o') && $_->ismode('S'));
-  }
-}
-sub fatal {
-  say 'FATAL: '.shift;
-  exit
-}
-sub createsockets {
-  say 'Opening client sockets...';
-  foreach my $name (keys %listen) {
-    my $socket;
-    foreach my $port (split(' ',$listen{$name}{'port'})) {
-      last if $port == 0;
-      say "  Listening on [$name]:$port";
-      if ($ipv6) {
-        $socket = IO::Socket::INET6->new(
-          Listen => 1,
-          ReuseAddr => 1,
-          LocalPort => $port,
-          LocalAddr => $name
-        ) or fatal('Could not listen: block ['.$name.']:'.$port.': '.$!);
-      } else {
-        $socket = IO::Socket::INET->new(
-          Listen => 1,
-          ReuseAddr => 1,
-          LocalPort => $port,
-          LocalAddr => $name
-        ) or fatal('Could not listen: block '.$name.':'.$port.': '.$!);
-      }
-      push(@sel,$socket) if $socket;
-      $listensockets{$socket} = $port if $socket;
-    }
-    foreach my $port (split(' ',$listen{$name}{'ssl'})) {
-      last if $port == 0;
-      say "  Listening SSL on [$name]:$port";
-      $socket = IO::Socket::SSL->new(
-        Listen => 1,
-        ReuseAddr => 1,
-        LocalPort => $port,
-        LocalAddr => $name,
-        SSL_cert_file => conf('ssl','cert'),
-        SSL_key_file => conf('ssl','key')
-        ) or fatal('Could not listen (SSL): block '.$name.':'.$port.': '.$!);
-      if ($socket) {
-        push(@sel,$socket);
-        $listensockets{$socket} = $port;
-        $SSL{$socket} = 1;
-      }
-    }
-  }
-}
-sub col {
-  my $str = shift;
-  return unless defined $str;
-  $str =~ s/^://;
-  return $str;
-}
-sub loadrequirements {
-  say 'Loading required modules...';
-  if (conf('enabled','API')) {
-    say '  Loading API module';
-    require API or fatal('Could not load API module');
-    $API = 1;
-    &API::load_modules;
-  }
-  if (conf('enabled','ipv6')) {
-    say '  Loading IPv6 module';
-    $ipv6 = 1;
-    require IO::Socket::INET6 or fatal('Could not load IPv6 module. (Do you have IO::Socket::INET6 installed?)');
-  }
-  if (conf('enabled','ssl')) {
-    say '  Loading SSL module';
-    require IO::Socket::SSL or fatal('Could not load SSL module. (Do you have IO::Socket::SSL installed?)');
-    if (conf('enabled','ipv6')) {
-      say '    Importing IPv6 support to SSL module';
-      IO::Socket::SSL->import('inet6')
-    }
-  }
-  if (conf('enabled','cloaking')) {
-    say '  Loading cloaking module';
-    require Digest::SHA or fatal('Could not load cloaking module. (Do you have Digest::SHA installed?)');
-    say '    Importing SHA256 support to cloaking module';
-    Digest::SHA->import('sha256_hex')
-  }
-  say 'All required modules have been loaded successfully.'
-}
-sub getpid {
-  open my $pidfile,'<','./etc/juno.pid' or fatal('juno-ircd is not running!');
-  my $pid = <$pidfile>;
-  chomp $pid;
-  close $pidfile;
-  return $pid unless $pid == 0;
-}
-sub handleargs {
-  say <<'EOF';
+#!/bin/bash
+# Copyright (c) 2011 Mitchell Cooper
+# don't make fun of my bash skills.
+cat << "EOF"
        _                     _              _
       (_)                   (_)            | |
        _ _   _ _ __   ___    _ _ __ ___  __| |
@@ -324,44 +10,47 @@ sub handleargs {
       | |\__,_|_| |_|\___/  |_|_|  \___|\__,_|
      _/ |
     |__/ 
+
 EOF
-  say "Running version $VERSION";
-  foreach (@ARGV) {
-    my @s = split('=',$_);
-    given($s[0]) {
-      when('--rehash') {
-        my $pid = getpid();
-        say 'Signaling '.$pid.' HUP';
-        kill 'HUP', $pid or fatal('Couldn\'t send signal');
-        say 'Rehashed server configuration.';
-        exit
-      } when('--stop') {
-        my $pid = getpid();
-        say 'Signaling '.$pid.' TERM';
-        kill 'TERM', $pid or fatal('Couldn\'t send signal');
-        exit
-      } when('--restart') {
-        my $pid = getpid();
-        say 'Signaling '.$pid.' TERM';
-        kill 'TERM', $pid or fatal('Couldn\'t send signal');
-        sleep 1
-      } when('--config') {
-        $CONFIG = $s[1] if $s[0] eq '--config';
-        say 'Setting configuration file: '.$CONFIG;
-      } when('--nofork') {
-        say 'Not becoming a daemon.';
-        $NOFORK = 1 if $s[0] eq '--nofork'
-      } when('--version') {
-        say $VERSION
-      } default {
-        print <<'EOF';
-usage: juno [options]
-    --config=/path/to/config    Use a configuration file other than etc/ircd.conf
-    --rehash                    Rehash the server running from this build
-    --nofork                    Prevent the IRCd from becoming a daemon.
-EOF
-        exit
-      }
-    }
-  }
-}
+
+dir=`dirname "$(cd "${0%/*}" 2>/dev/null; echo "$PWD"/"${0##*/}")"`
+
+if [ ! "$1" ]; then
+    echo "Incorrect number of parameters."
+    exit
+fi
+
+if [ -e "$dir/etc/juno.pid" ]; then
+  pid=`cat $dir/etc/juno.pid`
+  running=true
+fi
+
+case "$1" in
+  start)
+    if [ "$running" ]; then
+      echo "juno is already running!"
+      exit 1
+    fi
+    echo "Starting juno"
+    $dir/bin/juno $dir
+  ;;
+  rehash)
+    if [ ! "$running" ]; then
+      echo "juno is not running!"
+      exit 1
+    fi
+    echo "Signaling $pid HUP"
+    kill -HUP $pid
+  ;;
+  stop)
+    if [ ! "$running" ]; then
+      echo "juno is not running!"
+      exit 1
+    fi
+    echo "Signaling $pid TERM"
+    kill -TERM $pid
+  ;;
+  *)
+    echo "Incorrect parameter $1"
+  ;;
+esac

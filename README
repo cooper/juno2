@@ -2,7 +2,7 @@
              (_)                   (_)            | |
               _ _   _ _ __   ___    _ _ __ ___  __| |
              | | | | | '_ \ / _ \  | | '__/ __|/ _` |
-             | | |_| | | | | (_) |-| | | | (__| (_| | v0.7.*
+             | | |_| | | | | (_) |-| | | | (__| (_| | v0.8.*
 #############| |\__,_|_| |_|\___/  |_|_|  \___|\__,_|#############
             _/ |  Perl Internet Relay Chat daemon
            |__/ 
@@ -121,7 +121,6 @@ fix "no text to send"
 add a KLINE command and store K-Lines in a database of some sort
 add a ZLINE command and store Z-Lines in a database of some sort
 fix bug: x can be set/unset even if cloaking is disabled
-add virtual variables to API aliases
 make the modules be (un)loaded on rehash
 
 user commands
@@ -343,10 +342,6 @@ rehash - rehash config
   The kill flag grants use of the REHASH command to an IRC operator.
 globops - send globops to all opers
   The kill flag grants use of the GLOBOPS command to an IRC operator.
-
-API
------------------------
-  The module API is explained in detail in the helloworld module.
 
 * unfinished
 ** LOl!OL!OL!OL!

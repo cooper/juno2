@@ -10,10 +10,9 @@ cat << "EOF"
       | |\__,_|_| |_|\___/  |_|_|  \___|\__,_|
      _/ |
     |__/ 
-
 EOF
-
 dir=`dirname "$(cd "${0%/*}" 2>/dev/null; echo "$PWD"/"${0##*/}")"`
+echo version `cat $dir/etc/version`
 
 if [ ! "$1" ]; then
     echo "Incorrect number of parameters."
@@ -49,6 +48,17 @@ case "$1" in
     fi
     echo "Signaling $pid TERM"
     kill -TERM $pid
+  ;;
+  restart)
+    if [ ! "$running" ]; then
+      echo "juno is not running!"
+      exit 1
+    fi
+    echo "Signaling $pid TERM"
+    kill -TERM $pid
+    sleep 2
+    echo "Starting juno"
+    $dir/bin/juno $dir
   ;;
   *)
     echo "Incorrect parameter $1"

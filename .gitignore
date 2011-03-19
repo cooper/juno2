@@ -2,4 +2,3 @@ dev/
 etc/*.conf
 etc/*.pem
 etc/*.pid
-indev

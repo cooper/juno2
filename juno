@@ -56,7 +56,7 @@ case "$1" in
     fi
     echo "Signaling $pid TERM"
     kill -TERM $pid
-    sleep 2
+    sleep 1
     echo "Starting juno"
     $dir/bin/juno $dir
   ;;

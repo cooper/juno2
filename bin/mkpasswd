@@ -2,10 +2,11 @@
 use warnings;
 use strict;
 my $salt = rand(9001);
+print "Note: this uses perl crypt(), which only encrypts the first 8 bits.$/";
 print 'Password: ';
 my $password = <STDIN>;
 chomp $password;
 $password = crypt($password,$salt);
 print "Hash: $password\n";
 print "Salt: $salt\n";
-exit;
+exit

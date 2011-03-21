@@ -9,13 +9,13 @@
 
 about
 -----------------------
-In July 2010, I found pIRCd, the perl internet relay chat daemon. while learning
-Perl, I added a few more features to it; however, I caused several disadvantages,
-bugs, and memory failures. I decided to start over from scratch because if I wrote
-it myself I would understand more how to modify it and work around the issues that
-I had when I was working on the perl IRC daemon that Jay Kominek wrote 13 years ago.
-It is written mostly from scratch; however, I will not take credit for the many
-concepts from pIRCd that I have used in my writing.
+In July 2010, I found pIRCd, the perl internet relay chat daemon. while
+learning Perl, I added a few more features to it; however, I caused several
+disadvantages, bugs, and memory failures. I decided to start over from scratch
+because if I wrote it myself I would understand more how to modify it and work
+around the issues that I had when I was working on the perl IRC daemon that Jay
+Kominek wrote 13 years ago. It is written mostly from scratch; however, I will
+not take credit for the many concepts from pIRCd that I have used in my writing.
 
 license
 -----------------------
@@ -49,24 +49,29 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 setting up/installation
 -----------------------
-one thing I have tried to do is to make it as simple as possible to setup and install, so
-there is no install script and there are no files that the IRCd requires to be built before
-it is started. for this reason, there is an 'enable' block in the configuration to enable
-certain features that were originally to be enabled in installation; but as long as the etc
-directory is readable and writable, you should be ready to enjoy juno, that is, of course, after
-you edit etc/ircd.conf.example and read the comments. the configuration is setup very simply.
-the first word of a line is the value you're setting, and everything beyond it is the value
-you are setting it to (except for in oper, listen, etc blocks.) when you finish configuring,
-just run ./juno
---config=/path/to/config # use a configuration other than etc/ircd.conf
---nofork # prevent the IRCd from running in the background
+one thing I have tried to do is to make it as simple as possible to setup and
+install, so there is no install script and there are no files that the IRCd
+requires to be built before it is started. for this reason, there is an 'enable'
+block in the configuration to enable certain features that were originally to
+be enabled in installation; but as long as the etc directory is readable and
+writable, you should be ready to enjoy juno, that is, of course, after you edit
+etc/ircd.conf.example and read the comments. the configuration is setup very
+simply. the first word of a line is the value you're setting, and everything
+beyond it is the value you are setting it to (except for in oper, listen, etc.
+blocks.) when you finish configuring, just run:
+
+./juno start # starts
+
+./juno rehash # sends SIGHUP
+
+./juno stop # sends SIGTERM
 
 support
 -----------------------
 if you are in need of assistance, you are likely to find me on my development
-network at cooper.on.fgtb.us #k. this is pretty basic when it comes to the style
-of which it's written, so if you know a little bit of Perl, editing it should be
-fairly easy.
+network at cooper.on.fgtb.us #k. this is pretty basic when it comes to the
+style of which it's written so if you know a little bit of Perl, editing it
+should be fairly easy.
 
 requirements
 -----------------------
@@ -79,15 +84,15 @@ all dependencies are core modules as of now.
 
 IPv6
 -----------------------
-to enable IPv6 listening, you must set the configuration option enabled:ipv6 to a true value.
-This requires the IO::Socket::INET6 and Socket6 perl modules.
-If you wish to listen with SSL on IPv6, you must also have SSL enabled.
+to enable IPv6 listening, you must set the configuration option enabled:ipv6 to
+a true value. This requires the IO::Socket::INET6 and Socket6 perl modules. If
+you wish to listen with SSL on IPv6, you must also have SSL enabled. 
 
 SSL
 -----------------------
-to enable SSL listening, you must must set the configuration option enabled:ssl to a true value.
-This requires the IO::Socket::SSL perl module.
-If you wish to listen with SSL on IPv6, you must also have IPv6 enabled.
+to enable SSL listening, you must must set the configuration option enabled:ssl
+to a true value. This requires the IO::Socket::SSL perl module. If you wish to
+listen with SSL on IPv6, you must also have IPv6 enabled. 
 
 cloaking
 -----------------------
@@ -347,3 +352,4 @@ globops - send globops to all opers
 
 * unfinished
 ** (this is just a joke; don't be alarmed)
+# aftep: spacing=80 no-punc

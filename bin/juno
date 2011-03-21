@@ -1,9 +1,9 @@
 #!/usr/bin/perl -w
 our $DIR;
 BEGIN {
-    $DIR = shift(@ARGV);
-    die "No directory specified\n" unless $DIR;
-    push(@INC,$DIR);
+    $DIR = shift @ARGV;
+    die "No directory specified\n" unless defined $DIR;
+    push @INC, $DIR
 }
 use warnings;
 use strict;
@@ -15,6 +15,7 @@ use IO::Socket;
 use user;
 use handle;
 use channel;
+use utils qw(fatal conf);
 local $0 = 'juno';
 open my $versionfile, '<', $DIR.'/etc/version' or fatal("Couldn't read version file");
 our $VERSION = <$versionfile>;
@@ -23,9 +24,8 @@ $VERSION =~ s/\s+$//;
 our $TIME = time;
 our $CONFIG = $DIR.'/etc/ircd.conf';
 my ($NOFORK,$PID) = (0,0);
-our %GV;
 our $ACCEPTING = 1;
-$SIG{$_} = \&sigdie foreach ('TERM','INT','KILL');
+$SIG{$_} = \&sigdie foreach 'TERM','INT','KILL';
 $SIG{'HUP'} = \&sighup;
 our (%config,%oper,%kline,%zline,%listen,%outbuffer,%inbuffer,%timer);
 my (%listensockets,%SSL,@sel,$ipv6);
@@ -34,7 +34,7 @@ confparse($CONFIG);
 &createsockets;
 unless ($NOFORK) {
     say 'Becoming a daemon...';
-    open STDIN,    '/dev/null' or fatal('Can\'t read /dev/null: '.$!);
+    open STDIN, '/dev/null' or fatal('Can\'t read /dev/null: '.$!);
     open STDOUT, '>/dev/null';
     open STDERR, '>/dev/null';
     open my $pidfile,'>', $DIR.'/etc/juno.pid' or fatal('Could not write etc/juno.pid');
@@ -87,13 +87,11 @@ for(;;) {
         my $sent = $client->syswrite($outbuffer{$client},POSIX::BUFSIZ);
         next unless defined $sent;
         if ($sent <= length $outbuffer{$client} || $! == POSIX::EWOULDBLOCK) {
-                substr($outbuffer{$client},0,$sent) = '';
-            if (!length $outbuffer{$client}) {
-                delete $outbuffer{$client};
-            }
+            substr($outbuffer{$client},0,$sent) = '';
+            delete $outbuffer{$client} unless length $outbuffer{$client}
         } else {
             user::lookup($client)->quit('Write error',1);
-            next;
+            next
         }
     }
     foreach my $client (values %user::connection) {
@@ -124,24 +122,13 @@ sub sighup {
     say 'Receieved SIGHUP, rehashing server configuration file.';
     confparse($CONFIG);
 }
-sub conf {
-    my ($key,$val) = @_;
-    return $config{$key}{$val} if exists $config{$key}{$val};
-    return
-}
-sub oper {
-    my ($key,$val) = @_;
-    return $oper{$key}{$val} if exists $oper{$key}{$val};
-    return;
-}
 sub confparse {
     my $file = shift;
     say 'Loading configuration: '.$file;
-    open(my $CONF,'<',$file) or fatal('can not open configuration file '.$file);
+    open(my $CONF,'<',$file) or fatal('Cannot open configuration file: '.$file);
     my @sections;
     (%kline,%zline,%config,%oper) = ((),(),(),());
-    delete $::GV{'motd'};
-
+    delete $utils::GV{'motd'};
     while (my $line = <$CONF>) {
         $line =~ s/\t//g;
         $line =~ s/^\s+//;
@@ -181,7 +168,7 @@ sub confparse {
     usercheck: foreach my $user (values %user::connection) {
         foreach (keys %zline) {
             if (hostmatch($user->{'ip'},$_)) {
-                $user->quit('Z-Lined: '.$zline{$_}{'reason'},undef,'Z-Lined'.(::conf('main','showzline')?': '.$zline{$_}{'reason'}:''));
+                $user->quit('Z-Lined: '.$zline{$_}{'reason'},undef,'Z-Lined'.(conf('main','showzline')?': '.$zline{$_}{'reason'}:''));
                 next usercheck;
             }
         }
@@ -192,43 +179,12 @@ sub confparse {
 }
 sub loadmotd {
     say 'Loading MOTD: '.$DIR.'/'.conf('server','motd');
-    open my $MOTD, $DIR.'/'.conf('server','motd') or $GV{'motd'} = 'MOTD file is missing.', return; 
+    open my $MOTD, $DIR.'/'.conf('server','motd') or $utils::GV{'motd'} = 'MOTD file is missing.', return; 
     while (my $line = <$MOTD>) {
-        chomp $line;
-        $GV{'motd'} .= $line.$/;
+        $utils::GV{'motd'} .= $line;
     }
     close $MOTD;
     return 1;
-}
-sub validnick {
-    my ($str,$limit,$i) = @_;
-    return if length $str < 1 || length $str > $limit;
-    return if $str =~ m/^\d/ && !$i;
-    return if $str =~ m/[^A-Za-z-0-9-\[\]\\\`\^\|\{\}\_]/;
-    return 1
-}
-sub hostmatch {
-    my ($mask,@list) = @_;
-    my @aregexps;
-    foreach my $regexp (@list) {
-        $regexp =~ s/\./\\\./g;
-        $regexp =~ s/\?/\./g;
-        $regexp =~ s/\*/\.\*/g;
-        $regexp = '^'.$regexp.'$';
-        push(@aregexps,lc $regexp)
-    }
-    return 1 if (grep {lc $mask =~ /$_/} @aregexps);
-    return
-}
-sub snotice {
-    my $msg = shift;
-    foreach (values %user::connection) {
-        $_->sendserv('NOTICE '.$_->nick.' :*** Server notice: '.$msg) if ($_->ismode('o') && $_->ismode('S'));
-    }
-}
-sub fatal {
-    say 'FATAL: '.shift;
-    exit
 }
 sub createsockets {
     say 'Opening client sockets...';
@@ -273,12 +229,6 @@ sub createsockets {
             }
         }
     }
-}
-sub col {
-    my $str = shift;
-    return unless defined $str;
-    $str =~ s/^://;
-    return $str;
 }
 sub loadrequirements {
     say 'Loading required modules...';

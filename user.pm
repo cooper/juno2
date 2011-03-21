@@ -3,8 +3,9 @@ package user;
 use warnings;
 use strict;
 use less 'mem';
-$::GV{'cid'} = 0;
-$::GV{'max'} = 0;
+use utils qw/col conf oper hostmatch snotice validnick/;
+$utils::GV{'cid'} = 0;
+$utils::GV{'max'} = 0;
 our %connection;
 our %commands = (
     PONG => sub{},
@@ -113,7 +114,7 @@ sub new {
         return;
     }
     $::select->add($peer);
-    ::sendpeer($peer,':'.::conf('server','name').' NOTICE * :*** Looking up your hostname...');
+    ::sendpeer($peer,':'.conf('server','name').' NOTICE * :*** Looking up your hostname...');
     my ($ip,$ipv) = ($peer->peerhost,4);
     $ipv = 6 if $ip =~ m/:/;
     my $user = {
@@ -141,7 +142,7 @@ sub setmode {
     foreach (split(//,$modes)) {
         $user->{'mode'}->{$_} = time;
         next if $_ =~ m/i/;
-        if ($_ eq 'x' && ::conf('enabled','cloaking')) {
+        if ($_ eq 'x' && conf('enabled','cloaking')) {
             $user->setcloak(host2cloak($user->{'ipv'}==6?1:0,$user->{'host'}));
         }
     }
@@ -157,7 +158,7 @@ sub unsetmode {
     foreach (split(//,$modes)) {
         delete $user->{'mode'}->{$_};
         next if $_ =~ m/(i|S)/;
-        if ($_ eq 'x' && ::conf('enabled','cloaking')) {
+        if ($_ eq 'x' && conf('enabled','cloaking')) {
             $user->unsetcloak;
         } elsif ($_ eq 'o') {
             delete $user->{'oper'};
@@ -204,7 +205,7 @@ sub host2cloak {
     my @pieces = ();
     my $sep = shift;
     foreach (split(($sep?':':'\.'),shift)) {
-        my $part = Digest::SHA::sha1_hex($_,::conf('cloak','salt'),$#pieces);
+        my $part = Digest::SHA::sha1_hex($_,conf('cloak','salt'),$#pieces);
         push(@pieces,($part=~m/....../g)[0]);
     }
     return join($sep?':':'.',@pieces);
@@ -227,7 +228,7 @@ sub can {
     my $user = shift;
     my $priv = shift;
     return unless defined $user->{'oper'};
-    foreach (split(' ',::oper($user->{'oper'},'privs'))) {
+    foreach (split(' ',oper($user->{'oper'},'privs'))) {
         return 1 if $_ eq $priv;
     }
     return;
@@ -245,7 +246,7 @@ sub quit {
         }
         $_->remove($user);
     }
-    ::snotice('client exiting: '.$user->fullhost.' ['.$user->{'ip'}.'] ('.$r.')') if $user->{'ready'};
+    snotice('client exiting: '.$user->fullhost.' ['.$user->{'ip'}.'] ('.$r.')') if $user->{'ready'};
     $user->obj->syswrite('ERROR :Closing Link: ('.(defined $user->{'ident'}?$user->{'ident'}:'*').'@'.$user->host.') ['.$r.']'."\r\n",POSIX::BUFSIZ) unless $no;
     delete $connection{$user->obj};
     $::select->remove($user->obj);
@@ -257,22 +258,22 @@ sub quit {
 }
 sub servernotice {
     my $user = shift;
-    $user->send(':'.::conf('server','name').' NOTICE '.$user->nick." :@_");
+    $user->send(':'.conf('server','name').' NOTICE '.$user->nick." :@_");
 }
 sub sendnum {
     # deprecated
     my $user = shift;
-    $user->send(':'.::conf('server','name').' '.shift().' '.$user->nick." @_");
+    $user->send(':'.conf('server','name').' '.shift().' '.$user->nick." @_");
 }
 sub numeric {
     my ($user,$num) = (shift,shift);
-    $user->send(join(' ',':'.::conf('server','name'),$num,$user->nick,sprintf($numerics{$num},@_)));
+    $user->send(join(' ',':'.conf('server','name'),$num,$user->nick,sprintf($numerics{$num},@_)));
 }
 sub sendserv {
-    shift->send(':'.::conf('server','name').' '.sprintf(shift, @_));
+    shift->send(':'.conf('server','name').' '.sprintf(shift, @_));
 }
 sub sendservj {
-    shift->send(':'.::conf('server','name').' '.join(' ',@_));
+    shift->send(':'.conf('server','name').' '.join(' ',@_));
 }
 sub sendfrom {
     shift->send(':'.shift().' '.sprintf(shift, @_));
@@ -305,20 +306,20 @@ sub nick {
 sub start {
     my $user = shift;
     return if $user->checkkline;
-    ::snotice('client connecting: '.$user->fullhost.' ['.$user->{'ip'}.']');
-    $user->sendnum('001',':Welcome to the '.::conf('server','network').' Internet Relay Chat Network '.$user->nick);
-    $user->sendnum('002',':Your host is '.::conf('server','name').', running version juno-'.$::VERSION);
+    snotice('client connecting: '.$user->fullhost.' ['.$user->{'ip'}.']');
+    $user->sendnum('001',':Welcome to the '.conf('server','network').' Internet Relay Chat Network '.$user->nick);
+    $user->sendnum('002',':Your host is '.conf('server','name').', running version juno-'.$::VERSION);
     $user->sendnum('003',':This server was created '.POSIX::strftime('%a %b %d %Y at %H:%M:%S %Z',localtime $::TIME));
-    $user->sendnum('004',::conf('server','name').' juno-'.$::VERSION.' ix o bei');
-    $user->sendnum('005','CHANTYPES=# EXCEPTS INVEX CHANMODES=AeIbZ,,l,imntz PREFIX=(qaohv)~&@%+ NETWORK='.::conf('server','network').' MODES='.::conf('limit','chanmodes').' NICKLEN='.::conf('limit','nick').' TOPICLEN='.::conf('limit','topic').' :are supported by this server');
+    $user->sendnum('004',conf('server','name').' juno-'.$::VERSION.' ix o bei');
+    $user->sendnum('005','CHANTYPES=# EXCEPTS INVEX CHANMODES=AeIbZ,,l,imntz PREFIX=(qaohv)~&@%+ NETWORK='.conf('server','network').' MODES='.conf('limit','chanmodes').' NICKLEN='.conf('limit','nick').' TOPICLEN='.conf('limit','topic').' :are supported by this server');
     $user->handle_lusers;
     $user->handle_motd;
-    $user->setmode(::conf('user','automodes').($user->{'ssl'}?'Z':''));
+    $user->setmode(conf('user','automodes').($user->{'ssl'}?'Z':''));
     return 1
 }
 sub newid {
-    $::GV{'cid'}++;
-    return $::GV{'cid'}-1;
+    $utils::GV{'cid'}++;
+    return $utils::GV{'cid'}-1;
 }
 sub id {
     return shift->{'id'}
@@ -350,8 +351,8 @@ sub canoper {
     # TODO: add support for SHA encryption.
     my ($user,$oper,$password) = @_;
     return unless exists $::oper{$oper};
-    if (::oper($oper,'password') eq crypt($password,::oper($oper,'salt'))) {
-                return $oper if ::hostmatch($user->fullhost,split(' ',::oper($oper,'host')))
+    if (oper($oper,'password') eq crypt($password,oper($oper,'salt'))) {
+                return $oper if hostmatch($user->fullhost,split(' ',oper($oper,'host')))
     }
     return
 }
@@ -363,8 +364,8 @@ sub ison {
 sub checkkline {
     my $user = shift;
     foreach (keys %::kline) {
-        if (::hostmatch($user->fullhost,$_)) {
-            $user->quit('K-Lined: '.$::kline{$_}{'reason'},undef,'K-Lined'.(::conf('main','showkline')?': '.$::kline{$_}{'reason'}:''));
+        if (hostmatch($user->fullhost,$_)) {
+            $user->quit('K-Lined: '.$::kline{$_}{'reason'},undef,'K-Lined'.(conf('main','showkline')?': '.$::kline{$_}{'reason'}:''));
             return 1
         }
     }
@@ -373,12 +374,12 @@ sub checkkline {
 sub acceptcheck {
     my $i = 0;
     $i++ foreach (values %connection);
-    if ($i == ::conf('limit','clients')) {
-        ::snotice('No new clients are being accepted. ('.$i.' users)') if $::ACCEPTING != 0;
+    if ($i == conf('limit','clients')) {
+        snotice('No new clients are being accepted. ('.$i.' users)') if $::ACCEPTING != 0;
         $::ACCEPTING = 0;
         return
     } else {
-        ::snotice('Clients are now being accepted. ('.$i.' users)') if $::ACCEPTING != 1;
+        snotice('Clients are now being accepted. ('.$i.' users)') if $::ACCEPTING != 1;
         $::ACCEPTING = 1;
         return 1
     }
@@ -389,9 +390,9 @@ sub ip_accept {
     foreach (values %connection) {
         $count++ if $_->{'ip'} eq $ip;
     }
-    return (undef,'Too many connections from this host') if $count >= ::conf('limit','perip');
+    return (undef,'Too many connections from this host') if $count >= conf('limit','perip');
     foreach (keys %::zline) {
-            return (undef,'Z-Lined: '.$::zline{$_}{'reason'}) if ::hostmatch($ip,$_);
+            return (undef,'Z-Lined: '.$::zline{$_}{'reason'}) if hostmatch($ip,$_);
     }
     return 1;
 }
@@ -404,15 +405,15 @@ sub handle_lusers {
             $ii++;
         } else { $i++; }
     } my $t = $i+$ii;
-    $::GV{'max'} = $t if $::GV{'max'} < $t;
+    $utils::GV{'max'} = $t if $utils::GV{'max'} < $t;
     $user->numeric(251,$i,$ii,1);
-    $user->numeric(265,$t,$::GV{'max'},$t,$::GV{'max'});
-    $user->numeric(267,$t,$::GV{'max'},$t,$::GV{'max'});
+    $user->numeric(265,$t,$utils::GV{'max'},$t,$utils::GV{'max'});
+    $user->numeric(267,$t,$utils::GV{'max'},$t,$utils::GV{'max'});
 }
 sub handle_motd {
     my $user = shift;
-    $user->numeric(375,::conf('server','name'));
-    foreach my $line (split($/,$::GV{'motd'})) {
+    $user->numeric(375,conf('server','name'));
+    foreach my $line (split($/,$utils::GV{'motd'})) {
         $user->numeric(372,$line);
     }
     $user->numeric(376);
@@ -422,14 +423,14 @@ sub handle_nick {
     my @s = split(' ',shift);
     if ($s[1]) {
         return if $s[1] eq $user->nick;
-        if (::validnick($s[1],::conf('limit','nick'),undef)) {
+        if (validnick($s[1],conf('limit','nick'),undef)) {
             if(!user::nickexists($s[1]) || lc($s[1]) eq lc($user->nick)) {
                 my %sent;
                 my @users = $user;
                 foreach my $channel (values %channel::channels) {
                     if ($user->ison($channel)) {
-                        if (::hostmatch($user->fullcloak,keys %{$channel->{'bans'}}) || ::hostmatch($user->fullhost,keys %{$channel->{'bans'}}) &&
-                        !::hostmatch($user->fullhost,keys %{$channel->{'exempts'}})) {
+                        if (hostmatch($user->fullcloak,keys %{$channel->{'bans'}}) || hostmatch($user->fullhost,keys %{$channel->{'bans'}}) &&
+                        !hostmatch($user->fullhost,keys %{$channel->{'exempts'}})) {
                             $user->numeric(345,$s[1],$channel->name), return unless $channel->canspeakwithstatus($user);
                         }
                         $channel->check;
@@ -457,7 +458,7 @@ sub handle_whois {
             $modes .= $_ foreach (keys %{$target->{'mode'}});
             $user->numeric(311,$target->nick,$target->{'ident'},$target->{'cloak'},$target->{'gecos'});
             #>> :server 319 nick targetnick :~#chat @#halp
-            $user->numeric(312,$target->nick,::conf('server','name'),::conf('server','desc'));
+            $user->numeric(312,$target->nick,conf('server','name'),conf('server','desc'));
             $user->numeric(641,$target->nick) if defined $target->{'ssl'};
             $user->numeric(301,$target->nick,$target->{'away'}) if defined $target->{'away'};
             $user->numeric(313,$target->nick) if $target->ismode('o');
@@ -473,7 +474,7 @@ sub handle_whois {
 sub handle_ping {
     my $user = shift;
     my $reason = (split(' ',shift,2))[1];
-    $user->sendserv('PONG '.::conf('server','name').(defined $reason?' '.$reason:''));
+    $user->sendserv('PONG '.conf('server','name').(defined $reason?' '.$reason:''));
 }
 sub handle_mode {
     my ($user,$data) = @_;
@@ -498,7 +499,7 @@ sub handle_privmsgnotice {
     if (uc $s[0] eq 'NOTICE') { $n = 1; }
     my $target = nickexists($s[1]);
     my $channel = channel::chanexists($s[1]);
-    my $msg = ::col((split(' ',$data,3))[2]);
+    my $msg = col((split(' ',$data,3))[2]);
     if ($target) {
         if (defined $s[2]) {
             if ($msg ne '') { 
@@ -518,7 +519,7 @@ sub handle_away {
         $user->numeric(305);
         return;
     }
-    $user->{'away'} = ::col($reason);
+    $user->{'away'} = col($reason);
     $user->numeric(306);
 }
 sub handle_oper {
@@ -528,11 +529,11 @@ sub handle_oper {
         my $oper = $user->canoper($s[1],$s[2]);
         if ($oper) {
             $user->{'oper'} = $oper;
-            my $vhost = ::oper($oper,'vhost');
+            my $vhost = oper($oper,'vhost');
             $user->setcloak($vhost) if defined $vhost;
-            $user->setmode('o'.(::oper($oper,'snotice')?'S':''));
-            ::snotice($user->fullhost.' is now an IRC operator using name '.$oper);
-            ::snotice('user '.$user->nick.' now has oper privs: '.::oper($oper,'privs'));
+            $user->setmode('o'.(oper($oper,'snotice')?'S':''));
+            snotice($user->fullhost.' is now an IRC operator using name '.$oper);
+            snotice('user '.$user->nick.' now has oper privs: '.oper($oper,'privs'));
         } else { $user->numeric(491); }
     } else { $user->numeric(461,'OPER'); }
 }
@@ -543,7 +544,7 @@ sub handle_kill {
         if ($user->can('kill')) {
             my $target = nickexists($s[1]);
             if ($target) {
-                my $reason = ::col((split(' ',$data,3))[2]);
+                my $reason = col((split(' ',$data,3))[2]);
                 $target->quit('Killed ('.$user->nick.' ('.$reason.'))');
             } else { $user->numeric(401,$s[1]); }
         } else { $user->numeric(481); }
@@ -553,7 +554,7 @@ sub handle_join {
     my ($user,$data) = @_;
     my @s = split(' ',$data);
     if (defined($s[1])) {
-        $s[1] = ::col($s[1]);
+        $s[1] = col($s[1]);
         foreach(split(',',$s[1])) {
             my $target = channel::chanexists($_);
             if ($target) {
@@ -587,7 +588,7 @@ sub handle_names {
 sub handle_part {
     my ($user,$data) = @_;
     my @s = split(' ',$data);
-    my $reason = ::col((split(' ',$data,3))[2]);
+    my $reason = col((split(' ',$data,3))[2]);
     if ($s[1]) {
         foreach (split(',',$s[1])) {
             my $channel = channel::chanexists($_);
@@ -603,15 +604,15 @@ sub handle_part {
     } else { $user->numeric(461,'PART'); }
 }
 sub handle_quit {
-    my ($user,$reason) = (shift,::col((split(' ',shift,2))[1]));
+    my ($user,$reason) = (shift,col((split(' ',shift,2))[1]));
     $user->quit('Quit: '.$reason);
 }
 sub handle_rehash {
     my $user = shift;
     if ($user->can('rehash')) {
         (%::config,%::oper,%::kline) = ((),(),());
-        ::snotice($user->nick.' is rehashing server configuration file');
-        ::confparse($::CONFIG);
+        snotice($user->nick.' is rehashing server configuration file');
+        confparse($::CONFIG);
     } else {
         $user->numeric(481);
     }
@@ -621,7 +622,7 @@ sub handle_globops {
     if ($user->can('globops')) {
         my @s = split(' ',$data,2);
         if (defined $s[1]) {
-            ::snotice('GLOBOPS from '.$user->nick.': '.$s[1]);
+            snotice('GLOBOPS from '.$user->nick.': '.$s[1]);
         } else { $user->numeric(461,'GLOBOPS'); }
     } else { $user->numeric(481); }
 }
@@ -632,8 +633,8 @@ sub handle_topic {
         my $channel = channel::chanexists($s[1]);
         if ($channel) {
             if (defined $s[2]) {
-                $s[2] = substr($s[2],0,-(length($s[2])-(::conf('limit','topic')+1))) if (length $s[2] > ::conf('limit','topic'));
-                $channel->settopic($user,::col($s[2]));
+                $s[2] = substr($s[2],0,-(length($s[2])-(conf('limit','topic')+1))) if (length $s[2] > conf('limit','topic'));
+                $channel->settopic($user,col($s[2]));
             } else {
                 $channel->showtopic($user);
             }
@@ -650,7 +651,7 @@ sub handle_kick {
         my $target = nickexists($s[2]);
         if ($channel && $target) {
             my $reason = $target->nick;
-            $reason = ::col($s[3]) if defined $s[3];
+            $reason = col($s[3]) if defined $s[3];
             $user->numeric(482,$channel->name,'half-operator') unless $channel->kick($user,$target,$reason);
         } else { $user->numeric(401,$s[1]); }
     } else { $user->numeric(461,'KICK'); }

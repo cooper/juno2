@@ -3,6 +3,7 @@ package channel;
 use warnings;
 use strict;
 use less 'mem';
+use utils qw(conf hostmatch snotice);
 our %channels;
 sub new {
     my ($user,$name) = @_;
@@ -17,20 +18,20 @@ sub new {
     bless $this;
     $channels{lc($name)} = $this;
     $this->dojoin($user);
-    $this->{'mode'}->{$_} = {time => time, params => undef} foreach (split //, ::conf('channel','automodes'));
-    $this->allsend(':%s MODE %s +%s',0,::conf('server','name'),$name,::conf('channel','automodes')) if ::conf('channel','automodes');
-    ::snotice('channel '.$name.' created by '.$user->fullhost);
+    $this->{'mode'}->{$_} = {time => time, params => undef} foreach (split //, conf('channel','automodes'));
+    $this->allsend(':%s MODE %s +%s',0,conf('server','name'),$name,conf('channel','automodes')) if conf('channel','automodes');
+    snotice('channel '.$name.' created by '.$user->fullhost);
     return $this
 }
 sub dojoin {
     my ($channel,$user) = @_;
     my @users = keys %{$channel->{'users'}};
-        if ((::hostmatch($user->fullcloak,keys %{$channel->{'bans'}}) || ::hostmatch($user->fullhost,keys %{$channel->{'bans'}})) &&
-        (!::hostmatch($user->fullcloak,keys %{$channel->{'exempts'}}) && !::hostmatch($user->fullhost,keys %{$channel->{'exempts'}}))) {
+        if ((hostmatch($user->fullcloak,keys %{$channel->{'bans'}}) || hostmatch($user->fullhost,keys %{$channel->{'bans'}})) &&
+        (!hostmatch($user->fullcloak,keys %{$channel->{'exempts'}}) && !hostmatch($user->fullhost,keys %{$channel->{'exempts'}}))) {
             $user->numeric(474,$channel->name);
             return
         }
-        if ($channel->ismode('i') && !::hostmatch($user->fullcloak,keys %{$channel->{'invexes'}}) && !$channel->{'invites'}->{$user->{'id'}}) {
+        if ($channel->ismode('i') && !hostmatch($user->fullcloak,keys %{$channel->{'invexes'}}) && !$channel->{'invites'}->{$user->{'id'}}) {
             $user->numeric(473,$channel->name);
             return
         }
@@ -81,7 +82,7 @@ sub who {
         (defined $channel->{'ops'}->{$_}?'@':'').
         (defined $channel->{'halfops'}->{$_}?'%':'').
         (defined $channel->{'voices'}->{$_}?'+':'');
-        $user->sendservj(352,$user->nick,$channel->name,$u->{'ident'},$u->{'cloak'},::conf('server','name'),$u->nick,$flags,':0',$u->{'gecos'});
+        $user->sendservj(352,$user->nick,$channel->name,$u->{'ident'},$u->{'cloak'},conf('server','name'),$u->nick,$flags,':0',$u->{'gecos'});
     }
 }
 sub check {
@@ -89,7 +90,7 @@ sub check {
     my @c = keys %{$channel->{'users'}};
     if($#c < 0) {
         delete $channels{lc($channel->name)};
-        ::snotice('dead channel: '.$channel->name)
+        snotice('dead channel: '.$channel->name)
     }
 }
 sub has {
@@ -160,7 +161,7 @@ sub handlemode {
         my ($state,$cstate,$i,$failed) = (1,1,1,0);
         my (@par,@final);
         foreach (split //,$s[0]) {
-            last if $i > ::conf('limit','chanmodes');
+            last if $i > conf('limit','chanmodes');
             $i++ if $_ !~ m/(\+|-)/; 
             given($_) {
                 when('+') {
@@ -311,7 +312,7 @@ sub settopic {
         $channel->{'topic'} = {
             'topic' => $topic,
             'time' => time,
-            'setby' => (::conf('main','fullmasktopic')?$user->fullcloak:$user->nick)
+            'setby' => (conf('main','fullmasktopic')?$user->fullcloak:$user->nick)
         };
         $channel->allsend(':%s TOPIC %s :%s',0,$user->fullcloak,$channel->name,$topic)
     } else {
@@ -329,11 +330,11 @@ sub privmsgnotice {
     my ($channel,$user,$type,$msg) = @_;
     if (($channel->ismode('n') && !$user->ison($channel)) ||
     ($channel->ismode('m') && !$channel->canspeakwithstatus($user)) ||
-    ((::hostmatch($user->fullcloak,keys %{$channel->{'bans'}}) || 
-    ::hostmatch($user->fullhost,keys %{$channel->{'bans'}}) ||
-    ::hostmatch($user->fullcloak,keys %{$channel->{'mutes'}}) ||
-    ::hostmatch($user->fullhost,keys %{$channel->{'mutes'}})) && 
-    !$channel->canspeakwithstatus($user) && !::hostmatch($user->fullcloak,keys %{$channel->{'exempts'}}))) {
+    ((hostmatch($user->fullcloak,keys %{$channel->{'bans'}}) || 
+    hostmatch($user->fullhost,keys %{$channel->{'bans'}}) ||
+    hostmatch($user->fullcloak,keys %{$channel->{'mutes'}}) ||
+    hostmatch($user->fullhost,keys %{$channel->{'mutes'}})) && 
+    !$channel->canspeakwithstatus($user) && !hostmatch($user->fullcloak,keys %{$channel->{'exempts'}}))) {
         if ($channel->ismode('z')) {
             $channel->opsend(':'.$user->fullcloak.' '.join(' ',$type,$channel->name,':'.$msg),$user);
             return 1
@@ -463,7 +464,7 @@ sub doauto {
     foreach (keys %{$channel->{'autoops'}}) {
         my @s = split(':',$_,2);
         next if $done{$s[0]};
-        if (::hostmatch($user->fullcloak,$s[1]) || ::hostmatch($user->fullhost,$s[1])) {
+        if (hostmatch($user->fullcloak,$s[1]) || hostmatch($user->fullhost,$s[1])) {
             $modes .= $s[0];
             $done{$s[0]} = 1;
             push(@pars,$user->nick);
@@ -482,7 +483,7 @@ sub doauto {
             }
         }
     }
-    $channel->allsend(':%s MODE %s +%s %s',0,::conf('server','name'),$channel->name,$modes,join(' ',@pars)) unless $modes eq '';
+    $channel->allsend(':%s MODE %s +%s %s',0,conf('server','name'),$channel->name,$modes,join(' ',@pars)) unless $modes eq '';
 }
 sub canAmode {
     my ($channel,$user,$Amode) = @_;

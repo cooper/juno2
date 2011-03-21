@@ -122,6 +122,7 @@ add a KLINE command and store K-Lines in a database of some sort
 add a ZLINE command and store Z-Lines in a database of some sort
 fix bug: x can be set/unset even if cloaking is disabled
 make the modules be (un)loaded on rehash
+bug: nick changes are sent twice
 
 user commands
 -----------------------
@@ -206,6 +207,7 @@ QUIT
     The server acknowledges this by sending an ERROR message to the client.
         Parameters: <quit message>
 PART
+channel names may not contain ASCII character 7
     The PART command is used to leave a channel.
     The server will reply with a numeric error if the channel is invalid.
         Parameters: <channel>[,<channel>,...] <part message>
@@ -344,4 +346,4 @@ globops - send globops to all opers
     The kill flag grants use of the GLOBOPS command to an IRC operator.
 
 * unfinished
-** LOl!OL!OL!OL!
+** (this is just a joke; don't be alarmed)

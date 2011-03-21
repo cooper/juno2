@@ -3,6 +3,7 @@ package handle;
 use warnings;
 use strict;
 use less 'mem';
+use utils qw/col validnick conf/;
 sub new {
     my $user = user::lookup(shift);
     my $all = shift;
@@ -18,7 +19,7 @@ sub new {
         } else {
             if (uc($s[0]) eq 'NICK') {
                 if ($s[1]) {
-                    if (::validnick($s[1],::conf('limit','nick'),undef)) {
+                    if (validnick($s[1],conf('limit','nick'),undef)) {
                         unless(user::nickexists($s[1])) {
                             $user->{'nick'} = $s[1];
                             if (exists $user->{'ident'}) {
@@ -30,8 +31,8 @@ sub new {
                 } else { $user->sendnum(431,':No nickname given'); }
             } elsif (uc($s[0]) eq 'USER') { 
                 if (exists $s[4]) {
-                    if (::validnick($s[1],::conf('limit','ident'),1)) {
-                        $user->{'gecos'} = ::col((split(' ',$data,5))[4]);
+                    if (validnick($s[1],conf('limit','ident'),1)) {
+                        $user->{'gecos'} = col((split(' ',$data,5))[4]);
                         $user->{'ident'} = '~'.$s[1];
                         if (exists $user->{'nick'}) {
                             $user->{'ready'} = 1;

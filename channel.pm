@@ -336,6 +336,10 @@ sub privmsgnotice {
     hostmatch($user->fullhost,keys %{$channel->{'mutes'}})) && 
     !$channel->canspeakwithstatus($user) && !hostmatch($user->fullcloak,keys %{$channel->{'exempts'}}))) {
         if ($channel->ismode('z')) {
+            if (!$user->ison($channel)) {
+                $user->numeric(404,$channel->name);
+                return
+            }
             $channel->opsend(':'.$user->fullcloak.' '.join(' ',$type,$channel->name,':'.$msg),$user);
             return 1
         } else {
@@ -375,7 +379,7 @@ sub handlemaskmode {
             $modename = 'invexes'
         } when('A') {
             $modename = 'autoops';
-            return unless $channel->canAmode($user,(split(':',$mask))[0])
+            return unless $channel->canAmode($user,(split ':', $mask)[0])
         } when('e') {
             $modename = 'exempts'
         }
@@ -462,7 +466,7 @@ sub doauto {
     my($channel,$user) = @_;
     my ($modes,@pars,%done) = ('',(),());
     foreach (keys %{$channel->{'autoops'}}) {
-        my @s = split(':',$_,2);
+        my @s = split ':', $_, 2;
         next if $done{$s[0]};
         if (hostmatch($user->fullcloak,$s[1]) || hostmatch($user->fullhost,$s[1])) {
             $modes .= $s[0];

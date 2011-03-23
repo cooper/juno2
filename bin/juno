@@ -17,77 +17,67 @@ use handle;
 use channel;
 use utils qw(fatal conf);
 local $0 = 'juno';
-open my $versionfile, '<', $DIR.'/etc/version' or fatal("Couldn't read version file");
-our $VERSION = <$versionfile>;
-close $versionfile;
-$VERSION =~ s/\s+$//;
-our $TIME = time;
-our $CONFIG = $DIR.'/etc/ircd.conf';
-my ($NOFORK,$PID) = (0,0);
-our $ACCEPTING = 1;
 $SIG{$_} = \&sigdie foreach 'TERM','INT','KILL';
 $SIG{'HUP'} = \&sighup;
-our (%config,%oper,%kline,%zline,%listen,%outbuffer,%inbuffer,%timer);
-my (%listensockets,%SSL,@sel,$ipv6);
+our $VERSION = &getversion;
+our $TIME = time;
+our $CONFIG = $DIR.'/etc/ircd.conf';
+my ($NOFORK, $PID) = (0,0);
+our $ACCEPTING = 1;
+our (%config, %oper, %kline, %zline, %listen, %outbuffer, %inbuffer, %timer);
+my (%listensockets, %SSL, @sel, $ipv6);
 confparse($CONFIG);
+our $id = conf('server','id');
 &loadrequirements;
 &createsockets;
-unless ($NOFORK) {
+if (!$NOFORK) {
     say 'Becoming a daemon...';
     open STDIN, '/dev/null' or fatal('Can\'t read /dev/null: '.$!);
-    open STDOUT, '>/dev/null';
-    open STDERR, '>/dev/null';
-    open my $pidfile,'>', $DIR.'/etc/juno.pid' or fatal('Could not write etc/juno.pid');
+    open STDOUT, '>/dev/null' or fatal('Can\'t write /dev/null: '.$!);
+    open STDERR, '>/dev/null' or fatal('Can\'t write /dev/null: '.$!);
+    open my $pidfile, '>', $DIR.'/etc/juno.pid' or fatal('Could not write etc/juno.pid');
     $PID = fork;
     say $pidfile $PID if $PID != 0;
-    close $pidfile;
+    close $pidfile
 }
-exit if $PID != 0;
+exit unless $PID == 0;
 &POSIX::setsid;
-our $id = conf('server','id');
 fatal('not listening') if $#sel < 0;
-our $select = new IO::Select(@sel);
-for(;;) {
+our $select = new IO::Select @sel;
+for (;;) {
     my $time;
     foreach my $client ($select->can_read(conf('main','timeout'))) {
+        my $user = user::lookup($client);
         $timer{$client} = 0 unless $timer{$client};
-        if ($listensockets{$client}) {
-            user::new(($SSL{$client}?1:0),$client->accept);
+        if (exists $listensockets{$client}) {
+            user::new(($SSL{$client}?1:0),$client->accept)
         } else {
-            my $data;
             $time = time;
             $timer{$client} = $time if $timer{$client} < $time;
-            my $got = $client->sysread($data,POSIX::BUFSIZ);
-            if ($got) {
-                $inbuffer{$client} .= $data;
+            if (sysread $client, my $data, POSIX::BUFSIZ) {
+                $inbuffer{$client} .= $data
             } else {
-                user::lookup($client)->quit('Read error',1);
-                next
+                $user->quit('Connection closed',1);
             }
         }
-        my ($theline,$therest);
-        if ($inbuffer{$client}) {
-            if (!user::lookup($client)) {
-                delete $inbuffer{$client};
-                next
-            }
-            while(($timer{$client}-conf('flood','lines') <= $time) && (($theline,$therest) = $inbuffer{$client} =~ m/([^\n]*)\n(.*)/s)) {
-                $inbuffer{$client} = $therest;
-                $theline =~ s/\r$//;
-                handle::new($client,$theline);
-                $timer{$client}++;
-            }
-            if (length $inbuffer{$client} > conf('flood','bytes')) {
-                user::lookup($client)->quit(conf('flood','msg'));
-            }
+        delete $inbuffer{$client}, next unless $user;
+        next unless exists $inbuffer{$client};
+        my ($theline, $therest);
+        while (($timer{$client}-conf('flood','lines') <= $time) &&
+          (($theline, $therest) = $inbuffer{$client} =~ m/([^\n]*)\n(.*)/s)) {
+            $inbuffer{$client} = $therest;
+            $theline =~ s/\r$//;
+            handle::new($client, $theline);
+            $timer{$client}++
         }
+        $user->quit(conf('flood','msg')) if length $inbuffer{$client} > conf('flood','bytes')
     }
     foreach my $client ($select->can_write(0)) {
         next unless $outbuffer{$client};
-        my $sent = $client->syswrite($outbuffer{$client},POSIX::BUFSIZ);
+        my $sent = syswrite $client, $outbuffer{$client}, POSIX::BUFSIZ;
         next unless defined $sent;
         if ($sent <= length $outbuffer{$client} || $! == POSIX::EWOULDBLOCK) {
-            substr($outbuffer{$client},0,$sent) = '';
+            (substr $outbuffer{$client}, 0, $sent) = '';
             delete $outbuffer{$client} unless length $outbuffer{$client}
         } else {
             user::lookup($client)->quit('Write error',1);
@@ -95,102 +85,102 @@ for(;;) {
         }
     }
     foreach my $client (values %user::connection) {
-        if ((time-$client->{'ping'}) > conf('ping','freq')) {
-            $client->send('PING :'.conf('server','name'));
+        if ((time-$client->{'ping'}) > conf('ping', 'freq')) {
+            $client->send('PING :'.conf('server', 'name'));
             $client->{'ping'} = time;
-            $client->quit('Registration timeout') unless $client->{'ready'};
+            $client->quit('Registration timeout') unless $client->{'ready'}
         }
-        if (time-$client->{'last'} > conf('ping','timeout')) {
-            my $ping = sprintf(conf('ping','msg'),time-$client->{'last'});
-            $client->quit($ping,undef);
+        if ((time-$client->{'last'}) > conf('ping', 'timeout')) {
+            my $ping = sprintf conf('ping', 'msg'), (time-$client->{'last'});
+            $client->quit($ping, undef)
         }
     }
 }
 sub sendpeer {
-    my $client = shift;
-    $outbuffer{$client} .= "$_\n" foreach @_;
+    my $peer = shift;
+    $outbuffer{$peer} .= "$_\n" foreach @_
 }
 sub sigdie {
     say 'Preparing to exit...';
     $_->quit('Server shutdown'), say '    Removing user '.$_->{'id'} foreach values %user::connection;
     say 'Deleting PID file.';
     unlink $DIR.'/etc/juno.pid' or fatal('Couldn\'t delete PID file.');
-    fatal('Exiting by signal.');
+    fatal('Exiting by signal.')
 }
 sub sighup {
     snotice('Receieved SIGHUP, rehashing server configuration file.');
     say 'Receieved SIGHUP, rehashing server configuration file.';
-    confparse($CONFIG);
+    confparse($CONFIG)
 }
 sub confparse {
     my $file = shift;
     say 'Loading configuration: '.$file;
-    open(my $CONF,'<',$file) or fatal('Cannot open configuration file: '.$file);
-    my @sections;
-    (%kline,%zline,%config,%oper) = ((),(),(),());
+    open my $CONF, '<', $file or fatal('Cannot open configuration file: '.$file);
+    undef %kline; undef %zline; undef %config; undef %oper;
     delete $utils::GV{'motd'};
+    my @sections;
     while (my $line = <$CONF>) {
         $line =~ s/\t//g;
         $line =~ s/^\s+//;
         $line =~ s/\s+$//;
         next if $line eq '';
         next if $line =~ m/^#/;
-        my @s = split(' ',$line,2);
+        my @s = split / /, $line, 2;
         given($s[0]) {
             when('sec') {
-                @sections = ($s[1],0,0,0,0);
+                @sections = ($s[1],0,0,0,0)
             } when('inc') {
                 @sections = (0,0,0,0,0);
-                confparse($s[1]);
+                confparse($s[1])
             } when('oper') {
-                @sections = (0,$s[1],0,0,0);
+                @sections = (0,$s[1],0,0,0)
             } when('kline') {
-                @sections = (0,0,$s[1],0,0);
+                @sections = (0,0,$s[1],0,0)
             } when('listen') {
-                @sections = (0,0,0,$s[1],0);
+                @sections = (0,0,0,$s[1],0)
             } when('zline') {
-                @sections = (0,0,0,0,$s[1]);
+                @sections = (0,0,0,0,$s[1])
             } default {
                 if ($sections[0]) {
-                    $config{$sections[0]}{$s[0]} = $s[1];
+                    $config{$sections[0]}{$s[0]} = $s[1]
                 } elsif ($sections[1]) {
-                    $oper{$sections[1]}{$s[0]} = $s[1];
+                    $oper{$sections[1]}{$s[0]} = $s[1]
                 } elsif ($sections[2]) {
-                    $kline{$sections[2]}{$s[0]} = $s[1];
+                    $kline{$sections[2]}{$s[0]} = $s[1]
                 } elsif ($sections[3]) {
-                    $listen{$sections[3]}{$s[0]} = $s[1];
+                    $listen{$sections[3]}{$s[0]} = $s[1]
                 } elsif ($sections[4]) {
-                    $zline{$sections[4]}{$s[0]} = $s[1];
-                } else { fatal('no section set in configuration'); }
+                    $zline{$sections[4]}{$s[0]} = $s[1]
+                } else {
+                    fatal('no section set in configuration')
+                }
             }
         }
     }
     usercheck: foreach my $user (values %user::connection) {
         foreach (keys %zline) {
-            if (hostmatch($user->{'ip'},$_)) {
+            if (hostmatch($user->{'ip'}, $_)) {
                 $user->quit('Z-Lined: '.$zline{$_}{'reason'},undef,'Z-Lined'.(conf('main','showzline')?': '.$zline{$_}{'reason'}:''));
-                next usercheck;
+                next usercheck
             }
         }
-        $user->checkkline;
+        $user->checkkline
     }
     &loadmotd;
-    close $CONF;
+    close $CONF
 }
 sub loadmotd {
     say 'Loading MOTD: '.$DIR.'/'.conf('server','motd');
     open my $MOTD, $DIR.'/'.conf('server','motd') or $utils::GV{'motd'} = 'MOTD file is missing.', return; 
-    while (my $line = <$MOTD>) {
-        $utils::GV{'motd'} .= $line;
-    }
+    $utils::GV{'motd'} .= $_ while <$MOTD>;
     close $MOTD;
-    return 1;
+    return 1
 }
 sub createsockets {
     say 'Opening client sockets...';
     foreach my $name (keys %listen) {
         my $socket;
-        foreach my $port (split(' ',$listen{$name}{'port'})) {
+        foreach my $port (split / /, $listen{$name}{'port'}) {
             last if $port == 0;
             say "    Listening on [$name]:$port";
             if ($ipv6) {
@@ -199,19 +189,19 @@ sub createsockets {
                     ReuseAddr => 1,
                     LocalPort => $port,
                     LocalAddr => $name
-                ) or fatal('Could not listen: block ['.$name.']:'.$port.': '.$!);
+                ) or fatal('Could not listen: block ['.$name.']:'.$port.': '.$!)
             } else {
                 $socket = IO::Socket::INET->new(
                     Listen => 1,
                     ReuseAddr => 1,
                     LocalPort => $port,
                     LocalAddr => $name
-                ) or fatal('Could not listen: block '.$name.':'.$port.': '.$!);
+                ) or fatal('Could not listen: block '.$name.':'.$port.': '.$!)
             }
-            push(@sel,$socket) if $socket;
-            $listensockets{$socket} = $port if $socket;
+            push@sel, $socket if $socket;
+            $listensockets{$socket} = $port if $socket
         }
-        foreach my $port (split(' ',$listen{$name}{'ssl'})) {
+        foreach my $port (split / /, $listen{$name}{'ssl'}) {
             last if $port == 0;
             say "    Listening SSL on [$name]:$port";
             $socket = IO::Socket::SSL->new(
@@ -221,11 +211,11 @@ sub createsockets {
                 LocalAddr => $name,
                 SSL_cert_file => conf('ssl','cert'),
                 SSL_key_file => conf('ssl','key')
-                ) or fatal('Could not listen (SSL): block '.$name.':'.$port.': '.$!);
+            ) or fatal('Could not listen (SSL): block '.$name.':'.$port.': '.$!);
             if ($socket) {
-                push(@sel,$socket);
+                push @sel, $socket;
                 $listensockets{$socket} = $port;
-                $SSL{$socket} = 1;
+                $SSL{$socket} = 1
             }
         }
     }
@@ -235,7 +225,7 @@ sub loadrequirements {
     if (conf('enabled','ipv6')) {
         say '    Loading IPv6 module';
         $ipv6 = 1;
-        require IO::Socket::INET6 or fatal('Could not load IPv6 module. (Do you have IO::Socket::INET6 installed?)');
+        require IO::Socket::INET6 or fatal('Could not load IPv6 module. (Do you have IO::Socket::INET6 installed?)')
     }
     if (conf('enabled','ssl')) {
         say '    Loading SSL module';
@@ -252,5 +242,12 @@ sub loadrequirements {
         Digest::SHA->import('sha256_hex')
     }
     say 'All required modules have been loaded successfully.'
+}
+sub getversion {
+    open my $versionfile, '<', $DIR.'/etc/version' or fatal("Couldn't read version file");
+    my $version = <$versionfile>;
+    close $versionfile;
+    $version =~ s/\s+$//;
+    return $version
 }
 1

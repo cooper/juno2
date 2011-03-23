@@ -8,8 +8,8 @@ $utils::GV{'cid'} = 0;
 $utils::GV{'max'} = 0;
 our %connection;
 our %commands = (
-    PONG => sub{},
-    USER => sub{ shift->numeric(462); },
+    PONG => sub {},
+    USER => sub { shift->numeric(462) },
     LUSERS => \&handle_lusers,
     MOTD => \&handle_motd,
     NICK => \&handle_nick,
@@ -139,7 +139,7 @@ sub new {
 sub setmode {
     my ($user,$modes,$a) = @_;
     $user->send(':'.$user->nick.' MODE '.$user->nick.' :+'.$modes) unless $a;
-    foreach (split(//,$modes)) {
+    foreach (split //, $modes) {
         $user->{'mode'}->{$_} = time;
         next if $_ =~ m/i/;
         if ($_ eq 'x' && conf('enabled','cloaking')) {
@@ -155,7 +155,7 @@ sub ismode {
 sub unsetmode {
     my ($user,$modes,$a) = @_;
     $user->send(':'.$user->nick.' MODE '.$user->nick.' :-'.$modes) unless $a;
-    foreach (split(//,$modes)) {
+    foreach (split //, $modes) {
         delete $user->{'mode'}->{$_};
         next if $_ =~ m/(i|S)/;
         if ($_ eq 'x' && conf('enabled','cloaking')) {
@@ -170,7 +170,7 @@ sub hmodes {
     my ($user,$modes) = @_;
     return unless $modes;
     my ($state,$p,$m) = (1,'','',());
-    foreach (split(//,$modes)) {
+    foreach (split //, $modes) {
         if ($_ eq '+') { $state = 1; next; }
         elsif ($_ eq '-') { $state = 0; next; }
         next if $_ =~ m/Z/; # modes that cannot be unset
@@ -204,7 +204,7 @@ sub setcloak {
 sub host2cloak {
     my @pieces = ();
     my $sep = shift;
-    foreach (split(($sep?':':'\.'),shift)) {
+    foreach (split ($sep?':':'\.'), shift) {
         my $part = Digest::SHA::sha1_hex($_,conf('cloak','salt'),$#pieces);
         push(@pieces,($part=~m/....../g)[0]);
     }
@@ -228,7 +228,7 @@ sub can {
     my $user = shift;
     my $priv = shift;
     return unless defined $user->{'oper'};
-    foreach (split(' ',oper($user->{'oper'},'privs'))) {
+    foreach (split ' ', oper($user->{'oper'},'privs')) {
         return 1 if $_ eq $priv;
     }
     return;
@@ -352,7 +352,7 @@ sub canoper {
     my ($user,$oper,$password) = @_;
     return unless exists $::oper{$oper};
     if (oper($oper,'password') eq crypt($password,oper($oper,'salt'))) {
-                return $oper if hostmatch($user->fullhost,split(' ',oper($oper,'host')))
+                return $oper if hostmatch($user->fullhost,(split ' ', oper($oper,'host')))
     }
     return
 }
@@ -413,14 +413,14 @@ sub handle_lusers {
 sub handle_motd {
     my $user = shift;
     $user->numeric(375,conf('server','name'));
-    foreach my $line (split($/,$utils::GV{'motd'})) {
+    foreach my $line (split $/, $utils::GV{'motd'}) {
         $user->numeric(372,$line);
     }
     $user->numeric(376);
 }
 sub handle_nick {
     my $user = shift;
-    my @s = split(' ',shift);
+    my @s = split / /, shift;
     if ($s[1]) {
         return if $s[1] eq $user->nick;
         if (validnick($s[1],conf('limit','nick'),undef)) {
@@ -450,7 +450,7 @@ sub handle_nick {
 }
 sub handle_whois {
     my $user = shift;
-    my $nick = (split(' ',shift))[1];
+    my $nick = (split ' ', shift)[1];
     my $modes = '';
     if ($nick) {
         my $target = nickexists($nick);
@@ -473,19 +473,19 @@ sub handle_whois {
 }
 sub handle_ping {
     my $user = shift;
-    my $reason = (split(' ',shift,2))[1];
+    my $reason = (split ' ', shift, 2)[1];
     $user->sendserv('PONG '.conf('server','name').(defined $reason?' '.$reason:''));
 }
 sub handle_mode {
     my ($user,$data) = @_;
-    my @s = split(' ',$data);
+    my @s = split / /, $data;
     if (defined($s[1])) {
         if (lc($s[1]) eq lc($user->nick)) {
             $user->hmodes($s[2]);
         } else {
             my $target = channel::chanexists($s[1]);
             if ($target) {
-                $target->handlemode($user,(split(' ',$data,3))[2]);
+                $target->handlemode($user,(split ' ', $data, 3)[2]);
             } else {
                 $user->numeric(401,$s[1]);
             }
@@ -495,11 +495,11 @@ sub handle_mode {
 sub handle_privmsgnotice {
     my ($user,$data) = @_;
     my $n = 0;
-    my @s = split(' ',$data);
+    my @s = split / /, $data;
     if (uc $s[0] eq 'NOTICE') { $n = 1; }
     my $target = nickexists($s[1]);
     my $channel = channel::chanexists($s[1]);
-    my $msg = col((split(' ',$data,3))[2]);
+    my $msg = col((split ' ', $data, 3)[2]);
     if ($target) {
         if (defined $s[2]) {
             if ($msg ne '') { 
@@ -513,7 +513,7 @@ sub handle_privmsgnotice {
     }
 }
 sub handle_away {
-    my ($user,$reason) = (shift,(split(' ',shift,2))[1]);
+    my ($user,$reason) = (shift,(split ' ', shift, 2)[1]);
     if (defined $user->{'away'}) {
         $user->{'away'} = undef;
         $user->numeric(305);
@@ -524,7 +524,7 @@ sub handle_away {
 }
 sub handle_oper {
     my ($user,$data) = @_;
-    my @s = split(' ',$data);
+    my @s = split / /, $data;
     if (defined $s[2]) {
         my $oper = $user->canoper($s[1],$s[2]);
         if ($oper) {
@@ -539,12 +539,12 @@ sub handle_oper {
 }
 sub handle_kill {
     my ($user,$data) = @_;
-    my @s = split(' ',$data);
+    my @s = split / /, $data;
     if (defined $s[2]) {
         if ($user->can('kill')) {
             my $target = nickexists($s[1]);
             if ($target) {
-                my $reason = col((split(' ',$data,3))[2]);
+                my $reason = col((split ' ',$data,3)[2]);
                 $target->quit('Killed ('.$user->nick.' ('.$reason.'))');
             } else { $user->numeric(401,$s[1]); }
         } else { $user->numeric(481); }
@@ -552,10 +552,10 @@ sub handle_kill {
 }
 sub handle_join {
     my ($user,$data) = @_;
-    my @s = split(' ',$data);
+    my @s = split ' ', $data;
     if (defined($s[1])) {
         $s[1] = col($s[1]);
-        foreach(split(',',$s[1])) {
+        foreach(split ',', $s[1]) {
             my $target = channel::chanexists($_);
             if ($target) {
                 $target->dojoin($user) unless $user->ison($target);
@@ -570,7 +570,7 @@ sub handle_join {
     } else { $user->numeric(461,'JOIN'); }
 }
 sub handle_who {
-    my ($user,$query) = (shift,(split(' ',shift))[1]);
+    my ($user,$query) = (shift,(split ' ',shift)[1]);
     my $target = channel::chanexists($query);
     if ($target) {
         $target->who($user);
@@ -579,7 +579,7 @@ sub handle_who {
 }
 sub handle_names {
     my $user = shift;
-    foreach (split(',',(split(' ',shift))[1])) { 
+    foreach (split ',', (split ' ',shift)[1]) {
         my $target = channel::chanexists($_);
         $target->names($user) if $target;
         $user->numeric(366,$_) unless $target;
@@ -587,10 +587,10 @@ sub handle_names {
 }
 sub handle_part {
     my ($user,$data) = @_;
-    my @s = split(' ',$data);
-    my $reason = col((split(' ',$data,3))[2]);
+    my @s = split / /, $data;
+    my $reason = col((split ' ', $data,3)[2]);
     if ($s[1]) {
-        foreach (split(',',$s[1])) {
+        foreach (split ',', $s[1]) {
             my $channel = channel::chanexists($_);
             if ($channel) {
                 if ($user->ison($channel)) {
@@ -604,7 +604,7 @@ sub handle_part {
     } else { $user->numeric(461,'PART'); }
 }
 sub handle_quit {
-    my ($user,$reason) = (shift,col((split(' ',shift,2))[1]));
+    my ($user,$reason) = (shift,col((split ' ', shift, 2)[1]));
     $user->quit('Quit: '.$reason);
 }
 sub handle_rehash {
@@ -620,7 +620,7 @@ sub handle_rehash {
 sub handle_globops {
     my ($user,$data) = @_;
     if ($user->can('globops')) {
-        my @s = split(' ',$data,2);
+        my @s = split / /, $data, 2;
         if (defined $s[1]) {
             snotice('GLOBOPS from '.$user->nick.': '.$s[1]);
         } else { $user->numeric(461,'GLOBOPS'); }
@@ -628,7 +628,7 @@ sub handle_globops {
 }
 sub handle_topic {
     my ($user,$data) = @_;
-    my @s = split(' ',$data,3);
+    my @s = split / /, $data, 3;
     if (defined $s[1]) {
         my $channel = channel::chanexists($s[1]);
         if ($channel) {
@@ -645,7 +645,7 @@ sub handle_topic {
 }
 sub handle_kick {
     my($user,$data) = @_;
-    my @s = split(' ',$data,4);
+    my @s = split / /, $data, 4;
     if (defined $s[2]) {
         my $channel = channel::chanexists($s[1]);
         my $target = nickexists($s[2]);
@@ -657,31 +657,43 @@ sub handle_kick {
     } else { $user->numeric(461,'KICK'); }
 }
 sub handle_invite {
-    my($user,@s) = (shift,split(' ',shift));
+    my($user,@s) = (shift,(split ' ', shift));
     if (defined $s[2]) {
         my $someone = nickexists($s[1]);
         my $somewhere = channel::chanexists($s[2]);
-        if ($someone) {
-            return if $someone == $user;
-            if ($somewhere) {
-                if ($user->ison($somewhere)) {
-                    if ($somewhere->basicstatus($user)) {
-                        unless ($someone->ison($somewhere)) {
-                            $somewhere->{'invites'}->{$someone->{'id'}} = time;
-                            $someone->sendfrom($user->nick,' INVITE '.$someone->nick.' :'.$somewhere->name);
-                            $user->numeric(341,$someone->nick,$somewhere->name);
-                        } else { $user->numeric(433,$someone->nick,$somewhere->name); }
-                    } else { $user->numeric(482,$somewhere->name,'half-operator'); }
-                } else { $user->numeric(422,$somewhere->name); }
-            } else { $user->numeric(401,$s[2]); }
-        } else { $user->numeric(401,$s[1]); }
-    } else { $user->numeric(461,'INVITE'); }
+        if (!$someone) {
+            $user->numeric(401,$s[1]);
+            return
+        }
+        return if $someone == $user;
+        if (!$somewhere) {
+            $user->numeric(401,$s[2]); 
+            return
+        }
+        if (!$user->ison($somewhere)) {
+            $user->numeric(422,$somewhere->name);
+            return
+        }
+        if (!$somewhere->basicstatus($user)) {
+            $user->numeric(482,$somewhere->name,'half-operator');
+            return
+        }
+        if ($someone->ison($somewhere)) {
+            $user->numeric(433,$someone->nick,$somewhere->name);
+            return
+        }
+        $somewhere->{'invites'}->{$someone->{'id'}} = time;
+        $someone->sendfrom($user->nick,' INVITE '.$someone->nick.' :'.$somewhere->name);
+        $user->numeric(341,$someone->nick,$somewhere->name)
+    } else {
+        $user->numeric(461,'INVITE')
+    }
 }
 sub handle_list {
-    my($user,@s) = (shift,split(' ',shift));
+    my($user,@s) = (shift,(split ' ', shift));
     $user->numeric(321);
     if ($s[1]) {
-        foreach(split(',',$s[1])) {
+        foreach (split ',' ,$s[1]) {
             my $channel = channel::chanexists($_);
             if ($channel) {
                 $channel->list($user);
@@ -695,13 +707,13 @@ sub handle_list {
     $user->numeric(323);
 }
 sub handle_ison {
-    my($user,@s,@final) = (shift,split(' ',shift),());
+    my($user,@s,@final) = (shift,(split ' ', shift),());
     if (defined $s[1]) {
         foreach (@s[1..$#s]) {
             my $u = nickexists($_);
             push(@final,$u->nick) if $u;
         }
-        $user->numeric(303,join(' ',@final));
+        $user->numeric(303,(join ' ', @final));
     } else { $user->numeric(461,'ISON'); }
 }
 1

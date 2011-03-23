@@ -7,12 +7,12 @@ use utils qw/col validnick conf/;
 sub new {
     my $user = user::lookup(shift);
     my $all = shift;
-    foreach my $data (split("\n",$all)) {
+    foreach my $data (split "\n" ,$all) {
         $data =~ s/\s+$//;
         $data =~ s/^\s+//;
         return if $data eq '';
         ($user->{'ping'},$user->{'last'}) = (time,time);
-        my @s = split(' ',$data);
+        my @s = split / /, $data;
         $user->{'idle'} = time unless $s[0] =~ m/^(PONG|PING)$/i;
         if ($user->{'ready'}) {
             $user->handle($s[0],$data);
@@ -32,7 +32,7 @@ sub new {
             } elsif (uc($s[0]) eq 'USER') { 
                 if (exists $s[4]) {
                     if (validnick($s[1],conf('limit','ident'),1)) {
-                        $user->{'gecos'} = col((split(' ',$data,5))[4]);
+                        $user->{'gecos'} = col((split / /, $data, 5)[4]);
                         $user->{'ident'} = '~'.$s[1];
                         if (exists $user->{'nick'}) {
                             $user->{'ready'} = 1;

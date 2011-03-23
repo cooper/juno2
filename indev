@@ -121,7 +121,7 @@ VERSIONING
             Fixed main file to where API is not required (defined by enabled:API).
             Added API timers and a timertest module for an example.
         6. 2011-03-06
-            A LOT of misc. cleanup, perhaps the largest cleanup in juno's history. (this is bound to result in future bugs).
+            A LOT of misc. cleanup, perhaps the largest cleanup in juno's history. (this is bound to result in future bugs.)
             Added --stop argument and --restart argument.
             Added TERM signal handler.
         7. 2011-03-06
@@ -150,3 +150,8 @@ VERSIONING
         2. 2011-03-20
             Moved miscellaneous functions to utils package rather than main.
             Discovered bug: nick changes are sent twice if to the user changing his nick if he is in a channel with himself. (or at least I think that's the problem.)
+            "Read error" -> "Connection closed"
+        3. 2011-03-20
+            Misc. Cleanup, mostly in the invite handler. Also changed split()s.
+            Majorly cleaned up bin/juno - just a cleanliness check.
+            Channel mode z no longer allows users to override channel mode n; users must be in the channel to be affected by this mode.

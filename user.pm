@@ -10,6 +10,7 @@ our %connection;
 our %commands = (
     PONG => sub {},
     USER => sub { shift->numeric(462) },
+    SACONNECT => sub { return },
     LUSERS => \&handle_lusers,
     MOTD => \&handle_motd,
     NICK => \&handle_nick,

@@ -251,4 +251,4 @@ VERSIONING
 
         6. March 24, 2011
 
-            * 
+            * Fixed bug where user mode x can be set/unset even if cloaking is not enabled.

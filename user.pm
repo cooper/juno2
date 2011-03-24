@@ -171,12 +171,14 @@ sub unsetmode {
 sub hmodes {
     my ($user,$modes) = @_;
     return unless $modes;
+    my %normal = (i => 1);
+    $normal{'x'} = 1 if conf('enabled','cloaking');
     my ($state,$p,$m) = (1,'','',());
     foreach (split //, $modes) {
         if ($_ eq '+') { $state = 1; next; }
         elsif ($_ eq '-') { $state = 0; next; }
         next if $_ =~ m/Z/; # modes that cannot be unset
-        if ($_ =~ m/(i|x)/) { # normal modes
+        if ($normal{$_}) { # normal modes
             $user->unsetmode($_) if $state == 0;
             $user->setmode($_) if $state == 1;
         } elsif ($_ =~ m/(o|S)/) { # oper-only modes

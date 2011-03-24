@@ -35,11 +35,6 @@ sec main
   showzline 0
   # show full mask in topic "set by"
   fullmasktopic 0
-  # modules to be loaded on startup, separated by comma.
-  # (relative to modules/ dir)
-  # 0 disables.
-  modules 0
-  #modules helloworld.pm,somethingelse.pm
 
 sec enabled
   # enable SSL (requires IO::Socket::SSL)
@@ -50,8 +45,6 @@ sec enabled
   ipv6 1
   # enable cloaking (requires Digest::SHA (core))
   cloaking 0
-  # module API (requires Class::Unload)
-  API 0
 
 sec ssl
   #### ignore this block if you have SSL disabled ###

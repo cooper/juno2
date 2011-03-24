@@ -155,4 +155,5 @@ VERSIONING
             Misc. Cleanup, mostly in the invite handler. Also changed split()s.
             Majorly cleaned up bin/juno - just a cleanliness check.
             Channel mode z no longer allows users to override channel mode n; users must be in the channel to be affected by this mode.
-            Added SACONNECT command, like that in InspIRCd.
+            Added SACONNECT command like that in InspIRCd.
+            Removed a few more things about the former module API from docs.

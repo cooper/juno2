@@ -99,19 +99,19 @@ cloaking
 cloaking requires use of the Digest::SHA module, which is a core perl module.
 enabling cloaking may increase resource usage when importing the module.
 
-plans
+plans**
 -----------------------
-add full support for mIRCservices**
-add full support for Chakora IRC services**
-create an unrealIRCd-compatible linking protocol**
-create an inspIRCd-compatible linking protocol**
-implement WeIRCd-style built-in services**
-implement SporksIRCd-style FSAY command (roleplay)**
-create an Inspircd-style H channel mode to replay the last x lines spoken in x seconds**
-create an ircu-compatible linking protocol**
-create an ircd-compatible linking protocol**
-attempt to create an equivalent to InspIRCd's SACONNECT command**
-allow colors in hostnames, usernames, and nicknames**
+[✔] add full support for mIRCservices
+[ ] add full support for Chakora IRC services
+[ ] create an unrealIRCd-compatible linking protocol
+[ ] create an inspIRCd-compatible linking protocol
+[ ] implement WeIRCd-style built-in services
+[ ] implement SporksIRCd-style FSAY command (roleplay)
+[ ] create an Inspircd-style H channel mode to replay the last x lines spoken in x seconds
+[ ] create an ircu-compatible linking protocol
+[ ] create an ircd-compatible linking protocol
+[✔] attempt to create an equivalent to InspIRCd's SACONNECT command
+[ ] allow colors in hostnames, usernames, and nicknames
 
 TODO
 -----------------------
@@ -128,6 +128,7 @@ add a ZLINE command and store Z-Lines in a database of some sort
 fix bug: x can be set/unset even if cloaking is disabled
 make the modules be (un)loaded on rehash
 bug: nick changes are sent twice
+add channels (numeric 319) to WHOIS.
 
 user commands
 -----------------------

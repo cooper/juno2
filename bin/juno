@@ -88,7 +88,7 @@ for (;;) {
             (substr $outbuffer{$client}, 0, $sent) = '';
             delete $outbuffer{$client} unless length $outbuffer{$client}
         } else {
-            user::lookup($client)->quit('Write error',1);
+            user::lookup($client)->quit('Write error',1)
         }
     }
     foreach my $client (values %user::connection) {

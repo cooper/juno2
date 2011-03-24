@@ -244,3 +244,4 @@ VERSIONING
             * Version script failed, but I fixed it.
             * Added LOCOPS command.
               It's exactly the same as GLOBOPS since we currently only support one server.
+              This adds the locops oper flag.

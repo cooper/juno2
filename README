@@ -346,12 +346,14 @@ A
 oper flags
 -----------------------
 kill
-    The kill flag grants use of the KILL command to an IRC operator.
-rehash - rehash config
-    The kill flag grants use of the REHASH command to an IRC operator.
-globops - send globops to all opers
-    The kill flag grants use of the GLOBOPS command to an IRC operator.
+    The kill flag grants use of the KILL command.
+rehash
+    The rehash flag grants use of the REHASH command.
+locops
+    The loclops flag grants use of the LOCOPS command.
+globops
+    The globops flag grants use of the GLOBOPS command.
+
 
 * unfinished
 ** (this is just a joke; don't be alarmed)
-# aftep: spacing=80 no-punc

@@ -7,7 +7,7 @@ our $DIR;
 BEGIN {
     $DIR = shift @ARGV;
     die "No directory specified\n" unless defined $DIR;
-    push @INC, $D
+    push @INC, $DIR
 }
 
 use POSIX;

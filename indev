@@ -232,7 +232,12 @@ VERSIONING
             * Removed a few more things about the former module API from docs.
 
         4. March 24, 2011
+
             * Made indev prettier.
             * Rewrote start/stop/rehash script.
               It now has help and version actions.
               Attempting to run it without arguments prints the usage help.
+
+        5. March 24, 2011
+
+            * Fail, $D should be $DIR in bin/juno... who knows how that happened? Fixed.

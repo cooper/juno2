@@ -1,24 +1,28 @@
 #!/usr/bin/perl -w
+use warnings;
+use strict;
+use feature qw(say switch);
+
 our $DIR;
 BEGIN {
     $DIR = shift @ARGV;
     die "No directory specified\n" unless defined $DIR;
-    push @INC, $DIR
+    push @INC, $D
 }
-use warnings;
-use strict;
-use less 'mem';
-use feature qw(say switch);
+
 use POSIX;
 use IO::Select;
 use IO::Socket;
+
 use user;
 use handle;
 use channel;
 use utils qw(fatal conf);
+
 local $0 = 'juno';
 $SIG{$_} = \&sigdie foreach 'TERM','INT','KILL';
 $SIG{'HUP'} = \&sighup;
+
 our $VERSION = &getversion;
 our $TIME = time;
 our $CONFIG = $DIR.'/etc/ircd.conf';
@@ -26,10 +30,12 @@ my ($NOFORK, $PID) = (0,0);
 our $ACCEPTING = 1;
 our (%config, %oper, %kline, %zline, %listen, %outbuffer, %inbuffer, %timer);
 my (%listensockets, %SSL, @sel, $ipv6);
+
 confparse($CONFIG);
 our $id = conf('server','id');
 &loadrequirements;
 &createsockets;
+
 if (!$NOFORK) {
     say 'Becoming a daemon...';
     open STDIN, '/dev/null' or fatal('Can\'t read /dev/null: '.$!);
@@ -40,10 +46,12 @@ if (!$NOFORK) {
     say $pidfile $PID if $PID != 0;
     close $pidfile
 }
+
 exit unless $PID == 0;
 &POSIX::setsid;
 fatal('not listening') if $#sel < 0;
 our $select = new IO::Select @sel;
+
 for (;;) {
     my $time;
     foreach my $client ($select->can_read(conf('main','timeout'))) {
@@ -81,7 +89,6 @@ for (;;) {
             delete $outbuffer{$client} unless length $outbuffer{$client}
         } else {
             user::lookup($client)->quit('Write error',1);
-            next
         }
     }
     foreach my $client (values %user::connection) {
@@ -102,7 +109,10 @@ sub sendpeer {
 }
 sub sigdie {
     say 'Preparing to exit...';
-    $_->quit('Server shutdown'), say '    Removing user '.$_->{'id'} foreach values %user::connection;
+    foreach (values %user::connection) {
+        $_->quit('Server shutdown');
+        say '    Removing user '.$_->{'id'}
+    }
     say 'Deleting PID file.';
     unlink $DIR.'/etc/juno.pid' or fatal('Couldn\'t delete PID file.');
     fatal('Exiting by signal.')

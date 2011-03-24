@@ -1,66 +1,93 @@
 #!/bin/bash
 # Copyright (c) 2011 Mitchell Cooper
 # don't make fun of my bash skills.
-cat << "EOF"
-       _                     _              _
-      (_)                   (_)            | |
-       _ _   _ _ __   ___    _ _ __ ___  __| |
-      | | | | | '_ \ / _ \  | | '__/ __|/ _` |
-      | | |_| | | | | (_) |-| | | | (__| (_| |
-      | |\__,_|_| |_|\___/  |_|_|  \___|\__,_|
-     _/ |
-    |__/ 
-EOF
+
 dir=`dirname "$(cd "${0%/*}" 2>/dev/null; echo "$PWD"/"${0##*/}")"`
-echo version `cat $dir/etc/version`
+version=`cat $dir/etc/version`
+args=$@
+
+if [ -e "$dir/etc/juno.pid" ]; then
+    pid=`cat $dir/etc/juno.pid`
+    running=true
+fi
+
+
+showusage() {
+    cat << EOF
+usage: $0 [action]
+    start       start juno IRCd
+    stop        terminate juno IRCd (SIGTERM)
+    rehash      rehash the server configuration file (SIGHUP)
+    version     print the version of this copy of juno IRCd
+    help        print this information
+EOF
+}
+
+splash() {
+    cat << "EOF"
+              _                     _              _
+             (_)                   (_)            | |
+              _ _   _ _ __   ___    _ _ __ ___  __| |
+             | | | | | '_ \ / _ \  | | '__/ __|/ _` |
+             | | |_| | | | | (_) |-| | | | (__| (_| |
+             | |\__,_|_| |_|\___/  |_|_|  \___|\__,_|
+            _/ |
+           |__/ 
+
+EOF
+}
+
+check_if_running() {
+    if [ ! "$running" ]; then
+        echo "juno is not running!"
+        exit 1
+    fi
+}
+
+main() {
+    case "${args[0]}" in
+        start)
+            if [ "$running" ]; then
+                echo "juno is already running!"
+                exit 1
+            fi
+        echo "Starting juno"
+        $dir/bin/juno $dir
+        ;;
+        rehash)
+            check_if_running
+            echo "Signaling $pid HUP"
+            kill -HUP $pid
+        ;;
+        stop)
+            check_if_running
+            echo "Signaling $pid TERM"
+            kill -TERM $pid
+        ;;
+        restart)
+            check_if_running
+            echo "Signaling $pid TERM"
+            kill -TERM $pid
+            sleep 1
+            echo "Starting juno"
+            $dir/bin/juno $dir
+        ;;
+        version)
+            echo juno-$version
+        ;;
+        help)
+            showusage
+        ;;
+        *)
+            echo "Incorrect parameter: ${args[0]}"
+            echo "$0 help for help"
+        ;;
+    esac
+}
 
 if [ ! "$1" ]; then
-    echo "Incorrect number of parameters."
+    showusage
     exit
 fi
 
-if [ -e "$dir/etc/juno.pid" ]; then
-  pid=`cat $dir/etc/juno.pid`
-  running=true
-fi
-
-case "$1" in
-  start)
-    if [ "$running" ]; then
-      echo "juno is already running!"
-      exit 1
-    fi
-    echo "Starting juno"
-    $dir/bin/juno $dir
-  ;;
-  rehash)
-    if [ ! "$running" ]; then
-      echo "juno is not running!"
-      exit 1
-    fi
-    echo "Signaling $pid HUP"
-    kill -HUP $pid
-  ;;
-  stop)
-    if [ ! "$running" ]; then
-      echo "juno is not running!"
-      exit 1
-    fi
-    echo "Signaling $pid TERM"
-    kill -TERM $pid
-  ;;
-  restart)
-    if [ ! "$running" ]; then
-      echo "juno is not running!"
-      exit 1
-    fi
-    echo "Signaling $pid TERM"
-    kill -TERM $pid
-    sleep 1
-    echo "Starting juno"
-    $dir/bin/juno $dir
-  ;;
-  *)
-    echo "Incorrect parameter $1"
-  ;;
-esac
+main

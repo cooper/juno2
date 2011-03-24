@@ -223,10 +223,15 @@ REHASH*
     If you are not an IRC operator, a numeric error will be displayed.
     Currently, nothing is replied if the rehash was successful.
         Parameters: none
+LOCOPS
+    The LOCOPS command is used to send a message to all IRC operators on the IRC server.
+    The message will be sent to all users on the common server with +S (server notices) enabled.
+    If unsuccessful, LOCOPS will return a numeric error.
+        Parameters: <message>
 GLOBOPS*
     The GLOBOPS command is used to send a message to all IRC operators on the network.
-    The message will be sent to all users with +S (server notice) enabled.
-    If unsuccessful, GLOBOPS will return a numeric error.
+    Because juno-ircd currently supports only 1 server, it simply an alias for LOCOPS at this time.
+        Parameters: <message>
 TOPIC*
     The TOPIC command is used to view or change a channel's topic.
     Only channel operators may use the TOPIC command to change a channel topic if channel mode t is enabled.

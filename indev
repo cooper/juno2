@@ -242,3 +242,5 @@ VERSIONING
 
             * Fail, $D should be $DIR in bin/juno... who knows how that happened? Fixed.
             * Version script failed, but I fixed it.
+            * Added LOCOPS command.
+              It's exactly the same as GLOBOPS since we currently only support one server.

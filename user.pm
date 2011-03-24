@@ -28,7 +28,8 @@ our %commands = (
     QUIT => \&handle_quit,
     PART => \&handle_part,
     REHASH => \&handle_rehash,
-    GLOBOPS => \&handle_globops,
+    LOCOPS => \&handle_locops,
+    GLOBOPS => \&handle_locops,
     TOPIC => \&handle_topic,
     KICK => \&handle_kick,
     INVITE => \&handle_invite,
@@ -618,13 +619,13 @@ sub handle_rehash {
         $user->numeric(481);
     }
 }
-sub handle_globops {
+sub handle_locops {
     my ($user,$data) = @_;
-    if ($user->can('globops')) {
+    if ($user->can('globops') || $user->can('locops')) {
         my @s = split / /, $data, 2;
         if (defined $s[1]) {
-            snotice('GLOBOPS from '.$user->nick.': '.$s[1]);
-        } else { $user->numeric(461,'GLOBOPS'); }
+            snotice('LOCOPS from '.$user->nick.': '.$s[1]);
+        } else { $user->numeric(461,uc (split / /, $data)[0]); }
     } else { $user->numeric(481); }
 }
 sub handle_topic {

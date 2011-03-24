@@ -126,7 +126,6 @@ add a KLINE command and store K-Lines in a database of some sort
 add a ZLINE command and store Z-Lines in a database of some sort
 fix bug: x can be set/unset even if cloaking is disabled
 make the modules be (un)loaded on rehash
-bug: nick changes are sent twice
 add channels (numeric 319) to WHOIS.
 
 user commands

@@ -247,3 +247,8 @@ VERSIONING
               This adds the locops oper flag.
             * Fixed the "No text to send" bug.
               Blank messages are no longer accepted.
+            * Fixed the bug where nick changes are sometimes sent twice.
+
+        6. March 24, 2011
+
+            * 

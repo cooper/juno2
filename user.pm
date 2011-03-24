@@ -429,6 +429,7 @@ sub handle_nick {
             if(!user::nickexists($s[1]) || lc($s[1]) eq lc($user->nick)) {
                 my %sent;
                 my @users = $user;
+                $sent{$user->{'id'}} = 1;
                 foreach my $channel (values %channel::channels) {
                     if ($user->ison($channel)) {
                         if (hostmatch($user->fullcloak,keys %{$channel->{'bans'}}) || hostmatch($user->fullhost,keys %{$channel->{'bans'}}) &&
@@ -443,7 +444,6 @@ sub handle_nick {
                         }
                     }
                 }
-                $sent{$user->{'id'}} = 1;
                 $_->send(':'.$user->fullcloak.' NICK :'.$s[1]) foreach @users;
                 $user->{'nick'} = $s[1];
             } else { $user->numeric(433,$s[1]); }

@@ -350,7 +350,7 @@ kill
 rehash
     The rehash flag grants use of the REHASH command.
 locops
-    The loclops flag grants use of the LOCOPS command.
+    The locops flag grants use of the LOCOPS command.
 globops
     The globops flag grants use of the GLOBOPS command.
 

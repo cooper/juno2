@@ -241,3 +241,4 @@ VERSIONING
         5. March 24, 2011
 
             * Fail, $D should be $DIR in bin/juno... who knows how that happened? Fixed.
+            * Version script failed, but I fixed it.

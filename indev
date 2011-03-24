@@ -245,3 +245,5 @@ VERSIONING
             * Added LOCOPS command.
               It's exactly the same as GLOBOPS since we currently only support one server.
               This adds the locops oper flag.
+            * Fixed the "No text to send" bug.
+              Blank messages are no longer accepted.

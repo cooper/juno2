@@ -495,19 +495,22 @@ sub handle_mode {
     } else { $user->numeric(461,'MODE'); }
 }
 sub handle_privmsgnotice {
-    my ($user,$data) = @_;
-    my $n = 0;
-    my @s = split / /, $data;
-    if (uc $s[0] eq 'NOTICE') { $n = 1; }
+    my ($user, $data) = @_;
+    my ($n, @s) = (0, (split / /, $data));
+    $n = 1 if uc $s[0] eq 'NOTICE';
+    if (!defined $s[2]) {
+        $user->numeric(461,$n?'NOTICE':'PRIVMSG');
+        return
+    }
     my $target = nickexists($s[1]);
     my $channel = channel::chanexists($s[1]);
-    my $msg = col((split ' ', $data, 3)[2]);
+    my $msg = col((split / /, $data, 3)[2]);
+    if (!length $msg) {
+        $user->numeric(412);
+        return
+    }
     if ($target) {
-        if (defined $s[2]) {
-            if ($msg ne '') { 
-                $target->recvprivmsg($user->fullcloak,$target->nick,$msg,($n?'NOTICE':'PRIVMSG'));
-            } else { $user->numeric(412); }
-        } else { $user->numeric(461,$n?'NOTICE':'PRIVMSG'); }
+        $target->recvprivmsg($user->fullcloak,$target->nick,$msg,($n?'NOTICE':'PRIVMSG'));
     } elsif ($channel) {
         $channel->privmsgnotice($user,($n?'NOTICE':'PRIVMSG'),$msg);
     } else {
@@ -625,7 +628,7 @@ sub handle_locops {
         my @s = split / /, $data, 2;
         if (defined $s[1]) {
             snotice('LOCOPS from '.$user->nick.': '.$s[1]);
-        } else { $user->numeric(461,uc (split / /, $data)[0]); }
+        } else { $user->numeric(461,uc $s[0]); }
     } else { $user->numeric(481); }
 }
 sub handle_topic {

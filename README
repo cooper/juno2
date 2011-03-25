@@ -150,14 +150,14 @@ PING
 WHOIS*
     A WHOIS query replies with several numerics with information on a user.
     The current WHOIS replies are as follows:
-            - Nick, username, visible host, and real name
-            - Name of the server that the user is connecting to the network with
-            - Whether or not the user is using SSL
-            - If the user is away, the away reason
-            - Whether or not the user is an IRC operator
-            - Applied user modes
-            - Actual host of the user (IRC operators only)
-            - Idle time
+    - Nick, username, visible host, and real name
+    - Name of the server that the user is connecting to the network with
+    - Whether or not the user is using SSL
+    - If the user is away, the away reason
+    - Whether or not the user is an IRC operator
+    - Applied user modes
+    - Actual host of the user (IRC operators only)
+    - Idle time
         Parameters: <nickname> (currently)
 MODE
     The MODE command is a multi-purpose command.

@@ -6,16 +6,19 @@ dir=`dirname "$(cd "${0%/*}" 2>/dev/null; echo "$PWD"/"${0##*/}")"`
 version=`cat $dir/etc/version`
 args=$@
 
-if [ -e "$dir/etc/juno.pid" ]; then
-    pid=`cat $dir/etc/juno.pid`
-    running=true
-fi
-
+runningq() {
+    running=false
+    if [ -e "$dir/etc/juno.pid" ]; then
+        pid=`cat $dir/etc/juno.pid`
+        running=true
+    fi
+}
 
 showusage() {
     cat << EOF
 usage: $0 [action]
     start       start juno IRCd
+    forcestart  attempt to start juno under any circumstances
     stop        terminate juno IRCd (SIGTERM)
     rehash      rehash the server configuration file (SIGHUP)
     version     print the version of this copy of juno IRCd
@@ -25,14 +28,14 @@ EOF
 
 splash() {
     cat << "EOF"
-              _                     _              _
-             (_)                   (_)            | |
-              _ _   _ _ __   ___    _ _ __ ___  __| |
-             | | | | | '_ \ / _ \  | | '__/ __|/ _` |
-             | | |_| | | | | (_) |-| | | | (__| (_| |
-             | |\__,_|_| |_|\___/  |_|_|  \___|\__,_|
-            _/ |
-           |__/ 
+      _                     _              _
+     (_)                   (_)            | |
+      _ _   _ _ __   ___    _ _ __ ___  __| |
+     | | | | | '_ \ / _ \  | | '__/ __|/ _` |
+     | | |_| | | | | (_) |-| | | | (__| (_| |
+     | |\__,_|_| |_|\___/  |_|_|  \___|\__,_|
+    _/ |
+   |__/ 
 
 EOF
 }
@@ -44,15 +47,40 @@ check_if_running() {
     fi
 }
 
+dostart() {
+    echo "Starting juno"
+    splash
+    $dir/bin/juno $dir
+}
+
+start() {
+    if [ "$running" ]; then
+        echo "juno is already running!"
+        exit 1
+    fi
+    dostart
+}
+
+forcestart() {
+    if [ -e "$dir/etc/juno.pid" ]; then
+        rm -v $dir/etc/juno.pid
+    fi
+    dostart
+}
+
+stop() {
+    check_if_running
+    echo "Signaling $pid TERM"
+    kill -TERM $pid
+}
+
 main() {
     case "${args[0]}" in
         start)
-            if [ "$running" ]; then
-                echo "juno is already running!"
-                exit 1
-            fi
-        echo "Starting juno"
-        $dir/bin/juno $dir
+            start
+        ;;
+        forcestart)
+            forcestart
         ;;
         rehash)
             check_if_running
@@ -60,17 +88,13 @@ main() {
             kill -HUP $pid
         ;;
         stop)
-            check_if_running
-            echo "Signaling $pid TERM"
-            kill -TERM $pid
+            stop
         ;;
         restart)
-            check_if_running
-            echo "Signaling $pid TERM"
-            kill -TERM $pid
+            stop
             sleep 1
-            echo "Starting juno"
-            $dir/bin/juno $dir
+            runningq
+            forcestart
         ;;
         version)
             echo juno-$version
@@ -90,4 +114,5 @@ if [ ! "$1" ]; then
     exit
 fi
 
+runningq
 main

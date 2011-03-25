@@ -1,7 +1,8 @@
-# sample configuration
-# all files are relative the the directory of juno.pl
-# if you want to disable something, your best bet is to
-# set the value to 0 unless the comments say otherwise
+# juno-ircd sample configuration
+# THIS CONFIGURATION WILL NOT WORK WITHOUT EDITING IT TO
+# YOUR NEEDS. all files are relative the the directory of
+# juno.pl. if you want to disable something, your best bet
+# is to set the value to 0 unless the comments say otherwise.
 
 # your configuration file is to be set up in the 
 # following layout:

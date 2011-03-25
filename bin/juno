@@ -20,7 +20,7 @@ use channel;
 use utils qw(fatal conf);
 
 local $0 = 'juno';
-$SIG{$_} = \&sigdie foreach 'TERM','INT','KILL';
+$SIG{$_} = \&sigdie foreach ('TERM','INT','KILL');
 $SIG{'HUP'} = \&sighup;
 
 our $VERSION = &getversion;
@@ -213,6 +213,9 @@ sub createsockets {
         }
         foreach my $port (split / /, $listen{$name}{'ssl'}) {
             last if $port == 0;
+            if (!conf('enabled','ssl')) {
+                fatal('You tried to listen using SSL, but SSL is not enabled in the configuration.')
+            }
             say "    Listening SSL on [$name]:$port";
             $socket = IO::Socket::SSL->new(
                 Listen => 1,

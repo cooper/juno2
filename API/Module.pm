@@ -30,19 +30,14 @@ sub register {
         return
     }
 
-    my $module = {
-        'name' => shift,
-        'version' => shift,
-        'desc' => shift,
-        'init' => shift,
-        'void' => shift
-    };
+    my %module = ();
+    $module{$_} = shift foreach ('name','version','desc','init','void');
 
     # I was gonna make it check if a module with the same name already exists, but that's kinda
     # pointless because it uses package names; there shouldn't be any issues.
 
-    say 'API module registered: '.$module->{'name'}.' from '.$package;
-    $MODULE{$package} = $module->{'name'};
+    say 'API module registered: '.$module{'name'}.' from '.$package;
+    $MODULE{$package} = \%module;
 
     # success
     return 1

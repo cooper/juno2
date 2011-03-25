@@ -14,7 +14,7 @@ sub register {
 
     # make sure that this module hasn't already registered itself.
     if (exists $MODULE{$package}) {
-        say 'Package '.$module.' attempted to register multiple modules; aborting register.';
+        say 'Package '.$package.' attempted to register multiple modules; aborting register.';
         return
     }
 
@@ -36,13 +36,13 @@ sub register {
         'desc' => shift,
         'init' => shift,
         'void' => shift
-    }
+    };
 
     # I was gonna make it check if a module with the same name already exists, but that's kinda
     # pointless because it uses package names; there shouldn't be any issues.
 
-    say 'API module registered: '.$module{'name'}.' from '.$package;
-    $MODULE{$package} = $module{'name'};
+    say 'API module registered: '.$module->{'name'}.' from '.$package;
+    $MODULE{$package} = $module->{'name'};
 
     # success
     return 1

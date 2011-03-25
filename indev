@@ -254,3 +254,8 @@ VERSIONING
             * Fixed bug where user mode x can be set/unset even if cloaking is not enabled.
             * bin/juno now fatal()s if an attempt to listen using SSL is made and SSL is disabled in the configuration.
             * Start/stop/rehash/etc script now has a forcestart option which starts juno whether or not a PID file exists.
+
+        7. March 25, 2011
+
+            * Beginning redesigned module API.
+              Added API::Module package (currently nonfunctional).

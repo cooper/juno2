@@ -434,7 +434,7 @@ sub kick {
     return if ($channel->has($target,'halfop') && !$channel->has($user,'owner') && !$channel->has($user,'admin') && !$channel->has($user,'op'));
     $channel->allsend(':%s KICK %s %s :%s',0,$user->fullcloak,$channel->name,$target->nick,$reason);
     $channel->remove($target);
-    return 1;
+    return 1
 }
 sub list {
     my $channel = shift;

@@ -17,7 +17,7 @@ use IO::Socket;
 use user;
 use handle;
 use channel;
-use utils qw(fatal conf);
+use utils qw(fatal conf hostmatch);
 
 local $0 = 'juno';
 $SIG{$_} = \&sigdie foreach ('TERM','INT','KILL');

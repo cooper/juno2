@@ -4,7 +4,7 @@ package API::Module;
 
 use warnings;
 use strict;
-use feature qw/say switch/;
+use feature 'say';
 
 use Exporter;
 use Class::Unload;
@@ -89,13 +89,25 @@ sub package_init {
     }
     if (ref $MODULE{$package}{'init'} eq 'CODE') {
         say 'Initializing module '.$MODULE{$package};
-        $MODULE{$package}{'init'}(caller 0);
+        if ($MODULE{$package}{'init'}(caller 0)) {
+            say 'Module initialized successfully.';
+            return 1
+        } else {
+            say 'Module refused to load; aborting.';
+            return
+        }
     } else {
         say 'Module '.$MODULE{$package}{'name'}.' did not provide a init CODE ref; forcing unload.';
         delete_package($package);
         return
     }
     return 1
+}
+
+sub package_exists {
+    my $package = shift;
+    return $MODULE{$package} if exists $MODULE{$package};
+    return
 }
 
 1

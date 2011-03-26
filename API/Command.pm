@@ -28,7 +28,7 @@ sub command_register {
         return
     }
 
-    # create the module
+    # create the command
     $COMMAND{$command}{$package} = {
         'name' => $command,
         'code' => $code

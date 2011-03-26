@@ -145,7 +145,8 @@ sub setmode {
         $user->{'mode'}->{$_} = time;
         next if $_ =~ m/i/;
         if ($_ eq 'x' && conf('enabled','cloaking')) {
-            $user->setcloak(host2cloak($user->{'ipv'}==6?1:0,$user->{'host'}));
+            my $sep = ($user->{'ipv'} == 6 ? ':' : '\.');
+            $user->setcloak(host2cloak($sep, $user->{'host'}));
         }
     }
 }
@@ -208,11 +209,13 @@ sub setcloak {
 sub host2cloak {
     my @pieces = ();
     my $sep = shift;
-    foreach (split ($sep?':':'\.'), shift) {
+    foreach (split $sep, shift) {
         my $part = Digest::SHA::sha1_hex($_,conf('cloak','salt'),$#pieces);
-        push(@pieces,($part=~m/....../g)[0]);
+        $part = ($part =~ m/....../g)[0];
+        push @pieces, $part;
     }
-    return join($sep?':':'.',@pieces);
+    $sep = '.' if $sep eq '\.';
+    return (join $sep, @pieces);
 }
 sub unsetcloak {
     my $user = shift;
@@ -617,9 +620,11 @@ sub handle_quit {
 sub handle_rehash {
     my $user = shift;
     if ($user->can('rehash')) {
-        (%::config,%::oper,%::kline) = ((),(),());
+        undef %::config;
+        undef %::oper;
+        undef %::kline;
         snotice($user->nick.' is rehashing server configuration file');
-        confparse($::CONFIG);
+        ::confparse($::CONFIG);
     } else {
         $user->numeric(481);
     }

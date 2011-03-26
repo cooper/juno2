@@ -41,9 +41,9 @@ sec enabled
   # enable SSL (requires IO::Socket::SSL)
   # please see the note a few blocks down
   # about issues with SSL.
-  ssl 1
+  ssl 0
   # enable IPv6 (requires IO::Socket::INET6)
-  ipv6 1
+  ipv6 0
   # enable cloaking (requires Digest::SHA (core))
   cloaking 0
 

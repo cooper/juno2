@@ -261,3 +261,8 @@ VERSIONING
               Added API::Module package (currently nonfunctional).
               By the way, the API is excluded from versioning and changelog until it is functional.
             * Added HelloWorld module.
+
+        8. March 26, 2011
+
+            * Fixed a fatal bug in REHASH command.
+            * Fixed cloaking (I think)... I guess it's been like this for a long time and I just noticed.

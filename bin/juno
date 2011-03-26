@@ -26,7 +26,7 @@ $SIG{'HUP'} = \&sighup;
 our $VERSION = &getversion;
 our $TIME = time;
 our $CONFIG = $DIR.'/etc/ircd.conf';
-my ($NOFORK, $PID) = (0,0);
+my ($NOFORK, $PID) = (0, 0);
 our $ACCEPTING = 1;
 our (%config, %oper, %kline, %zline, %listen, %outbuffer, %inbuffer, %timer);
 my (%listensockets, %SSL, @sel, $ipv6);

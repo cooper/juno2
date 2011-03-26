@@ -7,7 +7,6 @@ version=`cat $dir/etc/version`
 args=$@
 
 runningq() {
-    running=false
     if [ -e "$dir/etc/juno.pid" ]; then
         pid=`cat $dir/etc/juno.pid`
         running=true

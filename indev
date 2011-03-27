@@ -266,3 +266,13 @@ VERSIONING
 
             * Fixed a fatal bug in REHASH command.
             * Fixed cloaking (I think)... I guess it's been like this for a long time and I just noticed.
+            * Fixed bug in start/stop script that preventing juno from starting without the force option.
+            * Fixed bug where all users were shown as using SSL in WHOIS command.
+
+        9. March 27, 2011
+
+            * Misc. cleanup.
+            * Added CHGHOST command.
+              This adds the chghost oper flag.
+            * Fixed a fatal bug that occured when the outgoing buffer is not empty and a user quits.
+            * Updated 004 numeric.

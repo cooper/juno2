@@ -28,8 +28,6 @@
 sec main
   # the loop timeout (1 recommended)
   timeout 1
-  # the DNS server(s) to use
-  dns 8.8.8.8 8.8.4.4
   # show K-Line reason in quit
   showkline 0
   # show Z-Line reason in quit

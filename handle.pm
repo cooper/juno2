@@ -5,9 +5,9 @@ use strict;
 use less 'mem';
 use utils qw/col validnick conf/;
 sub new {
-    my $user = user::lookup(shift);
+    my $user = user::lookup(shift) or return;
     my $all = shift;
-    foreach my $data (split "\n" ,$all) {
+    foreach my $data (split "\n", $all) {
         $data =~ s/\s+$//;
         $data =~ s/^\s+//;
         return if $data eq '';

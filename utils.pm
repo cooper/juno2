@@ -5,7 +5,7 @@ use strict;
 use less 'mem';
 use base 'Exporter';
 use Exporter;
-our @EXPORT_OK = qw/col validnick hostmatch snotice fatal conf oper/;
+our @EXPORT_OK = qw/col validnick validcloak hostmatch snotice fatal conf oper/;
 our %GV;
 sub col {
     my $str = shift;
@@ -52,5 +52,9 @@ sub oper {
     my ($key,$val) = @_;
     return $::oper{$key}{$val} if exists $::oper{$key}{$val};
     return
+}
+sub validcloak {
+    return if $_[0] =~ m/[^A-Za-z-0-9-\.\/\-]/;
+    return 1
 }
 1

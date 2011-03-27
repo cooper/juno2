@@ -3,7 +3,7 @@ package user;
 use warnings;
 use strict;
 use less 'mem';
-use utils qw/col conf oper hostmatch snotice validnick/;
+use utils qw/col conf oper hostmatch snotice validnick validcloak/;
 $utils::GV{'cid'} = 0;
 $utils::GV{'max'} = 0;
 our %connection;
@@ -35,6 +35,7 @@ our %commands = (
     INVITE => \&handle_invite,
     LIST => \&handle_list,
     ISON => \&handle_ison,
+    CHGHOST => \&handle_chghost
 );
 our %numerics = (
     251 => ':There are %s users and %s invisible on %s servers',
@@ -267,6 +268,10 @@ sub servernotice {
     my $user = shift;
     $user->send(':'.conf('server','name').' NOTICE '.$user->nick." :@_");
 }
+sub snt {
+    my $user = shift;
+    $user->servernotice(sprintf '*** %s: %s', shift, shift);
+}
 sub sendnum {
     # deprecated
     my $user = shift;
@@ -466,7 +471,7 @@ sub handle_whois {
             $user->numeric(311,$target->nick,$target->{'ident'},$target->{'cloak'},$target->{'gecos'});
             #>> :server 319 nick targetnick :~#chat @#halp
             $user->numeric(312,$target->nick,conf('server','name'),conf('server','desc'));
-            $user->numeric(641,$target->nick) if defined $target->{'ssl'};
+            $user->numeric(641,$target->nick) if $target->{'ssl'};
             $user->numeric(301,$target->nick,$target->{'away'}) if defined $target->{'away'};
             $user->numeric(313,$target->nick) if $target->ismode('o');
             $user->numeric(379,$target->nick,$modes) if $user->ismode('o');
@@ -630,13 +635,19 @@ sub handle_rehash {
     }
 }
 sub handle_locops {
-    my ($user,$data) = @_;
-    if ($user->can('globops') || $user->can('locops')) {
-        my @s = split / /, $data, 2;
-        if (defined $s[1]) {
+    my ($user, $data) = @_;
+    my @s = split / /, $data, 2;
+    if (defined $s[1]) {
+        if ($user->can('globops') || $user->can('locops')) {
+            my @s = split / /, $data, 2;
             snotice('LOCOPS from '.$user->nick.': '.$s[1]);
-        } else { $user->numeric(461,uc $s[0]); }
-    } else { $user->numeric(481); }
+            return 1
+        } else {
+            $user->numeric(481)
+        }
+    } else {
+        $user->numeric(461,uc $s[0])
+    }
 }
 sub handle_topic {
     my ($user,$data) = @_;
@@ -702,10 +713,10 @@ sub handle_invite {
     }
 }
 sub handle_list {
-    my($user,@s) = (shift,(split ' ', shift));
+    my($user,@s) = (shift, (split ' ', shift));
     $user->numeric(321);
     if ($s[1]) {
-        foreach (split ',' ,$s[1]) {
+        foreach (split ',', $s[1]) {
             my $channel = channel::chanexists($_);
             if ($channel) {
                 $channel->list($user);
@@ -719,13 +730,39 @@ sub handle_list {
     $user->numeric(323);
 }
 sub handle_ison {
-    my($user,@s,@final) = (shift,(split ' ', shift),());
+    my($user,@s,@final) = (shift, (split / /, shift), ());
     if (defined $s[1]) {
         foreach (@s[1..$#s]) {
             my $u = nickexists($_);
-            push(@final,$u->nick) if $u;
+            push @final, $u->nick if $u;
         }
         $user->numeric(303,(join ' ', @final));
-    } else { $user->numeric(461,'ISON'); }
+    } else {
+        $user->numeric(461,'ISON');
+    }
+}
+sub handle_chghost {
+    my ($user, @s) = (shift, (split / /, shift));
+    if (!defined $s[2]) {
+        $user->numeric(461, 'CHGHOST');
+        return
+    }
+    if (!$user->can('chghost')) {
+        $user->numeric(481);
+        return
+    }
+    my $target = user::nickexists($s[1]);
+    if ($target) {
+        if (validcloak($s[2])) {
+            snotice(sprintf '%s used CHGHOST to change %s\'s cloak to %s', $user->nick, $target->nick, $s[2]);
+            $target->setcloak($s[2]);
+            $user->snt('CHGHOST', $target->nick.'\'s cloak has been changed to '.$s[2]);
+            return 1
+        } else {
+            $user->snt('CHGHOST', 'invalid characters');
+        }
+    } else {
+        $user->numeric(401, $s[1]);
+    }
 }
 1

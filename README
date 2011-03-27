@@ -252,6 +252,12 @@ ISON
     A numeric will be displayed containing those users' nicks.
     If there are no users that match, there will be no error, but only an empty numeric.
         Parameters: <nickname> [<nickname>] [...]
+CHGHOST
+    The CHGHOST command is used by IRC operators to change a user's visible host.
+    It requires the chghost oper flag; without it, a server notice error will be sent to the requesting user.
+    If the host is invalid or if the target nickname does not exist, the server will notice an error.
+    When successful, juno will send a numeric to the user whose cloak was changed.
+        Parameters: <nickname> <new host>
 
 user modes
 ----------
@@ -350,6 +356,8 @@ locops
     The locops flag grants use of the LOCOPS command.
 globops
     The globops flag grants use of the GLOBOPS command.
+chghost
+    The CHGHOST flag grants use of the CHGHOST command.
 
 
 * unfinished

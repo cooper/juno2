@@ -75,7 +75,7 @@ for (;;) {
           (($theline, $therest) = $inbuffer{$client} =~ m/([^\n]*)\n(.*)/s)) {
             $inbuffer{$client} = $therest;
             $theline =~ s/\r$//;
-            handle::new($client, $theline);
+            handle::user($client, $theline);
             $timer{$client}++
         }
         $user->quit(conf('flood','msg')) if length $inbuffer{$client} > conf('flood','bytes')

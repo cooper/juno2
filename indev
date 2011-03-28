@@ -276,3 +276,9 @@ VERSIONING
               This adds the chghost oper flag.
             * Fixed a fatal bug that occured when the outgoing buffer is not empty and a user quits.
             * Updated 004 numeric.
+
+    9. March 27, 2011
+
+        0. March 27, 2011
+
+            * Completely rewrote handle.pm due to bugs and other issues.

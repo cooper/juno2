@@ -98,8 +98,9 @@ my %commands = (
     }
 );
 
+# register the handlers
 sub get {
-    user::register_handler($_, $commands{$_}{'code'}) foreach keys %commands;
+    user::register_handler($_, $commands{$_}{'code'}) foreach keys %commands
 }
 
 # HANDLERS (see README for information of each command)
@@ -137,7 +138,7 @@ sub handle_motd {
 
 sub handle_nick {
     my $user = shift;
-    my @s = split / /, shift;
+    my @s = split /\s+/, shift;
     if ($s[1]) {
         return if $s[1] eq $user->nick;
         if (validnick($s[1],conf('limit','nick'),undef)) {
@@ -154,7 +155,7 @@ sub handle_nick {
                         $channel->check;
                         foreach (keys %{$channel->{'users'}}) {
                             next if $sent{$_};
-                            push(@users,lookupbyid($_));
+                            push(@users,user::lookupbyid($_));
                             $sent{$_} = 1;
                         }
                     }
@@ -168,10 +169,10 @@ sub handle_nick {
 
 sub handle_whois {
     my $user = shift;
-    my $nick = (split ' ', shift)[1];
+    my $nick = (split /\s+/, shift)[1];
     my $modes = '';
     if ($nick) {
-        my $target = nickexists($nick);
+        my $target = user::nickexists($nick);
         if ($target) {
             $modes .= $_ foreach (keys %{$target->{'mode'}});
             $user->numeric(311,$target->nick,$target->{'ident'},$target->{'cloak'},$target->{'gecos'});
@@ -192,20 +193,20 @@ sub handle_whois {
 
 sub handle_ping {
     my $user = shift;
-    my $reason = (split ' ', shift, 2)[1];
+    my $reason = (split /\s+/, shift, 2)[1];
     $user->sendserv('PONG '.conf('server','name').(defined $reason?' '.$reason:''));
 }
 
 sub handle_mode {
     my ($user,$data) = @_;
-    my @s = split / /, $data;
+    my @s = split /\s+/, $data;
     if (defined($s[1])) {
         if (lc($s[1]) eq lc($user->nick)) {
             $user->hmodes($s[2]);
         } else {
             my $target = channel::chanexists($s[1]);
             if ($target) {
-                $target->handlemode($user,(split ' ', $data, 3)[2]);
+                $target->handlemode($user,(split /\s+/, $data, 3)[2]);
             } else {
                 $user->numeric(401,$s[1]);
             }
@@ -215,15 +216,15 @@ sub handle_mode {
 
 sub handle_privmsgnotice {
     my ($user, $data) = @_;
-    my ($n, @s) = (0, (split / /, $data));
+    my ($n, @s) = (0, (split /\s+/, $data));
     $n = 1 if uc $s[0] eq 'NOTICE';
     if (!defined $s[2]) {
         $user->numeric(461,$n?'NOTICE':'PRIVMSG');
         return
     }
-    my $target = nickexists($s[1]);
+    my $target = user::nickexists($s[1]);
     my $channel = channel::chanexists($s[1]);
-    my $msg = col((split / /, $data, 3)[2]);
+    my $msg = col((split /\s+/, $data, 3)[2]);
     if (!length $msg) {
         $user->numeric(412);
         return
@@ -238,7 +239,7 @@ sub handle_privmsgnotice {
 }
 
 sub handle_away {
-    my ($user,$reason) = (shift,(split ' ', shift, 2)[1]);
+    my ($user,$reason) = (shift,(split /\s+/, shift, 2)[1]);
     if (defined $user->{'away'}) {
         $user->{'away'} = undef;
         $user->numeric(305);
@@ -250,7 +251,7 @@ sub handle_away {
 
 sub handle_oper {
     my ($user,$data) = @_;
-    my @s = split / /, $data;
+    my @s = split /\s+/, $data;
     if (defined $s[2]) {
         my $oper = $user->canoper($s[1],$s[2]);
         if ($oper) {
@@ -266,12 +267,12 @@ sub handle_oper {
 
 sub handle_kill {
     my ($user,$data) = @_;
-    my @s = split / /, $data;
+    my @s = split /\s+/, $data;
     if (defined $s[2]) {
         if ($user->can('kill')) {
-            my $target = nickexists($s[1]);
+            my $target = user::nickexists($s[1]);
             if ($target) {
-                my $reason = col((split ' ',$data,3)[2]);
+                my $reason = col((split /\s+/,$data,3)[2]);
                 $target->quit('Killed ('.$user->nick.' ('.$reason.'))');
             } else { $user->numeric(401,$s[1]); }
         } else { $user->numeric(481); }
@@ -280,7 +281,7 @@ sub handle_kill {
 
 sub handle_join {
     my ($user,$data) = @_;
-    my @s = split ' ', $data;
+    my @s = split /\s+/, $data;
     if (defined($s[1])) {
         $s[1] = col($s[1]);
         foreach(split ',', $s[1]) {
@@ -299,7 +300,7 @@ sub handle_join {
 }
 
 sub handle_who {
-    my ($user,$query) = (shift,(split ' ',shift)[1]);
+    my ($user,$query) = (shift,(split /\s+/,shift)[1]);
     my $target = channel::chanexists($query);
     if ($target) {
         $target->who($user);
@@ -309,7 +310,7 @@ sub handle_who {
 
 sub handle_names {
     my $user = shift;
-    foreach (split ',', (split ' ',shift)[1]) {
+    foreach (split ',', (split /\s+/,shift)[1]) {
         my $target = channel::chanexists($_);
         $target->names($user) if $target;
         $user->numeric(366,$_) unless $target;
@@ -318,8 +319,8 @@ sub handle_names {
 
 sub handle_part {
     my ($user,$data) = @_;
-    my @s = split / /, $data;
-    my $reason = col((split ' ', $data,3)[2]);
+    my @s = split /\s+/, $data;
+    my $reason = col((split /\s+/, $data,3)[2]);
     if ($s[1]) {
         foreach (split ',', $s[1]) {
             my $channel = channel::chanexists($_);
@@ -336,7 +337,7 @@ sub handle_part {
 }
 
 sub handle_quit {
-    my ($user,$reason) = (shift,col((split ' ', shift, 2)[1]));
+    my ($user,$reason) = (shift,col((split /\s+/, shift, 2)[1]));
     $user->quit('Quit: '.$reason);
 }
 
@@ -355,10 +356,10 @@ sub handle_rehash {
 
 sub handle_locops {
     my ($user, $data) = @_;
-    my @s = split / /, $data, 2;
+    my @s = split /\s+/, $data, 2;
     if (defined $s[1]) {
         if ($user->can('globops') || $user->can('locops')) {
-            my @s = split / /, $data, 2;
+            my @s = split /\s+/, $data, 2;
             snotice('LOCOPS from '.$user->nick.': '.$s[1]);
             return 1
         } else {
@@ -371,7 +372,7 @@ sub handle_locops {
 
 sub handle_topic {
     my ($user,$data) = @_;
-    my @s = split / /, $data, 3;
+    my @s = split /\s+/, $data, 3;
     if (defined $s[1]) {
         my $channel = channel::chanexists($s[1]);
         if ($channel) {
@@ -389,10 +390,10 @@ sub handle_topic {
 
 sub handle_kick {
     my($user,$data) = @_;
-    my @s = split / /, $data, 4;
+    my @s = split /\s+/, $data, 4;
     if (defined $s[2]) {
         my $channel = channel::chanexists($s[1]);
-        my $target = nickexists($s[2]);
+        my $target = user::nickexists($s[2]);
         if ($channel && $target) {
             my $reason = $target->nick;
             $reason = col($s[3]) if defined $s[3];
@@ -402,9 +403,9 @@ sub handle_kick {
 }
 
 sub handle_invite {
-    my($user,@s) = (shift,(split ' ', shift));
+    my($user,@s) = (shift,(split /\s+/, shift));
     if (defined $s[2]) {
-        my $someone = nickexists($s[1]);
+        my $someone = user::nickexists($s[1]);
         my $somewhere = channel::chanexists($s[2]);
         if (!$someone) {
             $user->numeric(401,$s[1]);
@@ -436,7 +437,7 @@ sub handle_invite {
 }
 
 sub handle_list {
-    my($user,@s) = (shift, (split ' ', shift));
+    my($user,@s) = (shift, (split /\s+/, shift));
     $user->numeric(321);
     if ($s[1]) {
         foreach (split ',', $s[1]) {
@@ -454,10 +455,10 @@ sub handle_list {
 }
 
 sub handle_ison {
-    my($user,@s,@final) = (shift, (split / /, shift), ());
+    my($user,@s,@final) = (shift, (split /\s+/, shift), ());
     if (defined $s[1]) {
         foreach (@s[1..$#s]) {
-            my $u = nickexists($_);
+            my $u = user::nickexists($_);
             push @final, $u->nick if $u;
         }
         $user->numeric(303,(join ' ', @final));
@@ -467,7 +468,7 @@ sub handle_ison {
 }
 
 sub handle_chghost {
-    my ($user, @s) = (shift, (split / /, shift));
+    my ($user, @s) = (shift, (split /\s+/, shift));
     if (!defined $s[2]) {
         $user->numeric(461, 'CHGHOST');
         return

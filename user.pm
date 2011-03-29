@@ -14,6 +14,7 @@ $utils::GV{'max'} = 0;
 our %connection;
 our %commands;
 
+# register the command handlers in userhandlers.pm
 &userhandlers::get;
 
 sub handle {

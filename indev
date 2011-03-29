@@ -286,6 +286,14 @@ VERSIONING
         1. March 28, 2011
 
             * Cleaned up user.pm A LOT.
+              (Expect new bugs.)
             * Moved user numerics to utils.
             * Moved user handlers to a new package called userhandlers.
             * Did some other cleanup in bin/juno and utils.pm.
+
+        2. March 29, 2011
+
+            * Replaced splits by / / in the user handler to split by whitespace.
+              This fixes several bugs that allowed an incorrect number of parameters in command handlers, causing all kinds of messups.
+            * Replaced some undefined functions from the transition from user.pm to userhandlers.pm...
+              This fixes several fatal bugs, but don't be surprised to find more.

@@ -1,4 +1,6 @@
 #!/usr/bin/perl -w
+# Copyright (c) 2011, Mitchell Cooper
+
 use warnings;
 use strict;
 use feature qw(say switch);
@@ -53,32 +55,32 @@ fatal('not listening') if $#sel < 0;
 our $select = new IO::Select @sel;
 
 for (;;) {
-    my $time;
     foreach my $client ($select->can_read(conf('main','timeout'))) {
+        my $time = time;
         my $user = user::lookup($client);
         $timer{$client} = 0 unless $timer{$client};
         if (exists $listensockets{$client}) {
-            user::new(($SSL{$client}?1:0),$client->accept)
+            user::new(($SSL{$client}?1:0), $client->accept)
         } else {
             $time = time;
             $timer{$client} = $time if $timer{$client} < $time;
             if (sysread $client, my $data, POSIX::BUFSIZ) {
                 $inbuffer{$client} .= $data
             } else {
-                $user->quit('Connection closed',1);
+                $user->quit('Connection closed', 1);
             }
         }
         delete $inbuffer{$client}, next unless $user;
         next unless exists $inbuffer{$client};
         my ($theline, $therest);
-        while (($timer{$client}-conf('flood','lines') <= $time) &&
+        while (($timer{$client}-conf('flood', 'lines') <= $time) &&
           (($theline, $therest) = $inbuffer{$client} =~ m/([^\n]*)\n(.*)/s)) {
             $inbuffer{$client} = $therest;
             $theline =~ s/\r$//;
             handle::user($client, $theline);
             $timer{$client}++
         }
-        $user->quit(conf('flood','msg')) if length $inbuffer{$client} > conf('flood','bytes')
+        $user->quit(conf('flood', 'msg')) if length $inbuffer{$client} > conf('flood', 'bytes')
     }
     foreach my $client ($select->can_write(0)) {
         next unless $outbuffer{$client};
@@ -88,7 +90,7 @@ for (;;) {
             (substr $outbuffer{$client}, 0, $sent) = '';
             delete $outbuffer{$client} unless length $outbuffer{$client}
         } else {
-            user::lookup($client)->quit('Write error',1)
+            user::lookup($client)->quit('Write error', 1)
         }
     }
     foreach my $client (values %user::connection) {
@@ -103,10 +105,12 @@ for (;;) {
         }
     }
 }
+
 sub sendpeer {
     my $peer = shift;
     $outbuffer{$peer} .= "$_\n" foreach @_
 }
+
 sub sigdie {
     say 'Preparing to exit...';
     foreach (values %user::connection) {
@@ -117,11 +121,13 @@ sub sigdie {
     unlink $DIR.'/etc/juno.pid' or fatal('Couldn\'t delete PID file.');
     fatal('Exiting by signal.')
 }
+
 sub sighup {
     snotice('Receieved SIGHUP, rehashing server configuration file.');
     say 'Receieved SIGHUP, rehashing server configuration file.';
     confparse($CONFIG)
 }
+
 sub confparse {
     my $file = shift;
     say 'Loading configuration: '.$file;
@@ -179,6 +185,7 @@ sub confparse {
     &loadmotd;
     close $CONF
 }
+
 sub loadmotd {
     say 'Loading MOTD: '.$DIR.'/'.conf('server','motd');
     open my $MOTD, $DIR.'/'.conf('server','motd') or $utils::GV{'motd'} = 'MOTD file is missing.', return; 
@@ -186,6 +193,7 @@ sub loadmotd {
     close $MOTD;
     return 1
 }
+
 sub createsockets {
     say 'Opening client sockets...';
     foreach my $name (keys %listen) {
@@ -208,7 +216,7 @@ sub createsockets {
                     LocalAddr => $name
                 ) or fatal('Could not listen: block '.$name.':'.$port.': '.$!)
             }
-            push@sel, $socket if $socket;
+            push @sel, $socket if $socket;
             $listensockets{$socket} = $port if $socket
         }
         foreach my $port (split / /, $listen{$name}{'ssl'}) {
@@ -233,6 +241,7 @@ sub createsockets {
         }
     }
 }
+
 sub loadrequirements {
     say 'Loading required modules...';
     if (conf('enabled','ipv6')) {
@@ -251,11 +260,11 @@ sub loadrequirements {
     if (conf('enabled','cloaking')) {
         say '    Loading cloaking module';
         require Digest::SHA or fatal('Could not load cloaking module. (Do you have Digest::SHA installed?)');
-        say '        Importing SHA256 support to cloaking module';
-        Digest::SHA->import('sha256_hex')
+        &user::DigestImport
     }
     say 'All required modules have been loaded successfully.'
 }
+
 sub getversion {
     open my $versionfile, '<', $DIR.'/etc/version' or fatal("Couldn't read version file");
     my $version = <$versionfile>;
@@ -263,4 +272,5 @@ sub getversion {
     $version =~ s/\s+$//;
     return $version
 }
+
 1

@@ -1,125 +1,59 @@
 #!/usr/bin/perl -w
+# Copyright (c) 2011, Mitchell Cooper
 package user;
+
 use warnings;
 use strict;
-use less 'mem';
+use feature qw/say switch/;
+
 use utils qw/col conf oper hostmatch snotice validnick validcloak/;
+use userhandlers;
+
 $utils::GV{'cid'} = 0;
 $utils::GV{'max'} = 0;
 our %connection;
-our %commands = (
-    PONG => sub {},
-    USER => sub { shift->numeric(462) },
-    SACONNECT => sub { return },
-    LUSERS => \&handle_lusers,
-    MOTD => \&handle_motd,
-    NICK => \&handle_nick,
-    PING => \&handle_ping,
-    WHOIS => \&handle_whois,
-    MODE => \&handle_mode,
-    PRIVMSG => \&handle_privmsgnotice,
-    NOTICE => \&handle_privmsgnotice,
-    AWAY => \&handle_away,
-    OPER => \&handle_oper,
-    KILL => \&handle_kill,
-    JOIN => \&handle_join,
-    WHO => \&handle_who,
-    NAMES => \&handle_names,
-    QUIT => \&handle_quit,
-    PART => \&handle_part,
-    REHASH => \&handle_rehash,
-    LOCOPS => \&handle_locops,
-    GLOBOPS => \&handle_locops,
-    TOPIC => \&handle_topic,
-    KICK => \&handle_kick,
-    INVITE => \&handle_invite,
-    LIST => \&handle_list,
-    ISON => \&handle_ison,
-    CHGHOST => \&handle_chghost
-);
-our %numerics = (
-    251 => ':There are %s users and %s invisible on %s servers',
-    265 => '%s %s :Current local users %s, max %s',
-    267 => '%s %s :Current global users %s, max %s',
-    301 => '%s :%s',
-    303 => ':%s',
-    305 => ':You are no longer marked as being away',
-    306 => ':You have been marked as being away',
-    311 => '%s %s %s * :%s',
-    312 => '%s %s :%s',
-    313 => '%s :is an IRC operator',
-    315 => '%s :End of /WHO list',
-    317 => '%s %s %s :seconds idle, signon time',
-    318 => '%s :End of /WHOIS list',
-    321 => 'Channel :Users    Name',
-    322 => '%s %s :%s',
-    323 => ':End of /LIST',
-    324 => '%s +%s %s',
-    329 => '%s %s',
-    331 => '%s :No topic is set',
-    332 => '%s :%s',
-    333 => '%s %s %s',
-    341 => '%s %s',
-    345 => '%s %s :Cannot change nickname while banned on channel',
-    346 => '%s %s %s %s',
-    347 => '%s :End of channel invite list',
-    348 => '%s %s %s %s',
-    349 => '%s :End of channel exception list',
-    353 => '= %s :%s',
-    366 => '%s :End of /NAMES list',
-    367 => '%s %s %s %s',
-    368 => '%s :End of channel ban list',
-    372 => ':- %s',
-    375 => '%s message of the day',
-    376 => ':End of message of the day.',
-    378 => '%s :is connecting from *@%s %s',
-    379 => '%s :is using modes +%s',
-    381 => '%s :End of /WHOIS list.',
-    388 => '%s %s %s %s',
-    389 => '%s :End of channel auto-access list',
-    396 => '%s :is now your displayed host',
-    401 => '%s :No such nick/channel',
-    403 => '%s :Invalid channel name',
-    404 => '%s :Cannot send to channel',
-    412 => ':No text to send',
-    421 => '%s :Unknown command',
-    422 => '%s :You\'re not on that channel',
-    431 => ':No nickname given',
-    432 => '%s :Erroneous nickname',
-    433 => '%s :Nickname is already in use',
-    441 => '%s :User is already on channel',    
-    443 => '%s %s :is already on channel',
-    461 => '%s :Not enough parameters',
-    462 => ':You may not reregister',
-    471 => '%s :Cannot join channel (channel limit reached)',
-    472 => '%s :No such mode',
-    473 => '%s :Cannot join channel (channel is invite only)',
-    474 => '%s :Cannot join channel (you\'re banned)',
-    481 => ':Permission Denied',
-    482 => '%s :You\'re not a channel %s',
-    491 => ':Invalid oper credentials',
-    501 => '%s :No such mode',
-    641 => '%s :is using a secure connection',
-    728 => '%s %s %s %s',
-    729 => '%s :End of channel mute list',
-);
+our %commands;
+
+&userhandlers::get;
+
+sub handle {
+    # main command handler
+    my ($user, $command) = (shift, uc shift);
+    if (exists $commands{$command}) {
+        # call to the CODE ref
+        $commands{$command}{'code'}($user, shift)
+    } else {
+        # unknown command
+        $user->numeric(421, $command)
+    }
+}
+
 sub new {
-    my($ssl,$peer) = @_;
+    my($ssl, $peer) = @_;
     return unless $peer;
     if (!&acceptcheck) {
+        # the server is not accepting connections
         $peer->close;
-        return;
+        return
     }
+
+    # check and make sure the IP is not Z-Lined, blacklisted, or if it has reached its max-per-IP limit
     my @ip_accept = ip_accept($peer->peerhost);
     if (!$ip_accept[0]) {
-        $peer->syswrite('ERROR :Closing Link: (*@'.$peer->peerhost.') ['.$ip_accept[1].']'."\r\n",POSIX::BUFSIZ);
+        # we can't use main::sendpeer here because the outbuffer will be cleared before the main loop gets a chance to send the data
+        $peer->syswrite('ERROR :Closing Link: (*@'.$peer->peerhost.') ['.$ip_accept[1].']'."\r\n", POSIX::BUFSIZ);
         $peer->close;
-        return;
+        return
     }
+
+    # add the user the IO::Select object
     $::select->add($peer);
+
     ::sendpeer($peer,':'.conf('server','name').' NOTICE * :*** Looking up your hostname...');
-    my ($ip,$ipv) = ($peer->peerhost,4);
+    my ($ip,$ipv) = ($peer->peerhost, 4);
     $ipv = 6 if $ip =~ m/:/;
+
+    # create the user
     my $user = {
         'ssl' => $ssl,
         'server' => $::id,
@@ -129,193 +63,274 @@ sub new {
         'ipv' => $ipv,
         'host' => $ip,
         'cloak' => $ip,
-        'time' => time,
-        'idle' => time,
-        'ping' => time,
-        'last' => time
+        'time' => time
     };
     bless $user;
+
+    # set PING rate, idle time, and other timers
+    handle::user_reset_timer($user, 0);
+
     $user->servernotice('*** Could not resolve hostname; using IP address instead');
     $connection{$peer} = $user;
-    return $user;
+    return $user
 }
+
 sub setmode {
-    my ($user,$modes,$a) = @_;
-    $user->send(':'.$user->nick.' MODE '.$user->nick.' :+'.$modes) unless $a;
+    # this is where the actual mode setting is done; mode handling is done in hmodes()
+    my ($user, $modes, $silent) = @_;
+    $user->send(':'.$user->nick.' MODE '.$user->nick.' :+'.$modes) unless $silent;
     foreach (split //, $modes) {
         $user->{'mode'}->{$_} = time;
         next if $_ =~ m/i/;
         if ($_ eq 'x' && conf('enabled','cloaking')) {
+            # use . for IPv4 and : for IPv6
             my $sep = ($user->{'ipv'} == 6 ? ':' : '\.');
+
+            # set the hidden host
             $user->setcloak(host2cloak($sep, $user->{'host'}));
         }
     }
 }
+
 sub ismode {
-    my ($user,$mode) = @_;
+    my ($user, $mode) = @_;
     return $user->{'mode'}->{$mode} if exists $user->{'mode'}->{$mode};
-    return;
+    return
 }
+
 sub unsetmode {
-    my ($user,$modes,$a) = @_;
-    $user->send(':'.$user->nick.' MODE '.$user->nick.' :-'.$modes) unless $a;
+    # once again, this is where the actual mode unsetting is done; mode handling is done in hmodes()
+    my ($user, $modes, $silent) = @_;
+    $user->send(':'.$user->nick.' MODE '.$user->nick.' :-'.$modes) unless $silent;
     foreach (split //, $modes) {
         delete $user->{'mode'}->{$_};
         next if $_ =~ m/(i|S)/;
-        if ($_ eq 'x' && conf('enabled','cloaking')) {
+        if ($_ eq 'x' && conf('enabled', 'cloaking')) {
+            # restore the original cloak
             $user->unsetcloak;
         } elsif ($_ eq 'o') {
+            # delete the user's IRCop
             delete $user->{'oper'};
+
+            # unset server notices if set
             $user->unsetmode('S') if $user->ismode('S');
         }
     }
 }
+
 sub hmodes {
     my ($user,$modes) = @_;
     return unless $modes;
-    my %normal = (i => 1);
-    $normal{'x'} = 1 if conf('enabled','cloaking');
-    my ($state,$p,$m) = (1,'','',());
-    foreach (split //, $modes) {
-        if ($_ eq '+') { $state = 1; next; }
-        elsif ($_ eq '-') { $state = 0; next; }
-        next if $_ =~ m/Z/; # modes that cannot be unset
-        if ($normal{$_}) { # normal modes
-            $user->unsetmode($_) if $state == 0;
-            $user->setmode($_) if $state == 1;
-        } elsif ($_ =~ m/(o|S)/) { # oper-only modes
-            if ($user->ismode('o')) {
-                $user->unsetmode($_) if $state == 0;
-                $user->setmode($_) if $state == 1;
+
+    # modes that always exist, whether or not a feature is enabled or disabled
+    my @enabled_modes = 'i';
+
+    push @enabled_modes, 'x' if conf('enabled', 'cloaking');
+    my $state = 1;
+    foreach my $piece (split //, $modes) {
+        given ($piece) {
+            when ('+') {
+                $state = 1
+            } when ('-') {
+                $state = 0
+            } when ('Z') {
+                # modes that cannot be set or unset
+                next
+            } when (/(o|S)/) {
+                # oper-only modes
+                if ($user->ismode('o')) {
+                    if ($state == 0) {
+                        $user->unsetmode($piece);
+                    } else {
+                        $user->setmode($piece);
+                    }
+                }
+            } default {
+                # unknown mode
+                $user->numeric(501, $piece)
             }
-        } else {
-            $user->numeric(501,$_);
         }
     }
 }
-sub handle {
-    my $user = shift;
-    my $command = uc shift;
-    if (exists($commands{$command})) {
-        $commands{$command}($user,shift);
-    } else { $user->numeric(421,$command); }
-}
+
 sub setcloak {
-    my $user = shift;
-    my $cloak = shift;
-    $user->numeric(396,$cloak);
+    my ($user, $cloak) = @_;
+    $user->numeric(396, $cloak);
     $user->{'cloak'} = $cloak;
-    return $cloak;
+    return $cloak
 }
+
 sub host2cloak {
     my @pieces = ();
     my $sep = shift;
     foreach (split $sep, shift) {
-        my $part = Digest::SHA::sha1_hex($_,conf('cloak','salt'),$#pieces);
+        my $part = sha1_hex($_,conf('cloak', 'salt'), $#pieces);
+
+        # create six-character section
         $part = ($part =~ m/....../g)[0];
+
         push @pieces, $part;
     }
+
+    # since split requires . to be escaped
     $sep = '.' if $sep eq '\.';
-    return (join $sep, @pieces);
+
+    return (join $sep, @pieces)
 }
+
 sub unsetcloak {
+    # restore a user's original host
     my $user = shift;
-    $user->numeric(396,$user->host);
+    $user->numeric(396, $user->host);
     $user->{'cloak'} = $user->host;
-    return $user->host;
+    return $user->host
 }
+
 sub lookup {
     my $peer = shift;
     return $connection{$peer} if exists $connection{$peer};
-    return;
+
+    # no such user
+    return
 }
+
 sub send {
-    ::sendpeer(shift->obj,@_);
+    ::sendpeer(shift->obj, @_)
 }
+
 sub can {
-    my $user = shift;
-    my $priv = shift;
+    # check for an oper flag
+    my ($user, $priv) = @_;
     return unless defined $user->{'oper'};
-    foreach (split ' ', oper($user->{'oper'},'privs')) {
+    foreach (split / /, oper($user->{'oper'},'privs')) {
         return 1 if $_ eq $priv;
     }
-    return;
+
+    # they don't have that priv
+    return
 }
 sub quit {
-    my ($user,$r,$no,$display) = @_;
+    my ($user, $reason, $silent, $display) = @_;
+
+    # relay the quit to all users in a common channel, but only once.
     my %sent;
-    foreach (values %channel::channels) {
-        if ($user->ison($_)) {
-            $_->check;
+    foreach my $channel (values %channel::channels) {
+        if ($user->ison($channel)) {
+
+            # ensure that the channel isn't empty
+            $channel->check;
+
             foreach (keys %{$_->{'users'}}) {
-                lookupbyid($_)->send(':'.$user->fullcloak.' QUIT :'.($display?$display:$r)) unless $sent{$_};
-                $sent{$_} = 1;
+                lookupbyid($_)->send(':'.$user->fullcloak.' QUIT :'.($display?$display:$reason)) unless $sent{$_};
+                $sent{$_} = 1
             }
         }
-        $_->remove($user);
+
+        # remove the user from the channel
+        # this has to be outside of the ison() because some data (such as invites) do not require that the user is in the channel
+        $channel->remove($user)
     }
-    snotice('client exiting: '.$user->fullhost.' ['.$user->{'ip'}.'] ('.$r.')') if $user->{'ready'};
-    $user->obj->syswrite('ERROR :Closing Link: ('.(defined $user->{'ident'}?$user->{'ident'}:'*').'@'.$user->host.') ['.$r.']'."\r\n",POSIX::BUFSIZ) unless $no;
+
+    snotice('client exiting: '.$user->fullhost.' ['.$user->{'ip'}.'] ('.$reason.')') if $user->{'ready'};
+
+    # we can't use main::sendpeer here because the outbuffer will be cleared before the main loop gets a chance to send the data
+    $user->obj->syswrite('ERROR :Closing Link: ('.(defined $user->{'ident'}?$user->{'ident'}:'*').'@'.$user->host.') ['.$reason.']'."\r\n", POSIX::BUFSIZ) unless $silent;
+
+    # delete their data
     delete $connection{$user->obj};
-    $::select->remove($user->obj);
     delete $::outbuffer{$user->obj};
     delete $::timer{$user->obj};
+
+    # remove the user from the IO::Select object and close the socket
+    $::select->remove($user->obj);
     $user->obj->close;
+
     undef $user;
-    &acceptcheck;
+
+    # double-check if the server is ready to accept new connections
+    &acceptcheck
 }
 sub servernotice {
+    # send a NOTICE from the server
+    # :server NOTICE nick :message
     my $user = shift;
     $user->send(':'.conf('server','name').' NOTICE '.$user->nick." :@_");
 }
+
 sub snt {
-    my $user = shift;
-    $user->servernotice(sprintf '*** %s: %s', shift, shift);
+    # server notice for a command such as CHGHOST
+    shift->servernotice(sprintf '*** %s: %s', shift, shift);
 }
+
 sub sendnum {
-    # deprecated
+    # deprecated; use numeric() instead.
+    # (this is still used in the start() function as those numerics are only used once,
+    # or at least until the VERSION command is complete.)
     my $user = shift;
     $user->send(':'.conf('server','name').' '.shift().' '.$user->nick." @_");
 }
+
 sub numeric {
-    my ($user,$num) = (shift,shift);
-    $user->send(join(' ',':'.conf('server','name'),$num,$user->nick,sprintf($numerics{$num},@_)));
+    # send a numeric
+    # numerics are defined in the %numerics hash
+    my ($user, $num) = (shift, shift);
+    $user->send(join(' ',':'.conf('server','name'),$num,$user->nick,sprintf($utils::numerics{$num},@_)));
 }
+
 sub sendserv {
-    shift->send(':'.conf('server','name').' '.sprintf(shift, @_));
+    # send from the server
+    # :server data
+    shift->send(':'.conf('server','name').' '.(sprintf shift, @_));
 }
+
 sub sendservj {
-    shift->send(':'.conf('server','name').' '.join(' ',@_));
+    # send from the server, using join(' ') for each argument
+    shift->send(':'.conf('server','name').' '.(join ' ', @_));
 }
+
 sub sendfrom {
-    shift->send(':'.shift().' '.sprintf(shift, @_));
+    # send from a server or user
+    shift->send(':'.shift().' '.(sprintf shift, @_));
 }
+
 sub sendfromj {
-    shift->send(':'.shift().' '.join(' ',@_));
+    # send from a server or user, using join(' ') for each argument
+    shift->send(':'.shift().' '.(join ' ', @_));
 }
+
 sub fullcloak {
+    # the entire mask, using the displayed host
     my $user = shift;
     return $user->{'nick'}.'!'.$user->{'ident'}.'@'.$user->{'cloak'} if $user->{'ready'};
     return '*'
 }
+
 sub recvprivmsg {
+    # who knows why this has its own function? it's only used once...
     my ($user,$from,$target,$msg,$cmd) = @_;
     $user->send(':'.join(' ',$from,$cmd,$target).' :'.$msg);
 }
+
 sub mode {
     return shift->{'mode'}->{shift()};
 }
+
 sub fullhost {
+    # the entire mask, using the actual host
     my $user = shift;
     return $user->{'nick'}.'!'.$user->{'ident'}.'@'.$user->{'host'} if defined $user->{'ready'};
     return '*'
 }
+
 sub nick {
+    # user's nick or * if they haven't registered
     my $user = shift;
     return $user->{'nick'} if $user->{'nick'};
     return '*'
 }
+
 sub start {
+    # called by handle.pm after the user registers
     my $user = shift;
     return if $user->checkkline;
     snotice('client connecting: '.$user->fullhost.' ['.$user->{'ip'}.']');
@@ -324,445 +339,161 @@ sub start {
     $user->sendnum('003',':This server was created '.POSIX::strftime('%a %b %d %Y at %H:%M:%S %Z',localtime $::TIME));
     $user->sendnum('004',conf('server','name').' juno-'.$::VERSION.' ix o bei');
     $user->sendnum('005','CHANTYPES=# EXCEPTS INVEX CHANMODES=AeIbZ,,l,imntz PREFIX=(qaohv)~&@%+ NETWORK='.conf('server','network').' MODES='.conf('limit','chanmodes').' NICKLEN='.conf('limit','nick').' TOPICLEN='.conf('limit','topic').' :are supported by this server');
-    $user->handle_lusers;
-    $user->handle_motd;
+
+    # make the server think the user sent these commands
+    userhandlers::handle_lusers($user);
+    userhandlers::handle_motd($user);
+
+    # set automatic modes as defined in the configuration
     $user->setmode(conf('user','automodes').($user->{'ssl'}?'Z':''));
+
     return 1
 }
+
 sub newid {
+    # a new ID
     $utils::GV{'cid'}++;
-    return $utils::GV{'cid'}-1;
+    return $utils::GV{'cid'}-1
 }
+
 sub id {
+    # the user's UID
     return shift->{'id'}
 }
+
 sub obj {
+    # the user's IO::Socket object
     return shift->{'obj'}
 }
+
 sub server {
+    # the ID of the server the user is on
     return shift->{'server'}
 }
+
 sub host {
+    # user's acutal host
     return shift->{'host'};
 }
+
 sub nickexists {
+    # check if a nickname exists and return that user's object if it does
     my $nick = shift;
     foreach (values %connection) {
-        return $_ if lc($_->{'nick'}) eq lc($nick);
+        # found a match
+        return $_ if lc $_->{'nick'} eq lc $nick;
     }
+
+    # no such nick
     return    
 }
+
 sub lookupbyid {
+    # find a user by their UID
     my $id = shift;
     foreach (values %connection) {
+        # found a match
         return $_ if $_->{'id'} == $id;
     }
+
+    # no such UID
     return 
 }
+
 sub canoper {
+    # check if a user has correct oper credentials
     # TODO: add support for SHA encryption.
-    my ($user,$oper,$password) = @_;
+    my ($user, $oper, $password) = @_;
     return unless exists $::oper{$oper};
-    if (oper($oper,'password') eq crypt($password,oper($oper,'salt'))) {
-                return $oper if hostmatch($user->fullhost,(split ' ', oper($oper,'host')))
+
+    # check if the password is correct
+    if (oper($oper, 'password') eq crypt($password, oper($oper, 'salt'))) {
+
+                # check if the mask is correct
+                return $oper if hostmatch($user->fullhost, (split / /, oper($oper, 'host')))
     }
+
+    # invalid credentials
     return
 }
+
 sub ison {
-    my ($user,$channel) = @_;
+    # check if a user is on a channel (by objects, not names)
+    my ($user, $channel) = @_;
     return 1 if exists $channel->{'users'}->{$user->{'id'}};
     return
 }
+
 sub checkkline {
+    # check if the user's mask matches a K-Line in the configuration
     my $user = shift;
     foreach (keys %::kline) {
         if (hostmatch($user->fullhost,$_)) {
-            $user->quit('K-Lined: '.$::kline{$_}{'reason'},undef,'K-Lined'.(conf('main','showkline')?': '.$::kline{$_}{'reason'}:''));
+            # found a match; forcing them to quit
+            $user->quit('K-Lined: '.$::kline{$_}{'reason'}, undef, 'K-Lined'.(conf('main', 'showkline')?': '.$::kline{$_}{'reason'}:''));
             return 1
         }
     }
+
+    # they're free to go
     return
 }
+
 sub acceptcheck {
+    # ensure that the server is accepting connections
     my $i = 0;
     $i++ foreach (values %connection);
     if ($i == conf('limit','clients')) {
+        # maximum client count reached
         snotice('No new clients are being accepted. ('.$i.' users)') if $::ACCEPTING != 0;
         $::ACCEPTING = 0;
         return
     } else {
+        # person(s) quit; accepting clients again
         snotice('Clients are now being accepted. ('.$i.' users)') if $::ACCEPTING != 1;
         $::ACCEPTING = 1;
         return 1
     }
 }
+
 sub ip_accept {
+    # make sure the max-per-ip limit has not been reached and that the IP is not zlined.
     my $ip = shift;
     my $count = 0;
     foreach (values %connection) {
-        $count++ if $_->{'ip'} eq $ip;
+        $count++ if $_->{'ip'} eq $ip
     }
-    return (undef,'Too many connections from this host') if $count >= conf('limit','perip');
+
+    # limit reached
+    return (undef, 'Too many connections from this host') if $count >= conf('limit', 'perip');
+
     foreach (keys %::zline) {
-            return (undef,'Z-Lined: '.$::zline{$_}{'reason'}) if hostmatch($ip,$_);
+            # IP matches a Z-Line in the configuration
+            return (undef, 'Z-Lined: '.$::zline{$_}{'reason'}) if hostmatch($ip, $_);
     }
-    return 1;
+    return 1
 }
-# HANDLERS
-sub handle_lusers {
-    my $user = shift;
-    my ($i,$ii) = (0,0);
-    foreach (values %connection) {
-        if ($_->mode('i')) {
-            $ii++;
-        } else { $i++; }
-    } my $t = $i+$ii;
-    $utils::GV{'max'} = $t if $utils::GV{'max'} < $t;
-    $user->numeric(251,$i,$ii,1);
-    $user->numeric(265,$t,$utils::GV{'max'},$t,$utils::GV{'max'});
-    $user->numeric(267,$t,$utils::GV{'max'},$t,$utils::GV{'max'});
+
+sub DigestImport {
+    say '        Importing SHA256 support to cloaking module';
+    Digest::SHA->import('sha256_hex')
 }
-sub handle_motd {
-    my $user = shift;
-    $user->numeric(375,conf('server','name'));
-    foreach my $line (split $/, $utils::GV{'motd'}) {
-        $user->numeric(372,$line);
-    }
-    $user->numeric(376);
-}
-sub handle_nick {
-    my $user = shift;
-    my @s = split / /, shift;
-    if ($s[1]) {
-        return if $s[1] eq $user->nick;
-        if (validnick($s[1],conf('limit','nick'),undef)) {
-            if(!user::nickexists($s[1]) || lc($s[1]) eq lc($user->nick)) {
-                my %sent;
-                my @users = $user;
-                $sent{$user->{'id'}} = 1;
-                foreach my $channel (values %channel::channels) {
-                    if ($user->ison($channel)) {
-                        if (hostmatch($user->fullcloak,keys %{$channel->{'bans'}}) || hostmatch($user->fullhost,keys %{$channel->{'bans'}}) &&
-                        !hostmatch($user->fullhost,keys %{$channel->{'exempts'}})) {
-                            $user->numeric(345,$s[1],$channel->name), return unless $channel->canspeakwithstatus($user);
-                        }
-                        $channel->check;
-                        foreach (keys %{$channel->{'users'}}) {
-                            next if $sent{$_};
-                            push(@users,lookupbyid($_));
-                            $sent{$_} = 1;
-                        }
-                    }
-                }
-                $_->send(':'.$user->fullcloak.' NICK :'.$s[1]) foreach @users;
-                $user->{'nick'} = $s[1];
-            } else { $user->numeric(433,$s[1]); }
-        } else { $user->numeric(432,$s[1]); }
-    } else { $user->numeric(431); }
-}
-sub handle_whois {
-    my $user = shift;
-    my $nick = (split ' ', shift)[1];
-    my $modes = '';
-    if ($nick) {
-        my $target = nickexists($nick);
-        if ($target) {
-            $modes .= $_ foreach (keys %{$target->{'mode'}});
-            $user->numeric(311,$target->nick,$target->{'ident'},$target->{'cloak'},$target->{'gecos'});
-            #>> :server 319 nick targetnick :~#chat @#halp
-            $user->numeric(312,$target->nick,conf('server','name'),conf('server','desc'));
-            $user->numeric(641,$target->nick) if $target->{'ssl'};
-            $user->numeric(301,$target->nick,$target->{'away'}) if defined $target->{'away'};
-            $user->numeric(313,$target->nick) if $target->ismode('o');
-            $user->numeric(379,$target->nick,$modes) if $user->ismode('o');
-            $user->numeric(378,$target->nick,$target->{'host'},$target->{'ip'}) if (!$user->{'mode'}->{'x'} || $user->ismode('o'));
-            $user->numeric(317,$target->nick,(time-$target->{'idle'}),$target->{'time'});
-        } else {
-            $user->numeric(401,$nick);
-        }
-        $user->numeric(318,$nick);
-    } else { $user->numeric(461,'WHOIS'); }
-}
-sub handle_ping {
-    my $user = shift;
-    my $reason = (split ' ', shift, 2)[1];
-    $user->sendserv('PONG '.conf('server','name').(defined $reason?' '.$reason:''));
-}
-sub handle_mode {
-    my ($user,$data) = @_;
-    my @s = split / /, $data;
-    if (defined($s[1])) {
-        if (lc($s[1]) eq lc($user->nick)) {
-            $user->hmodes($s[2]);
-        } else {
-            my $target = channel::chanexists($s[1]);
-            if ($target) {
-                $target->handlemode($user,(split ' ', $data, 3)[2]);
-            } else {
-                $user->numeric(401,$s[1]);
-            }
-        }
-    } else { $user->numeric(461,'MODE'); }
-}
-sub handle_privmsgnotice {
-    my ($user, $data) = @_;
-    my ($n, @s) = (0, (split / /, $data));
-    $n = 1 if uc $s[0] eq 'NOTICE';
-    if (!defined $s[2]) {
-        $user->numeric(461,$n?'NOTICE':'PRIVMSG');
+
+sub register_handler {
+    # add a command handler
+    my ($handler, $code) = (uc shift, shift);
+    if (exists $commands{$handler}) {
+        # command already exists
+        say 'add_handler failed; '.$handler.' already exists.';
         return
     }
-    my $target = nickexists($s[1]);
-    my $channel = channel::chanexists($s[1]);
-    my $msg = col((split / /, $data, 3)[2]);
-    if (!length $msg) {
-        $user->numeric(412);
-        return
-    }
-    if ($target) {
-        $target->recvprivmsg($user->fullcloak,$target->nick,$msg,($n?'NOTICE':'PRIVMSG'));
-    } elsif ($channel) {
-        $channel->privmsgnotice($user,($n?'NOTICE':'PRIVMSG'),$msg);
-    } else {
-        $user->numeric(401,$s[1]);
-    }
+
+    # success
+    $commands{$handler} = {
+        'code' => $code
+    };
+    say 'Registered handler '.$handler;
+    return 1
 }
-sub handle_away {
-    my ($user,$reason) = (shift,(split ' ', shift, 2)[1]);
-    if (defined $user->{'away'}) {
-        $user->{'away'} = undef;
-        $user->numeric(305);
-        return;
-    }
-    $user->{'away'} = col($reason);
-    $user->numeric(306);
-}
-sub handle_oper {
-    my ($user,$data) = @_;
-    my @s = split / /, $data;
-    if (defined $s[2]) {
-        my $oper = $user->canoper($s[1],$s[2]);
-        if ($oper) {
-            $user->{'oper'} = $oper;
-            my $vhost = oper($oper,'vhost');
-            $user->setcloak($vhost) if defined $vhost;
-            $user->setmode('o'.(oper($oper,'snotice')?'S':''));
-            snotice($user->fullhost.' is now an IRC operator using name '.$oper);
-            snotice('user '.$user->nick.' now has oper privs: '.oper($oper,'privs'));
-        } else { $user->numeric(491); }
-    } else { $user->numeric(461,'OPER'); }
-}
-sub handle_kill {
-    my ($user,$data) = @_;
-    my @s = split / /, $data;
-    if (defined $s[2]) {
-        if ($user->can('kill')) {
-            my $target = nickexists($s[1]);
-            if ($target) {
-                my $reason = col((split ' ',$data,3)[2]);
-                $target->quit('Killed ('.$user->nick.' ('.$reason.'))');
-            } else { $user->numeric(401,$s[1]); }
-        } else { $user->numeric(481); }
-    } else { $user->numeric(461,'KILL'); }
-}
-sub handle_join {
-    my ($user,$data) = @_;
-    my @s = split ' ', $data;
-    if (defined($s[1])) {
-        $s[1] = col($s[1]);
-        foreach(split ',', $s[1]) {
-            my $target = channel::chanexists($_);
-            if ($target) {
-                $target->dojoin($user) unless $user->ison($target);
-            } else {
-                if ($_ =~ m/^#/) {
-                    channel::new($user,$_);
-                } else {
-                    $user->numeric(403,$_);
-                }
-            }
-        }
-    } else { $user->numeric(461,'JOIN'); }
-}
-sub handle_who {
-    my ($user,$query) = (shift,(split ' ',shift)[1]);
-    my $target = channel::chanexists($query);
-    if ($target) {
-        $target->who($user);
-    }
-    $user->numeric(315,$query);
-}
-sub handle_names {
-    my $user = shift;
-    foreach (split ',', (split ' ',shift)[1]) {
-        my $target = channel::chanexists($_);
-        $target->names($user) if $target;
-        $user->numeric(366,$_) unless $target;
-    }
-}
-sub handle_part {
-    my ($user,$data) = @_;
-    my @s = split / /, $data;
-    my $reason = col((split ' ', $data,3)[2]);
-    if ($s[1]) {
-        foreach (split ',', $s[1]) {
-            my $channel = channel::chanexists($_);
-            if ($channel) {
-                if ($user->ison($channel)) {
-                    $channel->allsend(':%s PART %s%s',0,$user->fullcloak,$channel->name,(defined $reason?' :'.$reason:''));
-                    $channel->remove($user);
-                } else { $user->numeric(422,$channel->name); }
-            } else {
-                $user->numeric(401,$_);
-            }
-        }
-    } else { $user->numeric(461,'PART'); }
-}
-sub handle_quit {
-    my ($user,$reason) = (shift,col((split ' ', shift, 2)[1]));
-    $user->quit('Quit: '.$reason);
-}
-sub handle_rehash {
-    my $user = shift;
-    if ($user->can('rehash')) {
-        undef %::config;
-        undef %::oper;
-        undef %::kline;
-        snotice($user->nick.' is rehashing server configuration file');
-        ::confparse($::CONFIG);
-    } else {
-        $user->numeric(481);
-    }
-}
-sub handle_locops {
-    my ($user, $data) = @_;
-    my @s = split / /, $data, 2;
-    if (defined $s[1]) {
-        if ($user->can('globops') || $user->can('locops')) {
-            my @s = split / /, $data, 2;
-            snotice('LOCOPS from '.$user->nick.': '.$s[1]);
-            return 1
-        } else {
-            $user->numeric(481)
-        }
-    } else {
-        $user->numeric(461,uc $s[0])
-    }
-}
-sub handle_topic {
-    my ($user,$data) = @_;
-    my @s = split / /, $data, 3;
-    if (defined $s[1]) {
-        my $channel = channel::chanexists($s[1]);
-        if ($channel) {
-            if (defined $s[2]) {
-                $s[2] = substr($s[2],0,-(length($s[2])-(conf('limit','topic')+1))) if (length $s[2] > conf('limit','topic'));
-                $channel->settopic($user,col($s[2]));
-            } else {
-                $channel->showtopic($user);
-            }
-        } else { $user->numeric(401,$s[1]); }
-    } else {
-        $user->numeric(461,'TOPIC');
-    }
-}
-sub handle_kick {
-    my($user,$data) = @_;
-    my @s = split / /, $data, 4;
-    if (defined $s[2]) {
-        my $channel = channel::chanexists($s[1]);
-        my $target = nickexists($s[2]);
-        if ($channel && $target) {
-            my $reason = $target->nick;
-            $reason = col($s[3]) if defined $s[3];
-            $user->numeric(482,$channel->name,'half-operator') unless $channel->kick($user,$target,$reason);
-        } else { $user->numeric(401,$s[1]); }
-    } else { $user->numeric(461,'KICK'); }
-}
-sub handle_invite {
-    my($user,@s) = (shift,(split ' ', shift));
-    if (defined $s[2]) {
-        my $someone = nickexists($s[1]);
-        my $somewhere = channel::chanexists($s[2]);
-        if (!$someone) {
-            $user->numeric(401,$s[1]);
-            return
-        }
-        return if $someone == $user;
-        if (!$somewhere) {
-            $user->numeric(401,$s[2]); 
-            return
-        }
-        if (!$user->ison($somewhere)) {
-            $user->numeric(422,$somewhere->name);
-            return
-        }
-        if (!$somewhere->basicstatus($user)) {
-            $user->numeric(482,$somewhere->name,'half-operator');
-            return
-        }
-        if ($someone->ison($somewhere)) {
-            $user->numeric(433,$someone->nick,$somewhere->name);
-            return
-        }
-        $somewhere->{'invites'}->{$someone->{'id'}} = time;
-        $someone->sendfrom($user->nick,' INVITE '.$someone->nick.' :'.$somewhere->name);
-        $user->numeric(341,$someone->nick,$somewhere->name)
-    } else {
-        $user->numeric(461,'INVITE')
-    }
-}
-sub handle_list {
-    my($user,@s) = (shift, (split ' ', shift));
-    $user->numeric(321);
-    if ($s[1]) {
-        foreach (split ',', $s[1]) {
-            my $channel = channel::chanexists($_);
-            if ($channel) {
-                $channel->list($user);
-            } else {
-                $user->numeric(401,$_);
-            }
-        }
-    } else {
-        $_->list($user) foreach values %channel::channels;
-    }
-    $user->numeric(323);
-}
-sub handle_ison {
-    my($user,@s,@final) = (shift, (split / /, shift), ());
-    if (defined $s[1]) {
-        foreach (@s[1..$#s]) {
-            my $u = nickexists($_);
-            push @final, $u->nick if $u;
-        }
-        $user->numeric(303,(join ' ', @final));
-    } else {
-        $user->numeric(461,'ISON');
-    }
-}
-sub handle_chghost {
-    my ($user, @s) = (shift, (split / /, shift));
-    if (!defined $s[2]) {
-        $user->numeric(461, 'CHGHOST');
-        return
-    }
-    if (!$user->can('chghost')) {
-        $user->numeric(481);
-        return
-    }
-    my $target = user::nickexists($s[1]);
-    if ($target) {
-        if (validcloak($s[2])) {
-            snotice(sprintf '%s used CHGHOST to change %s\'s cloak to %s', $user->nick, $target->nick, $s[2]);
-            $target->setcloak($s[2]);
-            $user->snt('CHGHOST', $target->nick.'\'s cloak has been changed to '.$s[2]);
-            return 1
-        } else {
-            $user->snt('CHGHOST', 'invalid characters');
-        }
-    } else {
-        $user->numeric(401, $s[1]);
-    }
-}
+
 1

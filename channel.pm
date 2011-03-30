@@ -102,20 +102,33 @@ sub has {
 }
 sub names {
     my ($channel,$user) = @_;
-    my $names = '';
+    my @users = ();
     foreach (keys %{$channel->{'users'}}) {
         my $u = user::lookupbyid($_);
         next if ($u->ismode('i') and !$user->ison($channel));
-        $names .=
-        (defined $channel->{'owners'}->{$_}?'~':
-        (defined $channel->{'admins'}->{$_}?'&':
-        (defined $channel->{'ops'}->{$_}?'@':
-        (defined $channel->{'halfops'}->{$_}?'%':
-        (defined $channel->{'voices'}->{$_}?'+':''))))).
-        $u->nick.' '
+        push @users, ($channel->prefix($u) ? $channel->prefix($u).$u->nick : $u->nick);
     }
-    $user->numeric(353,$channel->name,$names) unless $names eq '';
+    $user->numeric(353,$channel->name, (join ' ', @users)) unless $#users < 0;
     $user->numeric(366,$channel->name)
+}
+sub prefix {
+    my ($channel, $user) = @_;
+    if ($channel->has($user, 'owner')) {
+        return '~'
+    }
+    if ($channel->has($user, 'admin')) {
+        return '&'
+    }
+    if ($channel->has($user, 'op')) {
+        return '@'
+    }
+    if ($channel->has($user, 'halfop')) {
+        return '%'
+    }
+    if ($channel->has($user, 'voice')) {
+        return '+'
+    }
+    return
 }
 sub chanexists {
     my $name = lc shift;

@@ -126,7 +126,6 @@ add a KLINE command and store K-Lines in a database of some sort
 add a ZLINE command and store Z-Lines in a database of some sort
 make the modules be (un)loaded on rehash
 add channels (numeric 319) to WHOIS.
-fix some fail bug in CHGHOST
 
 user commands
 -----------------------

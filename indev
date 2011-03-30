@@ -297,3 +297,7 @@ VERSIONING
               This fixes several bugs that allowed an incorrect number of parameters in command handlers, causing all kinds of messups.
             * Replaced some undefined functions from the transition from user.pm to userhandlers.pm...
               This fixes several fatal bugs, but don't be surprised to find more.
+            * Added channel::prefix to fetch a user prefix.
+              NAMES command now uses this function.
+            * WHOIS queries now display the channels that a user is in.
+            * Fixed bug in user mode handler where modes i and x were thought to be nonexistent.

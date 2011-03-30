@@ -146,6 +146,14 @@ sub hmodes {
                         $user->setmode($piece);
                     }
                 }
+                # otherwise just ignore it
+            } when ($_ ~~ @enabled_modes) {
+                # modes that actually exist!
+                if ($state == 0) {
+                    $user->unsetmode($piece);
+                } else {
+                    $user->setmode($piece);
+                }
             } default {
                 # unknown mode
                 $user->numeric(501, $piece)
@@ -217,14 +225,11 @@ sub quit {
     my %sent;
     foreach my $channel (values %channel::channels) {
         if ($user->ison($channel)) {
-
-            # ensure that the channel isn't empty
-            $channel->check;
-
             foreach (keys %{$_->{'users'}}) {
                 lookupbyid($_)->send(':'.$user->fullcloak.' QUIT :'.($display?$display:$reason)) unless $sent{$_};
                 $sent{$_} = 1
             }
+
         }
 
         # remove the user from the channel

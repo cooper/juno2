@@ -29,6 +29,7 @@ our %numerics = (
     315 => '%s :End of /WHO list',
     317 => '%s %s %s :seconds idle, signon time',
     318 => '%s :End of /WHOIS list',
+    319 => '%s :%s',
     321 => 'Channel :Users    Name',
     322 => '%s %s :%s',
     323 => ':End of /LIST',

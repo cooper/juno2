@@ -177,6 +177,13 @@ sub handle_whois {
             $modes .= $_ foreach (keys %{$target->{'mode'}});
             $user->numeric(311,$target->nick,$target->{'ident'},$target->{'cloak'},$target->{'gecos'});
             #>> :server 319 nick targetnick :~#chat @#halp
+            my @channels = ();
+            foreach my $channel (values %channel::channels) {
+                if ($user->ison($channel)) {
+                    push @channels, ($channel->prefix($user) ? $channel->prefix($user).$channel->name : $channel->name);
+                }
+            }
+            $user->numeric(319,$target->nick,(join ' ', @channels)) unless $#channels < 0;
             $user->numeric(312,$target->nick,conf('server','name'),conf('server','desc'));
             $user->numeric(641,$target->nick) if $target->{'ssl'};
             $user->numeric(301,$target->nick,$target->{'away'}) if defined $target->{'away'};

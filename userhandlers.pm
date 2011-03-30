@@ -176,7 +176,6 @@ sub handle_whois {
         if ($target) {
             $modes .= $_ foreach (keys %{$target->{'mode'}});
             $user->numeric(311,$target->nick,$target->{'ident'},$target->{'cloak'},$target->{'gecos'});
-            #>> :server 319 nick targetnick :~#chat @#halp
             my @channels = ();
             foreach my $channel (values %channel::channels) {
                 if ($user->ison($channel)) {

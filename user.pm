@@ -55,7 +55,7 @@ sub new {
     $ipv = 6 if $ip =~ m/:/;
 
     # create the user
-    my $user = {
+    bless my $user = {
         'ssl' => $ssl,
         'server' => $::id,
         'id' => $::id.&newid,
@@ -66,7 +66,6 @@ sub new {
         'cloak' => $ip,
         'time' => time
     };
-    bless $user;
 
     # set PING rate, idle time, and other timers
     handle::user_reset_timer($user, 0);
@@ -140,19 +139,19 @@ sub hmodes {
             } when (/(o|S)/) {
                 # oper-only modes
                 if ($user->ismode('o')) {
-                    if ($state == 0) {
-                        $user->unsetmode($piece);
+                    if ($state) {
+                        $user->setmode($piece)
                     } else {
-                        $user->setmode($piece);
+                        $user->unsetmode($piece)
                     }
                 }
                 # otherwise just ignore it
             } when ($_ ~~ @enabled_modes) {
                 # modes that actually exist!
-                if ($state == 0) {
-                    $user->unsetmode($piece);
+                if ($state) {
+                    $user->setmode($piece)
                 } else {
-                    $user->setmode($piece);
+                    $user->unsetmode($piece)
                 }
             } default {
                 # unknown mode
@@ -173,7 +172,7 @@ sub host2cloak {
     my @pieces = ();
     my $sep = shift;
     foreach (split $sep, shift) {
-        my $part = sha1_hex($_,conf('cloak', 'salt'), $#pieces);
+        my $part = sha1_hex($_, conf('cloak', 'salt'), $#pieces);
 
         # create six-character section
         $part = ($part =~ m/....../g)[0];
@@ -211,7 +210,7 @@ sub can {
     # check for an oper flag
     my ($user, $priv) = @_;
     return unless defined $user->{'oper'};
-    foreach (split / /, oper($user->{'oper'},'privs')) {
+    foreach (split / /, oper($user->{'oper'}, 'privs')) {
         return 1 if $_ eq $priv;
     }
 
@@ -379,7 +378,7 @@ sub server {
 
 sub host {
     # user's acutal host
-    return shift->{'host'};
+    return shift->{'host'}
 }
 
 sub nickexists {
@@ -387,7 +386,7 @@ sub nickexists {
     my $nick = shift;
     foreach (values %connection) {
         # found a match
-        return $_ if lc $_->{'nick'} eq lc $nick;
+        return $_ if lc $_->{'nick'} eq lc $nick
     }
 
     # no such nick
@@ -399,7 +398,7 @@ sub lookupbyid {
     my $id = shift;
     foreach (values %connection) {
         # found a match
-        return $_ if $_->{'id'} == $id;
+        return $_ if $_->{'id'} == $id
     }
 
     # no such UID
@@ -475,7 +474,7 @@ sub ip_accept {
 
     foreach (keys %::zline) {
             # IP matches a Z-Line in the configuration
-            return (undef, 'Z-Lined: '.$::zline{$_}{'reason'}) if hostmatch($ip, $_);
+            return (undef, 'Z-Lined: '.$::zline{$_}{'reason'}) if hostmatch($ip, $_)
     }
     return 1
 }

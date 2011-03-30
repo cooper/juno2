@@ -108,7 +108,7 @@ for (;;) {
 
 sub sendpeer {
     my $peer = shift;
-    $outbuffer{$peer} .= "$_\n" foreach @_
+    $outbuffer{$peer} .= "$_\r\n" foreach @_
 }
 
 sub sigdie {

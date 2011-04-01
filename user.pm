@@ -50,9 +50,9 @@ sub new {
     # add the user the IO::Select object
     $::select->add($peer);
 
-    ::sendpeer($peer,':'.conf('server','name').' NOTICE * :*** Looking up your hostname...');
-    my ($ip,$ipv) = ($peer->peerhost, 4);
-    $ipv = 6 if $ip =~ m/:/;
+    ::sendpeer($peer, ':'.conf('server','name').' NOTICE * :*** Looking up your hostname...');
+    my $ip = $peer->peerhost;
+    my $ipv = ($ip =~ m/:/ ? 6 : 4);
 
     # create the user
     bless my $user = {

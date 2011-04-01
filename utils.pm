@@ -121,7 +121,7 @@ sub snotice {
 
 sub fatal {
     say 'FATAL: '.shift;
-    exit
+    exit (shift() ? 1 : 0)
 }
 
 sub conf {

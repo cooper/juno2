@@ -3,12 +3,18 @@
 
 use warnings;
 use strict;
-use feature qw(say switch);
+use feature qw/say switch/;
 
+# this allows juno to be started properly from any directory
 our $DIR;
 BEGIN {
     $DIR = shift @ARGV;
+
+    # we *must* have this argument to load modules properly,
+    # so die if we don't
     die "No directory specified\n" unless defined $DIR;
+
+    # no error
     push @INC, $DIR
 }
 
@@ -19,10 +25,10 @@ use IO::Socket;
 use user;
 use handle;
 use channel;
-use utils qw(fatal conf hostmatch);
+use utils qw/fatal conf hostmatch/;
 
 local $0 = 'juno';
-$SIG{$_} = \&sigdie foreach ('TERM','INT','KILL');
+$SIG{$_} = \&sigdie foreach qw/INT TERM KILL/;
 $SIG{'HUP'} = \&sighup;
 
 our $VERSION = &getversion;
@@ -33,16 +39,29 @@ our $ACCEPTING = 1;
 our (%config, %oper, %kline, %zline, %listen, %outbuffer, %inbuffer, %timer);
 my (%listensockets, %SSL, @sel, $ipv6);
 
+# parse the configuration file (usually etc/ircd.conf)
 confparse($CONFIG);
+
 our $id = conf('server','id');
+
+# load the modules required to run this juno installation -
+# most of these can be set in the enabled section of the configuration.
 &loadrequirements;
+
+# begin listening on clients
 &createsockets;
 
+# if not in debug mode, become a daemon
 if (!$NOFORK) {
     say 'Becoming a daemon...';
+
+    # since there will be no input or output from here on,
+    # open the filehandles to /dev/null
     open STDIN, '/dev/null' or fatal('Can\'t read /dev/null: '.$!);
     open STDOUT, '>/dev/null' or fatal('Can\'t write /dev/null: '.$!);
     open STDERR, '>/dev/null' or fatal('Can\'t write /dev/null: '.$!);
+
+    # write the PID file that is used by the start/stop/rehash script.
     open my $pidfile, '>', $DIR.'/etc/juno.pid' or fatal('Could not write etc/juno.pid');
     $PID = fork;
     say $pidfile $PID if $PID != 0;
@@ -51,55 +70,86 @@ if (!$NOFORK) {
 
 exit unless $PID == 0;
 &POSIX::setsid;
+
+# create the IO::Select object for listening sockets,
+# and exit if the server is not listening at all.
 fatal('not listening') if $#sel < 0;
 our $select = new IO::Select @sel;
 
+# main loop that is run through every x seconds, as defined by main:timeout
+# or every time the IRC sockets read or write data.
 for (;;) {
+    # read incoming data
     foreach my $client ($select->can_read(conf('main','timeout'))) {
         my $time = time;
         my $user = user::lookup($client);
         $timer{$client} = 0 unless $timer{$client};
         if (exists $listensockets{$client}) {
+            # this is a new socket waiting to be accepted, so we create a new user.
             user::new(($SSL{$client}?1:0), $client->accept)
         } else {
             $time = time;
             $timer{$client} = $time if $timer{$client} < $time;
+
+            # check for incoming data
             if (sysread $client, my $data, POSIX::BUFSIZ) {
+                # add the data to the incoming buffer
                 $inbuffer{$client} .= $data
             } else {
-                $user->quit('Connection closed', 1);
+                # dead socket; force the user to quit
+                $user->quit('Connection closed', 1)
             }
         }
         delete $inbuffer{$client}, next unless $user;
         next unless exists $inbuffer{$client};
+
+        # flood check
         my ($theline, $therest);
         while (($timer{$client}-conf('flood', 'lines') <= $time) &&
           (($theline, $therest) = $inbuffer{$client} =~ m/([^\n]*)\n(.*)/s)) {
             $inbuffer{$client} = $therest;
             $theline =~ s/\r$//;
+
+            # they're okay, so handle the data
             handle::user($client, $theline);
+
             $timer{$client}++
         }
+        # they've reached their limit; force them to quit
         $user->quit(conf('flood', 'msg')) if length $inbuffer{$client} > conf('flood', 'bytes')
     }
+
+    # write outgoing data
     foreach my $client ($select->can_write(0)) {
+        # nothing to write
         next unless $outbuffer{$client};
+
+        # send the data
         my $sent = syswrite $client, $outbuffer{$client}, POSIX::BUFSIZ;
         next unless defined $sent;
         if ($sent <= length $outbuffer{$client} || $! == POSIX::EWOULDBLOCK) {
             (substr $outbuffer{$client}, 0, $sent) = '';
             delete $outbuffer{$client} unless length $outbuffer{$client}
         } else {
+            # can't write to this socket, so give up and force the user to quit
             user::lookup($client)->quit('Write error', 1)
         }
     }
+
+    # check for ping timeouts
     foreach my $client (values %user::connection) {
         if ((time-$client->{'ping'}) > conf('ping', 'freq')) {
+
+            # send a PING command and reset the ping time
             $client->send('PING :'.conf('server', 'name'));
             $client->{'ping'} = time;
+
+            # make sure that they aren't just sitting there without registering...
             $client->quit('Registration timeout') unless $client->{'ready'}
         }
         if ((time-$client->{'last'}) > conf('ping', 'timeout')) {
+            # too late; making them quit
+            # (the quit message is defined in ping:msg)
             my $ping = sprintf conf('ping', 'msg'), (time-$client->{'last'});
             $client->quit($ping, undef)
         }
@@ -107,33 +157,49 @@ for (;;) {
 }
 
 sub sendpeer {
+    # add data to the outgoing buffer
     my $peer = shift;
     $outbuffer{$peer} .= "$_\r\n" foreach @_
 }
 
 sub sigdie {
+    # force juno to exit
     say 'Preparing to exit...';
+
+    # remove each user properly
     foreach (values %user::connection) {
         $_->quit('Server shutdown');
         say '    Removing user '.$_->{'id'}
     }
-    say 'Deleting PID file.';
-    unlink $DIR.'/etc/juno.pid' or fatal('Couldn\'t delete PID file.');
-    fatal('Exiting by signal.')
+
+    # remove the PID file so the start script knows that juno is not running
+    if (!$NOFORK) {
+        say 'Deleting PID file.';
+        unlink $DIR.'/etc/juno.pid' or fatal('Couldn\'t delete PID file.');
+    }
+
+    fatal('Exiting by signal.', 1)
 }
 
 sub sighup {
+    # HUP signal; rehashing
     snotice('Receieved SIGHUP, rehashing server configuration file.');
     say 'Receieved SIGHUP, rehashing server configuration file.';
     confparse($CONFIG)
 }
 
 sub confparse {
+    # load a configuration file
     my $file = shift;
     say 'Loading configuration: '.$file;
     open my $CONF, '<', $file or fatal('Cannot open configuration file: '.$file);
-    undef %kline; undef %zline; undef %config; undef %oper;
-    delete $utils::GV{'motd'};
+
+    # unset the former options
+    if (!shift) {
+        undef %kline; undef %zline; undef %config; undef %oper;
+        delete $utils::GV{'motd'};
+    }
+
     my @sections;
     while (my $line = <$CONF>) {
         $line =~ s/\t//g;
@@ -147,7 +213,7 @@ sub confparse {
                 @sections = ($s[1],0,0,0,0)
             } when('inc') {
                 @sections = (0,0,0,0,0);
-                confparse($s[1])
+                confparse($s[1], 1)
             } when('oper') {
                 @sections = (0,$s[1],0,0,0)
             } when('kline') {
@@ -173,34 +239,56 @@ sub confparse {
             }
         }
     }
+
+    # check each user for a Z-Line or a K-Line
     usercheck: foreach my $user (values %user::connection) {
+
+        # check for a Z-Line
         foreach (keys %zline) {
             if (hostmatch($user->{'ip'}, $_)) {
+                # found a match!
                 $user->quit('Z-Lined: '.$zline{$_}{'reason'},undef,'Z-Lined'.(conf('main','showzline')?': '.$zline{$_}{'reason'}:''));
                 next usercheck
             }
         }
+
+        # check for a K-Line
         $user->checkkline
     }
+
+    # load the MOTD file
     &loadmotd;
     close $CONF
 }
 
 sub loadmotd {
+    # load the MOTD file.
     say 'Loading MOTD: '.$DIR.'/'.conf('server','motd');
-    open my $MOTD, $DIR.'/'.conf('server','motd') or $utils::GV{'motd'} = 'MOTD file is missing.', return; 
+
+    # if we can't open the file, replace the MOTD with a "not found" message
+    open my $MOTD, $DIR.'/'.conf('server','motd') or $utils::GV{'motd'} = 'MOTD file is missing.', return;
+
+    # set the MOTD
     $utils::GV{'motd'} .= $_ while <$MOTD>;
+
     close $MOTD;
     return 1
 }
 
 sub createsockets {
+    # create listening sockets for clients
     say 'Opening client sockets...';
     foreach my $name (keys %listen) {
         my $socket;
-        foreach my $port (split / /, $listen{$name}{'port'}) {
+
+        # non-SSL listening
+        foreach my $port (split /\s+/, $listen{$name}{'port'}) {
+            # false, so let's assume they wanted to disable it and continue to the next port
             last if $port == 0;
+
             say "    Listening on [$name]:$port";
+
+            # use IO::Socket::INET6 if IPv6 is enabled in the configuration (enabled:ipv6)
             if ($ipv6) {
                 $socket = IO::Socket::INET6->new(
                     Listen => 1,
@@ -208,6 +296,8 @@ sub createsockets {
                     LocalPort => $port,
                     LocalAddr => $name
                 ) or fatal('Could not listen: block ['.$name.']:'.$port.': '.$!)
+
+            # otherwise use IO::Socket::INET
             } else {
                 $socket = IO::Socket::INET->new(
                     Listen => 1,
@@ -216,15 +306,25 @@ sub createsockets {
                     LocalAddr => $name
                 ) or fatal('Could not listen: block '.$name.':'.$port.': '.$!)
             }
+
+            # success! add to IO::Select object
             push @sel, $socket if $socket;
             $listensockets{$socket} = $port if $socket
         }
-        foreach my $port (split / /, $listen{$name}{'ssl'}) {
+
+        # SSL listening
+        foreach my $port (split /\s+/, $listen{$name}{'ssl'}) {
+            # false, so let's assume they wanted to disable it and continue to the next port
             last if $port == 0;
+
+            # first make sure they have SSL enabled in the first place
             if (!conf('enabled','ssl')) {
                 fatal('You tried to listen using SSL, but SSL is not enabled in the configuration.')
             }
+
             say "    Listening SSL on [$name]:$port";
+
+            # create the socket
             $socket = IO::Socket::SSL->new(
                 Listen => 1,
                 ReuseAddr => 1,
@@ -233,22 +333,30 @@ sub createsockets {
                 SSL_cert_file => conf('ssl','cert'),
                 SSL_key_file => conf('ssl','key')
             ) or fatal('Could not listen (SSL): block '.$name.':'.$port.': '.$!);
+
+            # success! add to IO::Select object
             if ($socket) {
                 push @sel, $socket;
                 $listensockets{$socket} = $port;
                 $SSL{$socket} = 1
             }
+            # IO::Socket::SSL is pretty ugly, by the way
         }
     }
 }
 
 sub loadrequirements {
+    # load the required Perl modules, as defined in the enabled section of the configuration
     say 'Loading required modules...';
+
+    # IPv6 support
     if (conf('enabled','ipv6')) {
         say '    Loading IPv6 module';
         $ipv6 = 1;
         require IO::Socket::INET6 or fatal('Could not load IPv6 module. (Do you have IO::Socket::INET6 installed?)')
     }
+
+    # SSL support (IO::Socket::SSL fails.)
     if (conf('enabled','ssl')) {
         say '    Loading SSL module';
         require IO::Socket::SSL or fatal('Could not load SSL module. (Do you have IO::Socket::SSL installed?)');
@@ -257,15 +365,21 @@ sub loadrequirements {
             IO::Socket::SSL->import('inet6')
         }
     }
+
+    # cloaking support
     if (conf('enabled','cloaking')) {
         say '    Loading cloaking module';
         require Digest::SHA or fatal('Could not load cloaking module. (Do you have Digest::SHA installed?)');
         &user::DigestImport
     }
-    say 'All required modules have been loaded successfully.'
+
+    # no problems!
+    say 'All required modules have been loaded successfully.';
+    return 1
 }
 
 sub getversion {
+    # fetch the version of this juno installation
     open my $versionfile, '<', $DIR.'/etc/version' or fatal("Couldn't read version file");
     my $version = <$versionfile>;
     close $versionfile;

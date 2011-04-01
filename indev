@@ -306,3 +306,7 @@ VERSIONING
 
             * Did some cleanup in bin/juno.
             * Fixed bug where include didn't work in the configuration at all because confparse() unsets options before parsing a file.
+
+        4. March 30, 2011
+
+            * Cleaned up channel.pm A LOT.

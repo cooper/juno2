@@ -501,4 +501,19 @@ sub register_handler {
     return 1
 }
 
+sub delete_handler {
+    # delete a command handler
+    my $command = uc shift;
+
+    # if it exists, delete it
+    if (exists $commands{$command}) {
+        delete $commands{$command};
+        return 1
+    }
+
+    # it doesn't
+    say 'delete_handler failed; '.$command.' does not exist.';
+    return
+}
+
 1

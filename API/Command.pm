@@ -71,10 +71,10 @@ sub delete_package {
     # check each command for a hook to this module
     foreach my $command (keys %COMMAND) {
         # check if we found one
-        say 'k '.$COMMAND{$command}{'package'};
         if ($COMMAND{$command}{'package'} eq $package) {
             # delete it
             delete $COMMAND{$command};
+            user::delete_handler($command);
             say 'Deleted command '.$command.' by '.$package
         }
     }

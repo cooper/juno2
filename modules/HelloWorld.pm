@@ -1,6 +1,9 @@
 #!/usr/bin/perl
 # Copyright (c) 2011, Mitchell Cooper
+
+# all modules must have a unique package name
 package module::HelloWorld;
+
 use warnings;
 use strict;
 use feature 'say';

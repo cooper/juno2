@@ -224,7 +224,7 @@ sub quit {
     my %sent;
     foreach my $channel (values %channel::channels) {
         if ($user->ison($channel)) {
-            foreach (keys %{$_->{'users'}}) {
+            foreach (keys %{$channel->{'users'}}) {
                 lookupbyid($_)->send(':'.$user->fullcloak.' QUIT :'.($display?$display:$reason)) unless $sent{$_};
                 $sent{$_} = 1
             }

@@ -480,8 +480,8 @@ sub ip_accept {
 }
 
 sub DigestImport {
-    say '        Importing SHA256 support to cloaking module';
-    Digest::SHA->import('sha256_hex')
+    say '        Importing SHA1 support to cloaking module';
+    Digest::SHA->import('sha1_hex')
 }
 
 sub register_handler {
@@ -489,7 +489,7 @@ sub register_handler {
     my ($handler, $code) = (uc shift, shift);
     if (exists $commands{$handler}) {
         # command already exists
-        say 'add_handler failed; '.$handler.' already exists.';
+        say 'register_handler failed; '.$handler.' already exists.';
         return
     }
 

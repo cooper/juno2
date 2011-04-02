@@ -76,6 +76,7 @@ our %numerics = (
     474 => '%s :Cannot join channel (you\'re banned)',
     481 => ':Permission Denied',
     482 => '%s :You\'re not a channel %s',
+    482.1 => '%s :You do not have the proper privileges to kick this user',
     491 => ':Invalid oper credentials',
     501 => '%s :No such mode',
     641 => '%s :is using a secure connection',

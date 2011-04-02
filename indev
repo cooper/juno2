@@ -313,3 +313,5 @@ VERSIONING
             * Fixed several bugs... maybe they'd be listed here if Filezilla didn't cause me to lose my unsaved data.
             * Fatal bug fix: sha1 != sha256 in loading of the cloaking module.
             * Fixed bug in user::quit, caused by user.pm cleanup in 0.9.1 that didn't relay quits correctly at all.
+            * user::numeric uses int now.
+            * Fixed bug where it's possible to a kick user when they are not in the channel.

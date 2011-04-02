@@ -279,7 +279,7 @@ sub numeric {
     # send a numeric
     # numerics are defined in the %numerics hash
     my ($user, $num) = (shift, shift);
-    $user->send(join(' ',':'.conf('server','name'),$num,$user->nick,sprintf($utils::numerics{$num},@_)));
+    $user->send(join ' ', ':'.conf('server', 'name'), (int $num), $user->nick, (sprintf $utils::numerics{$num}, @_));
 }
 
 sub sendserv {

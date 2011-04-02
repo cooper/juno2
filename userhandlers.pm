@@ -395,17 +395,35 @@ sub handle_topic {
 }
 
 sub handle_kick {
-    my($user,$data) = @_;
+    my($user, $data) = @_;
     my @s = split /\s+/, $data, 4;
-    if (defined $s[2]) {
-        my $channel = channel::chanexists($s[1]);
-        my $target = user::nickexists($s[2]);
-        if ($channel && $target) {
-            my $reason = $target->nick;
-            $reason = col($s[3]) if defined $s[3];
-            $user->numeric(482,$channel->name,'half-operator') unless $channel->kick($user,$target,$reason);
-        } else { $user->numeric(401,$s[1]); }
-    } else { $user->numeric(461,'KICK'); }
+
+    # not enough parameters
+    if (!defined $s[2]) {
+        $user->numeric(461, 'KICK');
+        return
+    }
+    my $channel = channel::chanexists($s[1]);
+    my $target = user::nickexists($s[2]);
+
+    # no such channel or nick
+    # or they aren't in this channel
+    if (!$channel || !$target || !$target->ison($channel)) {
+        $user->numeric(401, $s[1]);
+        return
+    }
+
+    my $reason = $target->nick;
+    $reason = col($s[3]) if defined $s[3];
+
+    # give them an error for not having correct status
+    $user->numeric(482.1, $channel->name) and return
+
+    # unless it was successful
+    unless $channel->kick($user, $target, $reason);
+
+    # success!
+    return 1
 }
 
 sub handle_invite {

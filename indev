@@ -315,3 +315,12 @@ VERSIONING
             * Fixed bug in user::quit, caused by user.pm cleanup in 0.9.1 that didn't relay quits correctly at all.
             * user::numeric uses int now.
             * Fixed bug where it's possible to a kick user when they are not in the channel.
+
+        5. April 2, 2011
+
+            * Finished API::Module.
+              This adds enabled:api to enable the module API.
+              It also adds main:modules to load modules on startup.
+            * Finished API::Command.
+            * Fixed bug where QUIT is not sent to a user when he is /kill'd.
+            * Finished HelloWorld module.

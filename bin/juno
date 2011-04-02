@@ -42,7 +42,7 @@ my (%listensockets, %SSL, @sel, $ipv6);
 # parse the configuration file (usually etc/ircd.conf)
 confparse($CONFIG);
 
-our $id = conf('server','id');
+our $id = conf('server', 'id');
 
 # load the modules required to run this juno installation -
 # most of these can be set in the enabled section of the configuration.
@@ -50,6 +50,9 @@ our $id = conf('server','id');
 
 # begin listening on clients
 &createsockets;
+
+# load API modules
+&loadapi;
 
 # if not in debug mode, become a daemon
 if (!$NOFORK) {
@@ -80,7 +83,7 @@ our $select = new IO::Select @sel;
 # or every time the IRC sockets read or write data.
 for (;;) {
     # read incoming data
-    foreach my $client ($select->can_read(conf('main','timeout'))) {
+    foreach my $client ($select->can_read(conf('main', 'timeout'))) {
         my $time = time;
         my $user = user::lookup($client);
         $timer{$client} = 0 unless $timer{$client};
@@ -200,8 +203,18 @@ sub confparse {
         delete $utils::GV{'motd'};
     }
 
+    # keep track of the sections and their names
     my @sections;
+    my $current = 0;
+    my $reset = sub {
+        my $cur = shift;
+        undef @sections;
+        $sections[$cur] = shift;
+        $current = $cur
+    };
+
     while (my $line = <$CONF>) {
+
         $line =~ s/\t//g;
         $line =~ s/^\s+//;
         $line =~ s/\s+$//;
@@ -209,32 +222,41 @@ sub confparse {
         next if $line =~ m/^#/;
         my @s = split / /, $line, 2;
         given($s[0]) {
-            when('sec') {
-                @sections = ($s[1],0,0,0,0)
-            } when('inc') {
-                @sections = (0,0,0,0,0);
+            when ('sec') {
+                # set the section name
+                $reset->(0, $s[1])
+            } when ('inc') {
+                # include another file
+                $reset->(0, 0);
                 confparse($s[1], 1)
-            } when('oper') {
-                @sections = (0,$s[1],0,0,0)
-            } when('kline') {
-                @sections = (0,0,$s[1],0,0)
-            } when('listen') {
-                @sections = (0,0,0,$s[1],0)
-            } when('zline') {
-                @sections = (0,0,0,0,$s[1])
+            } when ('oper') {
+                # oper block
+                $reset->(1, $s[1])
+            } when ('kline') {
+                # kline block
+                $reset->(2, $s[1])
+            } when ('listen') {
+                # listen block
+                $reset->(3, $s[1])
+            } when ('zline') {
+                # zline block
+                $reset->(4, $s[1])
             } default {
-                if ($sections[0]) {
-                    $config{$sections[0]}{$s[0]} = $s[1]
-                } elsif ($sections[1]) {
-                    $oper{$sections[1]}{$s[0]} = $s[1]
-                } elsif ($sections[2]) {
-                    $kline{$sections[2]}{$s[0]} = $s[1]
-                } elsif ($sections[3]) {
-                    $listen{$sections[3]}{$s[0]} = $s[1]
-                } elsif ($sections[4]) {
-                    $zline{$sections[4]}{$s[0]} = $s[1]
-                } else {
-                    fatal('no section set in configuration')
+                # must be a key and value
+                given ($current) {
+                    when (0) {
+                        $config{$sections[$current]}{$s[0]} = $s[1]
+                    } when (1) {
+                        $oper{$sections[$current]}{$s[0]} = $s[1]
+                    } when (2) {
+                        $kline{$sections[$current]}{$s[0]} = $s[1]
+                    } when (3) {
+                        $listen{$sections[$current]}{$s[0]} = $s[1]
+                    } when (4) {
+                        $zline{$sections[$current]}{$s[0]} = $s[1]
+                    } default {
+                        fatal('no section set in configuration')
+                    }
                 }
             }
         }
@@ -247,7 +269,10 @@ sub confparse {
         foreach (keys %zline) {
             if (hostmatch($user->{'ip'}, $_)) {
                 # found a match!
-                $user->quit('Z-Lined: '.$zline{$_}{'reason'},undef,'Z-Lined'.(conf('main','showzline')?': '.$zline{$_}{'reason'}:''));
+                $user->quit('Z-Lined: '.$zline{$_}{'reason'},
+                    undef,
+                    'Z-Lined'.(conf('main', 'showzline') ? ': '.$zline{$_}{'reason'} : '')
+                );
                 next usercheck
             }
         }
@@ -263,10 +288,10 @@ sub confparse {
 
 sub loadmotd {
     # load the MOTD file.
-    say 'Loading MOTD: '.$DIR.'/'.conf('server','motd');
+    say 'Loading MOTD: '.$DIR.'/'.conf('server', 'motd');
 
     # if we can't open the file, replace the MOTD with a "not found" message
-    open my $MOTD, $DIR.'/'.conf('server','motd') or $utils::GV{'motd'} = 'MOTD file is missing.', return;
+    open my $MOTD, $DIR.'/'.conf('server', 'motd') or $utils::GV{'motd'} = 'MOTD file is missing.', return;
 
     # set the MOTD
     $utils::GV{'motd'} .= $_ while <$MOTD>;
@@ -318,7 +343,7 @@ sub createsockets {
             last if $port == 0;
 
             # first make sure they have SSL enabled in the first place
-            if (!conf('enabled','ssl')) {
+            if (!conf('enabled', 'ssl')) {
                 fatal('You tried to listen using SSL, but SSL is not enabled in the configuration.')
             }
 
@@ -330,8 +355,8 @@ sub createsockets {
                 ReuseAddr => 1,
                 LocalPort => $port,
                 LocalAddr => $name,
-                SSL_cert_file => conf('ssl','cert'),
-                SSL_key_file => conf('ssl','key')
+                SSL_cert_file => conf('ssl', 'cert'),
+                SSL_key_file => conf('ssl', 'key')
             ) or fatal('Could not listen (SSL): block '.$name.':'.$port.': '.$!);
 
             # success! add to IO::Select object
@@ -350,24 +375,24 @@ sub loadrequirements {
     say 'Loading required modules...';
 
     # IPv6 support
-    if (conf('enabled','ipv6')) {
+    if (conf('enabled', 'ipv6')) {
         say '    Loading IPv6 module';
         $ipv6 = 1;
         require IO::Socket::INET6 or fatal('Could not load IPv6 module. (Do you have IO::Socket::INET6 installed?)')
     }
 
     # SSL support (IO::Socket::SSL fails.)
-    if (conf('enabled','ssl')) {
+    if (conf('enabled', 'ssl')) {
         say '    Loading SSL module';
         require IO::Socket::SSL or fatal('Could not load SSL module. (Do you have IO::Socket::SSL installed?)');
-        if (conf('enabled','ipv6')) {
+        if (conf('enabled', 'ipv6')) {
             say '        Importing IPv6 support to SSL module';
             IO::Socket::SSL->import('inet6')
         }
     }
 
     # cloaking support
-    if (conf('enabled','cloaking')) {
+    if (conf('enabled', 'cloaking')) {
         say '    Loading cloaking module';
         require Digest::SHA or fatal('Could not load cloaking module. (Do you have Digest::SHA installed?)');
         &user::DigestImport
@@ -385,6 +410,29 @@ sub getversion {
     close $versionfile;
     $version =~ s/\s+$//;
     return $version
+}
+
+sub loadapi {
+    # load API modules
+    # is API loaded?
+    return unless conf('enabled', 'api');
+
+    # make sure it's not set to 0 (none)
+    if (my $modules = conf('main', 'modules')) {
+        # modules are separated by spaces
+        foreach my $module (split /\s+/, $modules) {
+            # load it
+            say 'Loading module '.$module;
+            $module = 'modules/'.$module.'.pm';
+            do $module
+
+            # or die due to an error
+            or fatal('Can\'t load '.$module.': '.($! ? $! : $@))
+        }
+    }
+
+    # success
+    return 1
 }
 
 1

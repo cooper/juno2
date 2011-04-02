@@ -5,12 +5,16 @@ package API::Module;
 use warnings;
 use strict;
 use feature 'say';
+use base 'Exporter';
 
 use Exporter;
 use Class::Unload;
 
+use API::Command;
+
 our @EXPORT = qw/register_module module_exists/;
 our %MODULE;
+our $LAST_INIT;
 
 # functions that can be imported
 
@@ -37,7 +41,7 @@ sub register_module {
     }
 
     my %module = ();
-    $module{$_} = shift foreach qw(name version desc init void);
+    $module{$_} = shift foreach qw/name version desc init void/;
 
     # I was gonna make it check if a module with the same name already exists, but that's kinda
     # pointless because it uses package names; there shouldn't be any issues.
@@ -63,9 +67,14 @@ sub module_exists {
 
 sub delete_package {
     # by package name, not module name
-
     my $package = shift;
+    say 'Unloading package '.$package.' by force';
+
+    # make sure it exists
     if (exists $MODULE{$package}) {
+
+        # delete any commands registered
+        API::Command::delete_package($package);
 
         # delete the module
         delete $MODULE{$package};
@@ -75,32 +84,49 @@ sub delete_package {
 
         say 'Unloaded package '.$package;
         return 1
-    } else {
+    }
+
+    # it hasn't registered, so give up
+    else {
         say 'I can\'t unload a module that hasn\'t registered. ('.$package.')';
         return
     }
+
+    return
 }
 
 sub package_init {
     my $package = shift;
+    $LAST_INIT = $package;
+
+    # make sure the module is registered
     if (!exists $MODULE{$package}) {
         say 'Package '.$package.' has not registered to API::Module; aborting initialization.';
         return
     }
+
+    # make sure it's a coderef
     if (ref $MODULE{$package}{'init'} eq 'CODE') {
-        say 'Initializing module '.$MODULE{$package};
+        say 'Initializing module '.$MODULE{$package}{'name'};
+        # it is, so run it
         if ($MODULE{$package}{'init'}(caller 0)) {
+            # it returned true
             say 'Module initialized successfully.';
             return 1
         } else {
+            # it failed
             say 'Module refused to load; aborting.';
+            delete_package($package);
             return
         }
     } else {
+        # it's not a coderef, so force the package to unload
         say 'Module '.$MODULE{$package}{'name'}.' did not provide a init CODE ref; forcing unload.';
         delete_package($package);
         return
     }
+
+    # success
     return 1
 }
 

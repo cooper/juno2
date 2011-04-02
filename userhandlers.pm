@@ -272,17 +272,34 @@ sub handle_oper {
 }
 
 sub handle_kill {
-    my ($user,$data) = @_;
+    my ($user, $data) = @_;
     my @s = split /\s+/, $data;
-    if (defined $s[2]) {
-        if ($user->can('kill')) {
-            my $target = user::nickexists($s[1]);
-            if ($target) {
-                my $reason = col((split /\s+/,$data,3)[2]);
-                $target->quit('Killed ('.$user->nick.' ('.$reason.'))');
-            } else { $user->numeric(401,$s[1]); }
-        } else { $user->numeric(481); }
-    } else { $user->numeric(461,'KILL'); }
+
+    # parameter check
+    if (!defined $s[2]) {
+        $user->numeric(461, 'KILL');
+        return
+    }
+
+    # make sure the user has kill flag
+    if (!$user->can('kill')) {
+        $user->numeric(481);
+        return
+    }
+
+    # see if the victim exists
+    if (my $target = user::nickexists($s[1])) {
+        # it does, so kill it
+        my $quit_string = 'Killed ('.$user->nick.' ('.col((split /\s+/,$data,3)[2]).'))';
+        $target->send(':'.$user->fullcloak.' QUIT :'.$quit_string);
+        $target->quit($quit_string);
+    }
+
+    # if it doesn't, so give the user an error
+    else {
+        $user->numeric(401, $s[1]);
+        return
+    }
 }
 
 sub handle_join {

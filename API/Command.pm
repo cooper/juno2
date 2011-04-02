@@ -5,18 +5,30 @@ package API::Command;
 use warnings;
 use strict;
 use feature 'say';
+use base 'Exporter';
 
 use Exporter;
 use API::Module;
 
-our @EXPORT = qw/command_register command_exists/;
+our @EXPORT = qw/register_command command_exists/;
 our %COMMAND;
 
-sub command_register {
+sub register_command {
     # arguments: command coderef
-    my $package = caller 0;
+    my @caller = caller;
+    my $package = $caller[0];
     my ($command, $code) = @_;
 
+    # make sure they're calling from inside a subroutine such as the init one
+    # (this is to ensure that commands are not registered before a module's
+    #  init sub returns a false value, causing the command to register without
+    #  a parent package)
+    if (!scalar @caller) {
+        say 'Command '.$command.' can\'t be registered from outside of a subroutine';
+        return
+    }
+
+    # see if it already exists
     if (exists $COMMAND{$command}{$package}) {
         say 'Command '.$command.' has already been registered by '.$package.'; aborting register.';
         return
@@ -28,14 +40,46 @@ sub command_register {
         return
     }
 
+    # see if user.pm will accept it
+    if (user::register_handler($command, $code)) {
+        # success
+        say 'Command '.$command.' registered successfully by '.$package
+    }
+
+    # failed
+        else {
+        say 'Command '.$command.' refused to load by user package';
+        return
+    }
+
     # create the command
-    $COMMAND{$command}{$package} = {
+    $COMMAND{$command} = {
+        'package' => $package,
         'name' => $command,
         'code' => $code
     };
 
     # success
-    say 'Command '.$command.' registered successfully by '.$package;
+    return 1
+}
+
+sub delete_package {
+    # delete all commands registered by a package
+    my $package = shift;
+    say 'Deleting all commands registered by '.$package;
+
+    # check each command for a hook to this module
+    foreach my $command (keys %COMMAND) {
+        # check if we found one
+        say 'k '.$COMMAND{$command}{'package'};
+        if ($COMMAND{$command}{'package'} eq $package) {
+            # delete it
+            delete $COMMAND{$command};
+            say 'Deleted command '.$command.' by '.$package
+        }
+    }
+
+    # success
     return 1
 }
 

@@ -14,10 +14,10 @@ our @EXPORT = qw/register_command command_exists/;
 our %COMMAND;
 
 sub register_command {
-    # arguments: command coderef
+    # arguments: command coderef description
     my @caller = caller;
     my $package = $caller[0];
-    my ($command, $code) = @_;
+    my ($command, $desc, $code) = @_;
 
     # make sure they're calling from inside a subroutine such as the init one
     # (this is to ensure that commands are not registered before a module's
@@ -35,13 +35,13 @@ sub register_command {
     }
 
     # make sure they gave the required arguments
-    if ($#_ < 1) {
+    if ($#_ < 2) {
         say 'Not enough arguments for command_register given by package '.$package;
         return
     }
 
     # see if user.pm will accept it
-    if (user::register_handler($command, $code)) {
+    if (user::register_handler($command, $code, $API::Module::MODULE{$package}{'name'}, $desc)) {
         # success
         say 'Command '.$command.' registered successfully by '.$package
     }
@@ -56,7 +56,8 @@ sub register_command {
     $COMMAND{$command} = {
         'package' => $package,
         'name' => $command,
-        'code' => $code
+        'code' => $code,
+        'desc' => $desc
     };
 
     # success

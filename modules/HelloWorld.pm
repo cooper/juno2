@@ -28,7 +28,7 @@ sub init {
     # register the HELLO command.
     # parameters for register_command are command_name and a coderef.
 
-    register_command('hello', sub {
+    register_command('hello', 'Hello world!', sub {
         # register_command provides the user who sent the data
         # and the value of the data.
         my ($user, $data) = @_;

@@ -30,7 +30,7 @@ sub handle {
 }
 
 sub new {
-    my($ssl, $peer) = @_;
+    my ($ssl, $peer) = @_;
     return unless $peer;
     if (!&acceptcheck) {
         # the server is not accepting connections
@@ -486,7 +486,7 @@ sub DigestImport {
 
 sub register_handler {
     # add a command handler
-    my ($handler, $code) = (uc shift, shift);
+    my ($handler, $code, $source, $desc) = (uc shift, shift, shift, shift);
     if (exists $commands{$handler}) {
         # command already exists
         say 'register_handler failed; '.$handler.' already exists.';
@@ -495,9 +495,11 @@ sub register_handler {
 
     # success
     $commands{$handler} = {
-        'code' => $code
+        'code' => $code,
+        'desc' => $desc,
+        'source' => $source
     };
-    say 'Registered handler '.$handler;
+    say $source.' registered handler '.$handler.': '.$desc;
     return 1
 }
 

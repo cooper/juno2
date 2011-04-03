@@ -13,94 +13,123 @@ use utils qw/col conf oper hostmatch snotice validnick validcloak/;
 # this will contain more information later when the module API is complete.
 my %commands = (
     PONG => {
-        'code' => sub {}
+        'code' => sub {},
+        'desc' => 'Reply to PING command'
     },
     SACONNECT => {
-        'code' => sub {}
+        'code' => sub {},
+        'desc' => 'Force a user to connect to the server'
     },
     USER => {
-        'code' => sub { shift->numeric(462) }
+        'code' => sub { shift->numeric(462) },
+        'desc' => 'fake user command'
     },
     LUSERS => {
-        'code' => \&handle_lusers
+        'code' => \&handle_lusers,
+        'desc' => 'View the server user statistics'
     },
     MOTD => {
-        'code' => \&handle_motd
+        'code' => \&handle_motd,
+        'desc' => 'View the message of the day'
     },
     NICK => { 
-        'code' => \&handle_nick
+        'code' => \&handle_nick,
+        'desc' => 'Change your nickname'
     },
     PING => {
-        'code' => \&handle_ping
+        'code' => \&handle_ping,
+        'desc' => 'Send a ping to the server'
     },
     WHOIS => {
-        'code' => \&handle_whois
+        'code' => \&handle_whois,
+        'desc' => 'View information on a user'
     },
     MODE => {
-        'code' => \&handle_mode
+        'code' => \&handle_mode,
+        'desc' => 'Set or view a user or channel mode'
     },
     PRIVMSG => {
-        'code' => \&handle_privmsgnotice
+        'code' => \&handle_privmsgnotice,
+        'desc' => 'Send a message to a channel or user'
     },
     NOTICE => {
-        'code' => \&handle_privmsgnotice
+        'code' => \&handle_privmsgnotice,
+        'desc' => 'Send a notice to a channel or user'
     },
     AWAY => {
-        'code' => \&handle_away
+        'code' => \&handle_away,
+        'desc' => 'Mark yourself as being away'
     },
     OPER => {
-        'code' => \&handle_oper
+        'code' => \&handle_oper,
+        'desc' => 'Gain IRCop privileges'
     },
     KILL => {
-        'code' => \&handle_kill
+        'code' => \&handle_kill,
+        'desc' => 'Forcibly remove a user from the server'
     },
     JOIN => {
-        'code' => \&handle_join
+        'code' => \&handle_join,
+        'desc' => 'Join a channel'
     },
     WHO => {
-        'code' => \&handle_who
+        'code' => \&handle_who,
+        'desc' => 'View user information'
     },
     NAMES => {
-        'code' => \&handle_names
+        'code' => \&handle_names,
+        'desc' => 'View the users on a channel'
     },
     QUIT => {
-        'code' => \&handle_quit
+        'code' => \&handle_quit,
+        'desc' => 'Leave the server'
     },
     PART => {
-        'code' => \&handle_part
+        'code' => \&handle_part,
+        'desc' => 'Leave a channel'
     },
     REHASH => {
-        'code' => \&handle_rehash
+        'code' => \&handle_rehash,
+        'desc' => 'Reload the server configuration file(s)'
     },
     LOCOPS => {
-        'code' => \&handle_locops
+        'code' => \&handle_locops,
+        'desc' => 'Send a message to all IRCops with mode S enabled'
     },
     GLOBOPS => {
-        'code' => \&handle_locops
+        'code' => \&handle_locops,
+        'desc' => 'Alias for LOCOPS'
     },
     TOPIC => {
-        'code' => \&handle_topic
+        'code' => \&handle_topic,
+        'desc' => 'View or set a channel\'s topic'
     },
     KICK => {
-        'code' => \&handle_kick
+        'code' => \&handle_kick,
+        'desc' => 'Forcibly remove a user from a channel'
     },
     INVITE => {
-        'code' => \&handle_invite
+        'code' => \&handle_invite,
+        'desc' => 'Invite a user to a channel'
     },
     LIST => {
-        'code' => \&handle_list
+        'code' => \&handle_list,
+        'desc' => 'View channels and their information'
     },
     ISON => {
-        'code' => \&handle_ison
+        'code' => \&handle_ison,
+        'desc' => 'Check if users are on the server'
     },
     CHGHOST => {
-        'code' => \&handle_chghost
+        'code' => \&handle_chghost,
+        'desc' => 'Change a user\'s visible hostname'
     }
 );
 
 # register the handlers
 sub get {
-    user::register_handler($_, $commands{$_}{'code'}) foreach keys %commands
+    user::register_handler($_, $commands{$_}{'code'}, 'core', $commands{$_}{'desc'}) foreach keys %commands;
+    undef %commands;
 }
 
 # HANDLERS (see README for information of each command)

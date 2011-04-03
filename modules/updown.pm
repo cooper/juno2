@@ -20,8 +20,8 @@ register_module('updown', '0.0.1', 'Grant or remove a user\'s channel access acc
 
 sub init {
     # register the commands
-    register_command('up', \&up);
-    register_command('down', \&down);
+    register_command('up', 'Gain channel privileges according to mode A', \&up);
+    register_command('down', 'Remove all channel privileges', \&down);
     return 1
 }
 

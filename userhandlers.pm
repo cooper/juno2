@@ -123,6 +123,10 @@ my %commands = (
     CHGHOST => {
         'code' => \&handle_chghost,
         'desc' => 'Change a user\'s visible hostname'
+    },
+    COMMANDS => {
+        'code' => \&handle_commands,
+        'desc' => 'List commands and their information'
     }
 );
 
@@ -560,6 +564,14 @@ sub handle_chghost {
     } else {
         $user->numeric(401, $s[1]);
     }
+}
+
+sub handle_commands {
+    my $user = shift;
+    while (my ($command, $cv) = each %user::commands) {
+        $user->servernotice($cv->{'source'}.q(.).$command.': '.$cv->{'desc'})
+    }
+    return 1
 }
 
 1

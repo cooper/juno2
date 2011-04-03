@@ -97,6 +97,14 @@ cloaking
 cloaking requires use of the Digest::SHA module, which is a core perl module.
 enabling cloaking may increase resource usage when importing the module.
 
+module API
+-----------------------
+juno's module API can be enabled by the enabled:api option in the configuration.
+the module API requires a significant amount of memory to function, and it also
+requires the Class::Unload Perl module to properly unload the modules.
+see modules/HelloWorld.pm for an example module.
+
+
 plans**
 -----------------------
 [✔] add full support for mIRCservices
@@ -123,7 +131,7 @@ add a channel mode similar to inspircd's +J - you may not rejoin after being kic
 add a KLINE command and store K-Lines in a database of some sort
 add a ZLINE command and store Z-Lines in a database of some sort
 make the modules be (un)loaded on rehash
-add channels (numeric 319) to WHOIS.
+fix weird bug where it sometimes adds mode a to finished_string in mode handler even if it doesn't work
 
 user commands
 -----------------------

@@ -326,4 +326,8 @@ VERSIONING
             * Finished HelloWorld module.
             * Cleaned up configuration parser.
 
-        6. 
+        6. April 2, 2011
+
+            * Added mode limit to new channel mode handler, as defined by limit:chanmodes.
+            * Added updown module.
+            * Fixed several bugs in channel mode handler.

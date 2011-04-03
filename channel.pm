@@ -347,8 +347,9 @@ sub handlemode {
     my @parameter_modes = qw/l/;
 
     # some modes (such as mask lists) do not require operator status.
-    # (this still gotta be in the modes above, though
-    my @no_op = qw/bZ/;
+    # qaohv are not here because they handle it in handlestatus().
+    # these modes require op
+    my @needs_op = qw/n t m i z l/;
 
     # if $success is false by the end of this mode string, a numeric is sent
     # reading that the user must have half-operator or above
@@ -364,17 +365,20 @@ sub handlemode {
 
     my @finished_parameters = ();
     my $finished_string = '+';
-    my ($state, $cstate, $ok) = (1, 1, 1);
-
+    my ($state, $cstate, $ok, $i) = (1, 1, 1, 0);
 
     # handle each mode individually
     foreach my $mode (split //, $modes) {
         $ok = 1;
 
+        # if the mode limit is reached
+        last if $i > conf('limit', 'chanmodes');
+        $i++;
+
         # if they need op and don't have it, give up
-        if (!($mode ~~ @no_op) && !$channel->basicstatus($user)) {
-            $ok = 0;
-            $success = 0
+        if ($mode ~~ @needs_op && !$channel->basicstatus($user)) {
+            $success = 0;
+            next
         }
 
         # setting or unsetting?

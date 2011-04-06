@@ -371,27 +371,55 @@ sub handle_whois {
 
 }
 
+# PING request
 sub handle_ping {
     my $user = shift;
     my $reason = (split /\s+/, shift, 2)[1];
-    $user->sendserv('PONG '.conf('server','name').(defined $reason?' '.$reason:''));
+
+    # only send a parameter if they supplied one
+    $user->sendserv('PONG '.conf('server','name').(defined $reason ? q. ..$reason : q..));
+
+    return 1
 }
 
+# setting a mode
+# actual user mode handling is done by user::hmodes()
+# actual channel mode handling is done by channel::handlemode()
 sub handle_mode {
-    my ($user,$data) = @_;
-    my @s = split /\s+/, $data;
-    if (defined($s[1])) {
-        if (lc($s[1]) eq lc($user->nick)) {
-            $user->hmodes($s[2]);
-        } else {
-            my $target = channel::chanexists($s[1]);
-            if ($target) {
-                $target->handlemode($user,(split /\s+/, $data, 3)[2]);
-            } else {
-                $user->numeric(401,$s[1]);
-            }
+    my ($user, $data) = @_;
+    my @args = split /\s+/, $data;
+
+    # parameter check
+    if (!defined $args[1]) {
+        $user->numeric(461,'MODE');
+        return
+    }
+
+    # is it a user mode?
+    if (lc $args[1] eq lc $user->nick) {
+
+        # yes it is!
+        $user->hmodes($args[2]);
+
+    }
+
+    # nope, must be a channel mode.
+    else {
+
+        # find the channel
+
+        if (my $target = channel::chanexists($args[2])) {
+            $target->handlemode($user, (split /\s+/, $data, 3)[2]);
         }
-    } else { $user->numeric(461,'MODE'); }
+
+        # no such channel
+        else {
+            $user->numeric(401, $args[1]);
+            return
+        }
+
+    # success
+    return 1
 }
 
 sub handle_privmsgnotice {

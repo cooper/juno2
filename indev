@@ -7,7 +7,7 @@ VERSIONING
         0. February 18, 2011
 
             * Adds LIST command.
-            * Changes filehandle to while (my $line = <$MOTD>) in user::handle_motd
+            * Changes filehandle to while (my $line = <$MOTD>) in user::handle_motd.
 
         1. February 19, 2011
 

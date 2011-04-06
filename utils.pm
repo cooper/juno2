@@ -58,6 +58,7 @@ our %numerics = (
     389 => '%s :End of channel auto-access list',
     396 => '%s :is now your displayed host',
     401 => '%s :No such nick/channel',
+    402 => '%s :No such server',
     403 => '%s :Invalid channel name',
     404 => '%s :Cannot send to channel',
     412 => ':No text to send',

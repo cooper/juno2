@@ -141,31 +141,31 @@ sub get {
 # network stats
 sub handle_lusers {
     my $user = shift;
-    my ($i, $ii) = (0, 0);
+    my ($visible, $invisible) = (0, 0);
     foreach my $usr (values %user::connection) {
 
         # if the user has i set, mark as invisible
         if ($usr->mode('i')) {
-            $ii++
+            $invisible++
         }
 
         # not invisible
         else {
-            $i++
+            $visible++
         }
 
     }
-    my $t = $i+$ii;
+    my $total = $visible+$invisible;
 
     # there are currently x users and y invisible on z servers
-    $utils::GV{'max'} = $t if $utils::GV{'max'} < $t;
-    $user->numeric(251, $i, $ii, 1);
+    $utils::GV{'max'} = $total if $utils::GV{'max'} < $total;
+    $user->numeric(251, $visible, $invisible, 1);
 
     # local
-    $user->numeric(265, $t, $utils::GV{'max'}, $t, $utils::GV{'max'});
+    $user->numeric(265, $total, $utils::GV{'max'}, $total, $utils::GV{'max'});
 
     # global
-    $user->numeric(267, $t, $utils::GV{'max'}, $t, $utils::GV{'max'});
+    $user->numeric(267, $total, $utils::GV{'max'}, $total, $utils::GV{'max'});
 
     return 1
 }
@@ -173,11 +173,19 @@ sub handle_lusers {
 # view message of the day
 sub handle_motd {
     my $user = shift;
+
+    # MOTD
     $user->numeric(375, conf qw/server name/);
+
+    # as of 0.5.8, the MOTD is stored in GV.
     foreach my $line (split $/, $utils::GV{'motd'}) {
-        $user->numeric(372,$line);
+        $user->numeric(372, $line)
     }
+
+    # end of MOTD
     $user->numeric(376);
+
+    return
 }
 
 # change nickname
@@ -186,16 +194,16 @@ sub handle_nick {
     # such a simple task is much more complicated behind the scenes!
 
     my $user = shift;
-    my @s = split /\s+/, shift;
+    my @args = split /\s+/, shift;
 
     # parameter check
-    if (!defined $s[1]) {
+    if (!defined $args[1]) {
         $user->numeric(431);
         return
     }
 
     # I don't feel that this is necessary, but just in case...
-    my $newnick = col($s[1]);
+    my $newnick = col($args[1]);
 
     # ignore stupid nick changes
     return if $newnick eq $user->nick;
@@ -262,34 +270,105 @@ sub handle_nick {
 
 }
 
+# WHOIS query
 sub handle_whois {
+
+    # there is probably such thing as having *too* many comments, but meh.
+
     my $user = shift;
-    my $nick = (split /\s+/, shift)[1];
-    my $modes = '';
-    if ($nick) {
-        my $target = user::nickexists($nick);
-        if ($target) {
-            $modes .= $_ foreach (keys %{$target->{'mode'}});
-            $user->numeric(311,$target->nick,$target->{'ident'},$target->{'cloak'},$target->{'gecos'});
-            my @channels = ();
-            foreach my $channel (values %channel::channels) {
-                if ($user->ison($channel)) {
-                    push @channels, ($channel->prefix($user) ? $channel->prefix($user).$channel->name : $channel->name);
-                }
-            }
-            $user->numeric(319,$target->nick,(join ' ', @channels)) unless $#channels < 0;
-            $user->numeric(312,$target->nick,conf('server','name'),conf('server','desc'));
-            $user->numeric(641,$target->nick) if $target->{'ssl'};
-            $user->numeric(301,$target->nick,$target->{'away'}) if defined $target->{'away'};
-            $user->numeric(313,$target->nick) if $target->ismode('o');
-            $user->numeric(379,$target->nick,$modes) if $user->ismode('o');
-            $user->numeric(378,$target->nick,$target->{'host'},$target->{'ip'}) if (!$user->{'mode'}->{'x'} || $user->ismode('o'));
-            $user->numeric(317,$target->nick,(time-$target->{'idle'}),$target->{'time'});
-        } else {
-            $user->numeric(401,$nick);
+    my @args = split /\s+/, shift;
+    my (@modes, @channels);
+
+    # parameter check
+    if (!defined $args[1]) {
+        $user->numeric(461, 'WHOIS');
+        return
+    }
+
+    # WHOIS can take a server parameter optionally
+    my ($nick, $server);
+    if (defined $args[2]) {
+        $nick = $args[2];
+        $server = $args[1];
+
+        # make sure the server exists (nick is also acceptable)
+        if ((lc $server ne lc conf qw/server name/) && (lc $server ne lc $user->nick)) {
+            $user->numeric(402, $server);
+            return
         }
-        $user->numeric(318,$nick);
-    } else { $user->numeric(461,'WHOIS'); }
+
+    }
+
+    # he only provided nick
+    else {
+        $nick = $args[1]
+    }
+
+    # find the user we're querying and make sure they exist
+    my $target = user::nickexists($nick);
+    if (!$target) {
+        $user->numeric(401, $nick);
+        return
+    }
+
+    $nick = $target->nick;
+
+    # username, visible host, and real name
+    $user->numeric(311, $nick, $target->{'ident'}, $target->{'cloak'}, $target->{'gecos'});
+
+    # channels
+    foreach my $channel (values %channel::channels) {
+            push @channels,
+
+            # get their prefix in the channel
+            ($channel->prefix($target) ? $channel->prefix($target).$channel->name : $channel->name)
+            if $target->ison($channel)
+
+    }
+
+    $user->numeric(319, $nick, (join q. ., @channels))
+
+    # they're not on any channels.
+    unless $#channels < 0;
+
+    # server the user is on
+    $user->numeric(312, $nick, (conf qw/server name/), (conf qw/server desc/));
+
+    # using an SSL connection?
+    $user->numeric(641, $nick) if $target->{'ssl'};
+
+    # AWAY reason
+    $user->numeric(301, $nick, $target->{'away'}) if defined $target->{'away'};
+
+    # is an IRC operator
+    $user->numeric(313, $nick)
+
+        # (only available to opers)
+        if $target->ismode('o');
+
+    # enabled modes
+    push @modes, $_ foreach keys %{$target->{'mode'}};
+    $user->numeric(379, $nick, (join q.., @modes))
+
+        # (only available to opers)
+        if $user->ismode('o');
+
+    # actual IP
+    $user->numeric(378, $nick, $target->{'host'}, $target->{'ip'})
+
+        # a user can see it if the target is not cloaked, and opers can always see it.
+        if (!$user->{'mode'}->{'x'} || $user->ismode('o'));
+
+    # idle time
+    # only show it if he provided a server
+    if ($server) {
+        $user->numeric(317, $target->nick, (time-$target->{'idle'}), $target->{'time'})
+    }
+
+    # end of query
+    $user->numeric(318, $nick);
+    return 1
+
 }
 
 sub handle_ping {

@@ -264,7 +264,7 @@ sub servernotice {
 
 sub snt {
     # server notice for a command such as CHGHOST
-    shift->servernotice(sprintf '*** %s: %s', shift, shift);
+    shift->servernotice(sprintf '*** %s: %s', shift, shift)
 }
 
 sub sendnum {
@@ -272,35 +272,35 @@ sub sendnum {
     # (this is still used in the start() function as those numerics are only used once,
     # or at least until the VERSION command is complete.)
     my $user = shift;
-    $user->send(':'.conf('server','name').' '.shift().' '.$user->nick." @_");
+    $user->send(':'.conf('server','name').' '.shift().' '.$user->nick." @_")
 }
 
 sub numeric {
     # send a numeric
     # numerics are defined in the %numerics hash
     my ($user, $num) = (shift, shift);
-    $user->send(join ' ', ':'.conf('server', 'name'), (int $num), $user->nick, (sprintf $utils::numerics{$num}, @_));
+    $user->send(join ' ', ':'.conf('server', 'name'), (int $num), $user->nick, (sprintf $utils::numerics{$num}, @_))
 }
 
 sub sendserv {
     # send from the server
     # :server data
-    shift->send(':'.conf('server','name').' '.(sprintf shift, @_));
+    shift->send(':'.conf('server','name').' '.(sprintf shift, @_))
 }
 
 sub sendservj {
     # send from the server, using join(' ') for each argument
-    shift->send(':'.conf('server','name').' '.(join ' ', @_));
+    shift->send(':'.conf('server','name').' '.(join ' ', @_))
 }
 
 sub sendfrom {
     # send from a server or user
-    shift->send(':'.shift().' '.(sprintf shift, @_));
+    shift->send(':'.shift().' '.(sprintf shift, @_))
 }
 
 sub sendfromj {
     # send from a server or user, using join(' ') for each argument
-    shift->send(':'.shift().' '.(join ' ', @_));
+    shift->send(':'.shift().' '.(join ' ', @_))
 }
 
 sub fullcloak {
@@ -313,11 +313,18 @@ sub fullcloak {
 sub recvprivmsg {
     # who knows why this has its own function? it's only used once...
     my ($user,$from,$target,$msg,$cmd) = @_;
-    $user->send(':'.join(' ',$from,$cmd,$target).' :'.$msg);
+    $user->send(':'.(join q. ., $from, $cmd, $target).' :'.$msg)
 }
 
 sub mode {
-    return shift->{'mode'}->{shift()};
+    # look for a usermode set on the user
+    my ($user, $mode) = @_;
+
+    # found one
+    return $user->{'mode'}->{$mode} if exists $user->{'mode'}->{$mode};
+
+    # doesn't exit
+    return
 }
 
 sub fullhost {

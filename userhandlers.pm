@@ -418,32 +418,51 @@ sub handle_mode {
             return
         }
 
+    }
+
     # success
     return 1
 }
 
+# NOTICE and PRIVMSG
+# these two are so similar that it's pointless to have two
+# of the same subroutine with different names
 sub handle_privmsgnotice {
     my ($user, $data) = @_;
-    my ($n, @s) = (0, (split /\s+/, $data));
-    $n = 1 if uc $s[0] eq 'NOTICE';
-    if (!defined $s[2]) {
-        $user->numeric(461,$n?'NOTICE':'PRIVMSG');
+    my @args = split /\s+/, $data;
+    my $command = uc $args[0];
+
+    # parameter check
+    if (!defined $args[2]) {
+        $user->numeric(461, $command);
         return
     }
-    my $target = user::nickexists($s[1]);
-    my $channel = channel::chanexists($s[1]);
-    my $msg = col((split /\s+/, $data, 3)[2]);
+
+    # make sure the message is at least 1 character
+    my $msg = col((split q. ., $data, 3)[2]);
     if (!length $msg) {
         $user->numeric(412);
         return
     }
+
+    # first, check for a user
+    my $target = user::nickexists($args[1]);
     if ($target) {
-        $target->recvprivmsg($user->fullcloak,$target->nick,$msg,($n?'NOTICE':'PRIVMSG'));
-    } elsif ($channel) {
-        $channel->privmsgnotice($user,($n?'NOTICE':'PRIVMSG'),$msg);
-    } else {
-        $user->numeric(401,$s[1]);
+        $target->recvprivmsg($user->fullcloak, $target->nick, $msg, $command);
+        return 1
     }
+
+    # not a user, so check for a channel
+    my $channel = channel::chanexists($args[1]);
+    if ($channel) {
+        $channel->privmsgnotice($user, $command, $msg);
+        return 1
+    }
+
+    # no such nick or channel
+    $user->numeric(401, $args[1]);
+    return
+
 }
 
 sub handle_away {

@@ -332,3 +332,4 @@ VERSIONING
             * Added updown module.
             * Fixed several bugs in channel mode handler.
             * API register_command now requires a command description parameter.
+            * Added COMMANDS command to list commands.

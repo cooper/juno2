@@ -30,7 +30,7 @@ sub register_module {
 
     # make sure they have all of the required parameters
     if ($#_ < 4) {
-        say 'Incorrect number of parameters for API::Module::register; aborting register.';
+        say 'Incorrect number of parameters for register_module; aborting register.';
         return
     }
 

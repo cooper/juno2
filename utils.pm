@@ -69,6 +69,7 @@ our %numerics = (
     441 => '%s :User is already on channel',    
     443 => '%s %s :is already on channel',
     461 => '%s :Not enough parameters',
+    461.1 => 'USER :Your username is not valid',
     462 => ':You may not reregister',
     471 => '%s :Cannot join channel (channel limit reached)',
     472 => '%s :No such mode',

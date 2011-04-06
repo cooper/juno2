@@ -279,7 +279,7 @@ sub numeric {
     # send a numeric
     # numerics are defined in the %numerics hash
     my ($user, $num) = (shift, shift);
-    $user->send(join ' ', ':'.conf('server', 'name'), (int $num), $user->nick, (sprintf $utils::numerics{$num}, @_))
+    $user->send(join q. ., ':'.conf('server', 'name'), (int $num), $user->nick, (sprintf $utils::numerics{$num}, @_))
 }
 
 sub sendserv {
@@ -290,7 +290,7 @@ sub sendserv {
 
 sub sendservj {
     # send from the server, using join(' ') for each argument
-    shift->send(':'.conf('server','name').' '.(join ' ', @_))
+    shift->send(':'.conf('server','name').' '.(join q. ., @_))
 }
 
 sub sendfrom {
@@ -300,7 +300,7 @@ sub sendfrom {
 
 sub sendfromj {
     # send from a server or user, using join(' ') for each argument
-    shift->send(':'.shift().' '.(join ' ', @_))
+    shift->send(':'.shift().' '.(join q. ., @_))
 }
 
 sub fullcloak {

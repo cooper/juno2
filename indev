@@ -76,7 +76,7 @@ VERSIONING
 
         1. February 25, 2011
 
-            * S is now for away in WHO query. (how that happened: the world may never know)
+            * S is now for away in WHO query. (how that happened, the world may never know.)
             * Added user::acceptcheck. This checks if the server is accepting new connections. (defined by limit:clients)
             * Added user::ip_accept. This prevents a user from connecting if their per-ip limit is reached. (defined by limit:perip)
               This will also be used when Z-Line is added, forcing the user to disconnect before they finish the connection process.
@@ -338,3 +338,6 @@ VERSIONING
 
             * Fixed bug in handle.pm where USER didn't give a numeric if the username was invalid.
             * Cleanup: user.pm handle.pm.
+            * The largest cleanup of juno's history begins here, userhandlers.pm.
+              Expect new bugs to come about.
+              I'm completely ignoring the versioning system for a while so that new bugs from here on can be marked as "caused by userhandlers cleanup."

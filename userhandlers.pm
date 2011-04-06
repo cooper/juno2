@@ -136,16 +136,26 @@ sub get {
     undef %commands;
 }
 
-# HANDLERS (see README for information of each command)
+### HANDLERS (see README for information of each command)
 
+# network stats
 sub handle_lusers {
     my $user = shift;
     my ($i, $ii) = (0, 0);
-    foreach (values %user::connection) {
-        if ($_->mode('i')) {
-            $ii++;
-        } else { $i++; }
-    } my $t = $i+$ii;
+    foreach my $usr (values %user::connection) {
+
+        # if the user has i set, mark as invisible
+        if ($usr->mode('i')) {
+            $ii++
+        }
+
+        # not invisible
+        else {
+            $i++
+        }
+
+    }
+    my $t = $i+$ii;
 
     # there are currently x users and y invisible on z servers
     $utils::GV{'max'} = $t if $utils::GV{'max'} < $t;
@@ -160,44 +170,95 @@ sub handle_lusers {
     return 1
 }
 
+# view message of the day
 sub handle_motd {
     my $user = shift;
-    $user->numeric(375,conf('server','name'));
+    $user->numeric(375, conf qw/server name/);
     foreach my $line (split $/, $utils::GV{'motd'}) {
         $user->numeric(372,$line);
     }
     $user->numeric(376);
 }
 
+# change nickname
 sub handle_nick {
+
+    # such a simple task is much more complicated behind the scenes!
+
     my $user = shift;
     my @s = split /\s+/, shift;
-    if ($s[1]) {
-        return if $s[1] eq $user->nick;
-        if (validnick($s[1],conf('limit','nick'),undef)) {
-            if(!user::nickexists($s[1]) || lc($s[1]) eq lc($user->nick)) {
-                my %sent;
-                my @users = $user;
-                $sent{$user->{'id'}} = 1;
-                foreach my $channel (values %channel::channels) {
-                    if ($user->ison($channel)) {
-                        if (hostmatch($user->fullcloak,keys %{$channel->{'bans'}}) || hostmatch($user->fullhost,keys %{$channel->{'bans'}}) &&
-                        !hostmatch($user->fullhost,keys %{$channel->{'exempts'}})) {
-                            $user->numeric(345,$s[1],$channel->name), return unless $channel->canspeakwithstatus($user);
-                        }
-                        $channel->check;
-                        foreach (keys %{$channel->{'users'}}) {
-                            next if $sent{$_};
-                            push(@users,user::lookupbyid($_));
-                            $sent{$_} = 1;
-                        }
-                    }
+
+    # parameter check
+    if (!defined $s[1]) {
+        $user->numeric(431);
+        return
+    }
+
+    # I don't feel that this is necessary, but just in case...
+    my $newnick = col($s[1]);
+
+    # ignore stupid nick changes
+    return if $newnick eq $user->nick;
+
+    # check if the nick is valid
+    if (!validnick($newnick, conf qw/limit nick/, undef)) {
+        $user->numeric(432, $newnick);
+        return
+    }
+
+    # make sure it's not taken
+    if (!user::nickexists($newnick) || lc $newnick eq lc $user->nick) {
+
+        # we have to be very careful to properly send the nick change to users in common,
+        # without sending the same thing multiple times.
+
+        # we start with only this user
+        my @done = $user->{'id'};
+
+        # check each channel first to check if the user is banned and then to send the nick
+        # change to all users of the channel
+        foreach my $channel (values %channel::channels) {
+
+            # if they aren't there, don't do anything
+            next unless $user->ison($channel);
+
+            # check for bans, no exceptions, etc.
+            if ($channel->banned($user)) {
+
+                # if they have voice or greater, allow the nick change even though they're banned
+                if (!$channel->canspeakwithstatus($user)) {
+                    $user->numeric(345, $newnick, $channel->name);
+                    return
                 }
-                $_->send(':'.$user->fullcloak.' NICK :'.$s[1]) foreach @users;
-                $user->{'nick'} = $s[1];
-            } else { $user->numeric(433,$s[1]); }
-        } else { $user->numeric(432,$s[1]); }
-    } else { $user->numeric(431); }
+
+            }
+
+            # here, we send the nick change to the users of the channel.
+
+            foreach my $chusr (values %{$channel->{users}}) {
+
+                # if we already sent to them, skip them
+                next if $chusr ~~ @done;
+
+                push @done, $chusr
+            }
+
+        }
+
+        # now that we have all of the users' IDs in an array, we can send the nick change to them.
+        user::lookupbyid($_)->sendfrom($user->nick, 'NICK :'.$newnick) foreach @done;
+
+        # congratulations, you are now known as $newnick.
+        return 1
+
+    }
+
+    # nickname is taken >:(
+    else {
+        $user->numeric(433, $newnick)
+    }
+    return
+
 }
 
 sub handle_whois {

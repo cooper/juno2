@@ -482,6 +482,7 @@ sub handle_away {
     return 1
 }
 
+# become an IRC operator
 sub handle_oper {
     my ($user,$data) = @_;
     my @args = split /\s+/, $data;
@@ -516,12 +517,13 @@ sub handle_oper {
     return
 }
 
+# forcibly remove a user from server
 sub handle_kill {
     my ($user, $data) = @_;
-    my @s = split /\s+/, $data;
+    my @args = split /\s+/, $data;
 
     # parameter check
-    if (!defined $s[2]) {
+    if (!defined $args[2]) {
         $user->numeric(461, 'KILL');
         return
     }
@@ -533,38 +535,62 @@ sub handle_kill {
     }
 
     # see if the victim exists
-    if (my $target = user::nickexists($s[1])) {
+    if (my $target = user::nickexists($args[1])) {
         # it does, so kill it
-        my $quit_string = 'Killed ('.$user->nick.' ('.col((split /\s+/,$data,3)[2]).'))';
+        my $quit_string = 'Killed ('.$user->nick.' ('.col((split q. ., $data, 3)[2]).'))';
         $target->send(':'.$user->fullcloak.' QUIT :'.$quit_string);
         $target->quit($quit_string);
+        return 1
     }
 
-    # if it doesn't, so give the user an error
+    # he doesn't :/
     else {
-        $user->numeric(401, $s[1]);
-        return
+        $user->numeric(401, $args[1])
     }
+
+    return
 }
 
+# join a channel
 sub handle_join {
-    my ($user,$data) = @_;
-    my @s = split /\s+/, $data;
-    if (defined($s[1])) {
-        $s[1] = col($s[1]);
-        foreach(split ',', $s[1]) {
-            my $target = channel::chanexists($_);
-            if ($target) {
-                $target->dojoin($user) unless $user->ison($target);
-            } else {
-                if ($_ =~ m/^#/) {
-                    channel::new($user,$_);
-                } else {
-                    $user->numeric(403,$_);
-                }
-            }
+    my ($user, $data) = @_;
+    my @args = split /\s+/, $data;
+
+    # parameter check
+    if (!defined $args[1]) {
+        $user->numeric(461, 'JOIN');
+        return
+    }
+
+    # channels are separated by commas.
+    foreach my $channel (split q/,/, col($args[1])) {
+
+        # if the channel exists, join
+        if (my $target = channel::chanexists($channel)) {
+            $target->dojoin($user)
+
+            # unless they're already there, of course
+            unless $user->ison($target);
+
         }
-    } else { $user->numeric(461,'JOIN'); }
+
+        # create a new channel if it's a valid name
+        else {
+            if ($channel =~ m/^#/) {
+                channel::new($user, $channel)
+            }
+
+            # invalid channel name
+            else {
+                $user->numeric(403, $channel);
+                return
+            }
+
+        }
+    }
+
+    # success
+    return 1
 }
 
 sub handle_who {

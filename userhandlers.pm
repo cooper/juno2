@@ -235,7 +235,7 @@ sub handle_nick {
 
             # here, we send the nick change to the users of the channel.
 
-            foreach my $chusr (values %{$channel->{users}}) {
+            foreach my $chusr (keys %{$channel->{users}}) {
 
                 # if we already sent to them, skip them
                 next if $chusr ~~ @done;
@@ -246,9 +246,10 @@ sub handle_nick {
         }
 
         # now that we have all of the users' IDs in an array, we can send the nick change to them.
-        user::lookupbyid($_)->sendfrom($user->nick, 'NICK :'.$newnick) foreach @done;
+        (user::lookupbyid($_) or next)->sendfrom($user->nick, 'NICK :'.$newnick) foreach @done;
 
         # congratulations, you are now known as $newnick.
+        $user->{'nick'} = $newnick;
         return 1
 
     }

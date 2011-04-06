@@ -246,7 +246,7 @@ sub handle_nick {
         }
 
         # now that we have all of the users' IDs in an array, we can send the nick change to them.
-        (user::lookupbyid($_) or next)->sendfrom($user->nick, 'NICK :'.$newnick) foreach @done;
+        (user::lookupbyid($_) or next)->sendfrom($user->fullcloak, 'NICK :'.$newnick) foreach @done;
 
         # congratulations, you are now known as $newnick.
         $user->{'nick'} = $newnick;

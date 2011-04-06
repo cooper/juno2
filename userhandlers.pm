@@ -465,31 +465,55 @@ sub handle_privmsgnotice {
 
 }
 
+# mark as away or return from being away
 sub handle_away {
-    my ($user,$reason) = (shift,(split /\s+/, shift, 2)[1]);
+    my ($user, $reason) = (shift, (split /\s+/, shift, 2)[1]);
+
+    # if they're away, return
     if (defined $user->{'away'}) {
         $user->{'away'} = undef;
         $user->numeric(305);
-        return;
+        return 1
     }
+
+    # otherwise set their away reason
     $user->{'away'} = col($reason);
     $user->numeric(306);
+    return 1
 }
 
 sub handle_oper {
     my ($user,$data) = @_;
-    my @s = split /\s+/, $data;
-    if (defined $s[2]) {
-        my $oper = $user->canoper($s[1],$s[2]);
-        if ($oper) {
-            $user->{'oper'} = $oper;
-            my $vhost = oper($oper,'vhost');
-            $user->setcloak($vhost) if defined $vhost;
-            $user->setmode('o'.(oper($oper,'snotice')?'S':''));
-            snotice($user->fullhost.' is now an IRC operator using name '.$oper);
-            snotice('user '.$user->nick.' now has oper privs: '.oper($oper,'privs'));
-        } else { $user->numeric(491); }
-    } else { $user->numeric(461,'OPER'); }
+    my @args = split /\s+/, $data;
+
+    # parameter check
+    if (defined $args[2]) {
+        $user->numeric(461, 'OPER'); 
+    }
+
+    # attempt to oper
+    if (my $oper = $user->canoper($args[1], $args[2])) {
+
+        # set their cloak if the oper block has a vhost
+        my $vhost = oper($oper,'vhost');
+        $user->setcloak($vhost) if defined $vhost;
+
+        # set oper-up modes
+        $user->setmode('o'.(oper($oper, 'snotice') ? 'S' : q..));
+
+        # cool
+        $user->{'oper'} = $oper;
+        snotice($user->fullhost." is now an IRC operator using name $oper");
+        snotice("user $$user{nick} now has oper privs: ".oper($oper, 'privs'));
+        return 1
+    }
+
+    # incorrect credentials!
+    else {
+        $user->numeric(491)
+    }
+
+    return
 }
 
 sub handle_kill {

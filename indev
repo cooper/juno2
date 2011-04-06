@@ -338,6 +338,6 @@ VERSIONING
 
             * Fixed bug in handle.pm where USER didn't give a numeric if the username was invalid.
             * Cleanup: user.pm handle.pm.
-            * The largest cleanup of juno's history begins here, userhandlers.pm.
+            * The largest cleanup of 0.9 begins here (userhandlers.pm.)
               Expect new bugs to come about.
               I'm completely ignoring the versioning system for a while so that new bugs from here on can be marked as "caused by userhandlers cleanup."

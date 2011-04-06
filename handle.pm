@@ -104,7 +104,7 @@ sub user_handle_nick {
 
         # nick taken
         else {
-            $user->numeric(433, $s[1])
+            $user->numeric(433, $s[1]);
             return
         }
 

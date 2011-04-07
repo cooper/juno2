@@ -1,6 +1,5 @@
 #!/usr/bin/perl -w
 # Copyright (c) 2011, Mitchell Cooper
-# this is messy; I'm working on it.
 package userhandlers;
 
 use warnings;

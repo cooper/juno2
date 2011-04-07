@@ -593,22 +593,45 @@ sub handle_join {
     return 1
 }
 
+# WHO query
+# this is NOT the proper way to handle a WHO query,
+# but it's the most commonly used by clients
 sub handle_who {
-    my ($user,$query) = (shift,(split /\s+/,shift)[1]);
-    my $target = channel::chanexists($query);
-    if ($target) {
-        $target->who($user);
+    my ($user, $query) = (shift, (split /\s+/, shift)[1]);
+
+    # if the channel exists, send them the query.
+    if (my $target = channel::chanexists($query)) {
+        $target->who($user)
     }
-    $user->numeric(315,$query);
+
+    # WHO queries never fail; they simply don't send information they don't have
+    $user->numeric(315, $query);
+
+    # always success
+    return 1
 }
 
+# view users in a channel
 sub handle_names {
     my $user = shift;
-    foreach (split ',', (split /\s+/,shift)[1]) {
-        my $target = channel::chanexists($_);
+
+    # channels separated by commas
+    foreach (split q/,/, (split /\s+/,shift)[1]) {
+
+        # find the channel
+        my $target = channel::chanexists($channel);
+
+        # have channel.pm take it from here if the channel exists
         $target->names($user) if $target;
-        $user->numeric(366,$_) unless $target;
+
+        # no such channel, but still send the end of query.
+        # like WHO, NAMES never fails.
+        $user->numeric(366, $_) unless $target;
+
     }
+
+    # always success
+    return 1
 }
 
 sub handle_part {

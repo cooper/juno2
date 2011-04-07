@@ -747,11 +747,11 @@ sub handle_topic {
     if (my $channel = channel::chanexists($args[1])) {
 
         # if they gave a parameter, they probably want to set the topic
-        if (defined $s[2]) {
+        if (defined $args[2]) {
 
             # limit it to the number of chars defined by limit:topic
-            my $overflow = (length $s[2]) - (conf qw/limit topic/) + 1;
-            my $topic = substr $s[2], 0, -$overflow if length $s[2] > conf qw/limit topic/;
+            my $overflow = (length $args[2]) - (conf qw/limit topic/) + 1;
+            my $topic = substr $args[2], 0, -$overflow if length $args[2] > conf qw/limit topic/;
 
             # set the topic
             $channel->settopic($user, col($topic));
@@ -852,14 +852,14 @@ sub handle_invite {
         # cool, no problems
         $somewhere->{'invites'}->{$someone->{'id'}} = time;
         $someone->sendfrom($user->nick, ' INVITE '.$someone->nick.' :'.$somewhere->name);
-        $user->numeric(341, $someone->nick, $somewhere->name)
+        $user->numeric(341, $someone->nick, $somewhere->name);
         return 1
 
     }
 
     # you have to be on a channel to invite someone to it
     else {
-        $user->numeric(422,$somewhere->name)
+        $user->numeric(422, $somewhere->name)
     }
 
     # :(

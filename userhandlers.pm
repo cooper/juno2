@@ -487,8 +487,9 @@ sub handle_oper {
     my @args = split /\s+/, $data;
 
     # parameter check
-    if (defined $args[2]) {
-        $user->numeric(461, 'OPER'); 
+    if (!defined $args[2]) {
+        $user->numeric(461, 'OPER');
+        return
     }
 
     # attempt to oper

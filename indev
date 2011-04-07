@@ -345,3 +345,4 @@ VERSIONING
         8. April 6, 2011
 
             * Bug fix: no such nick/channel in MODE when setting or viewing a channel mode.
+            * Bug fix: parameter messups in OPER command.

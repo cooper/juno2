@@ -23,7 +23,8 @@ sub handle {
     if (exists $commands{$command}) {
         # call to the CODE ref
         $commands{$command}{'code'}($user, shift)
-    } else {
+    }
+    else {
         # unknown command
         $user->numeric(421, $command)
     }
@@ -50,7 +51,7 @@ sub new {
     # add the user the IO::Select object
     $::select->add($peer);
 
-    ::sendpeer($peer, ':'.conf('server','name').' NOTICE * :*** Looking up your hostname...');
+    ::sendpeer($peer, ':'.(conf qw/server name/).' NOTICE * :*** Looking up your hostname...');
     my $ip = $peer->peerhost;
     my $ipv = ($ip =~ m/:/ ? 6 : 4);
 
@@ -82,7 +83,7 @@ sub setmode {
     foreach (split //, $modes) {
         $user->{'mode'}->{$_} = time;
         next if $_ =~ m/i/;
-        if ($_ eq 'x' && conf('enabled','cloaking')) {
+        if ($_ eq 'x' && conf qw/enabled cloaking/) {
             # use . for IPv4 and : for IPv6
             my $sep = ($user->{'ipv'} == 6 ? ':' : '\.');
 
@@ -105,7 +106,7 @@ sub unsetmode {
     foreach (split //, $modes) {
         delete $user->{'mode'}->{$_};
         next if $_ =~ m/(i|S)/;
-        if ($_ eq 'x' && conf('enabled', 'cloaking')) {
+        if ($_ eq 'x' && conf qw/enabled cloaking/) {
             # restore the original cloak
             $user->unsetcloak;
         } elsif ($_ eq 'o') {
@@ -125,7 +126,7 @@ sub hmodes {
     # modes that always exist, whether or not a feature is enabled or disabled
     my @enabled_modes = 'i';
 
-    push @enabled_modes, 'x' if conf('enabled', 'cloaking');
+    push @enabled_modes, 'x' if conf qw/enabled cloaking/;
     my $state = 1;
     foreach my $piece (split //, $modes) {
         given ($piece) {
@@ -141,7 +142,8 @@ sub hmodes {
                 if ($user->ismode('o')) {
                     if ($state) {
                         $user->setmode($piece)
-                    } else {
+                    }
+                    else {
                         $user->unsetmode($piece)
                     }
                 }
@@ -150,7 +152,8 @@ sub hmodes {
                 # modes that actually exist!
                 if ($state) {
                     $user->setmode($piece)
-                } else {
+                }
+                else {
                     $user->unsetmode($piece)
                 }
             } default {
@@ -172,7 +175,7 @@ sub host2cloak {
     my @pieces = ();
     my $sep = shift;
     foreach (split $sep, shift) {
-        my $part = sha1_hex($_, conf('cloak', 'salt'), $#pieces);
+        my $part = sha1_hex($_, (conf qw/cloak salt/), $#pieces);
 
         # create six-character section
         $part = ($part =~ m/....../g)[0];
@@ -259,7 +262,7 @@ sub servernotice {
     # send a NOTICE from the server
     # :server NOTICE nick :message
     my $user = shift;
-    $user->send(':'.conf('server','name').' NOTICE '.$user->nick." :@_");
+    $user->send(':'.(conf qw/server name/).' NOTICE '.$user->nick." :@_");
 }
 
 sub snt {
@@ -272,25 +275,25 @@ sub sendnum {
     # (this is still used in the start() function as those numerics are only used once,
     # or at least until the VERSION command is complete.)
     my $user = shift;
-    $user->send(':'.conf('server','name').' '.shift().' '.$user->nick." @_")
+    $user->send(':'.(conf qw/server name/).' '.shift().' '.$user->nick." @_")
 }
 
 sub numeric {
     # send a numeric
     # numerics are defined in the %numerics hash
     my ($user, $num) = (shift, shift);
-    $user->send(join q. ., ':'.conf('server', 'name'), (int $num), $user->nick, (sprintf $utils::numerics{$num}, @_))
+    $user->send(join q. ., ':'.(conf qw/server name/), (int $num), $user->nick, (sprintf $utils::numerics{$num}, @_))
 }
 
 sub sendserv {
     # send from the server
     # :server data
-    shift->send(':'.conf('server','name').' '.(sprintf shift, @_))
+    shift->send(':'.(conf qw/server name/).' '.(sprintf shift, @_))
 }
 
 sub sendservj {
     # send from the server, using join(' ') for each argument
-    shift->send(':'.conf('server','name').' '.(join q. ., @_))
+    shift->send(':'.(conf qw/server name/).' '.(join q. ., @_))
 }
 
 sub sendfrom {
@@ -346,18 +349,18 @@ sub start {
     my $user = shift;
     return if $user->checkkline;
     snotice('client connecting: '.$user->fullhost.' ['.$user->{'ip'}.']');
-    $user->sendnum('001',':Welcome to the '.conf('server','network').' Internet Relay Chat Network '.$user->nick);
-    $user->sendnum('002',':Your host is '.conf('server','name').', running version juno-'.$::VERSION);
-    $user->sendnum('003',':This server was created '.POSIX::strftime('%a %b %d %Y at %H:%M:%S %Z',localtime $::TIME));
-    $user->sendnum('004',conf('server','name').' juno-'.$::VERSION.' ix o bei');
-    $user->sendnum('005','CHANTYPES=# EXCEPTS INVEX CHANMODES=AeIbZ,,l,imntz PREFIX=(qaohv)~&@%+ NETWORK='.conf('server','network').' MODES='.conf('limit','chanmodes').' NICKLEN='.conf('limit','nick').' TOPICLEN='.conf('limit','topic').' :are supported by this server');
+    $user->sendnum('001', ':Welcome to the '.(conf qw/server network/).' Internet Relay Chat Network '.$user->nick);
+    $user->sendnum('002', ':Your host is '.(conf qw/server name/).', running version juno-'.$::VERSION);
+    $user->sendnum('003', ':This server was created '.POSIX::strftime('%a %b %d %Y at %H:%M:%S %Z',localtime $::TIME));
+    $user->sendnum('004', (conf qw/server name/).' juno-'.$::VERSION.' ix o bei');
+    $user->sendnum('005', 'CHANTYPES=# EXCEPTS INVEX CHANMODES=AeIbZ,,l,imntz PREFIX=(qaohv)~&@%+ NETWORK='.(conf qw/server network/).' MODES='.(conf qw/limit chanmodes/).' NICKLEN='.(conf qw/limit nick/).' TOPICLEN='.(conf qw/limit topic/).' :are supported by this server');
 
     # make the server think the user sent these commands
     userhandlers::handle_lusers($user);
     userhandlers::handle_motd($user);
 
     # set automatic modes as defined in the configuration
-    $user->setmode(conf('user','automodes').($user->{'ssl'}?'Z':''));
+    $user->setmode((conf qw/user automodes/).($user->{'ssl'}?'Z':''));
 
     return 1
 }
@@ -442,7 +445,7 @@ sub checkkline {
     foreach (keys %::kline) {
         if (hostmatch($user->fullhost,$_)) {
             # found a match; forcing them to quit
-            $user->quit('K-Lined: '.$::kline{$_}{'reason'}, undef, 'K-Lined'.(conf('main', 'showkline')?': '.$::kline{$_}{'reason'}:''));
+            $user->quit('K-Lined: '.$::kline{$_}{'reason'}, undef, 'K-Lined'.((conf qw/main showkline/) ? ': '.$::kline{$_}{'reason'}:''));
             return 1
         }
     }
@@ -455,12 +458,13 @@ sub acceptcheck {
     # ensure that the server is accepting connections
     my $i = 0;
     $i++ foreach (values %connection);
-    if ($i == conf('limit','clients')) {
+    if ($i == conf qw/limit clients/) {
         # maximum client count reached
         snotice('No new clients are being accepted. ('.$i.' users)') if $::ACCEPTING != 0;
         $::ACCEPTING = 0;
         return
-    } else {
+    }
+    else {
         # person(s) quit; accepting clients again
         snotice('Clients are now being accepted. ('.$i.' users)') if $::ACCEPTING != 1;
         $::ACCEPTING = 1;
@@ -477,7 +481,7 @@ sub ip_accept {
     }
 
     # limit reached
-    return (undef, 'Too many connections from this host') if $count >= conf('limit', 'perip');
+    return (undef, 'Too many connections from this host') if $count >= conf qw/limit perip/;
 
     foreach (keys %::zline) {
             # IP matches a Z-Line in the configuration

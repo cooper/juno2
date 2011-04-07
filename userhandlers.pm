@@ -967,7 +967,7 @@ sub handle_commands {
 
     # send a notice for each command
     while (my ($command, $cv) = each %user::commands) {
-        $user->servernotice($cv->{'source'}.q(.).$command.': '.$cv->{'desc'})
+        $user->servernotice("$command [$$cv{source}] $$cv{desc}")
     }
 
     # always success

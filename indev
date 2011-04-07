@@ -341,3 +341,5 @@ VERSIONING
             * The largest cleanup of 0.9 begins here (userhandlers.pm.)
               Expect new bugs to come about.
               I'm completely ignoring the versioning system for a while so that new bugs from here on can be marked as "caused by userhandlers cleanup."
+
+        8.

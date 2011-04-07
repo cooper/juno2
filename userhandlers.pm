@@ -484,7 +484,7 @@ sub handle_away {
 
 # become an IRC operator
 sub handle_oper {
-    my ($user,$data) = @_;
+    my ($user, $data) = @_;
     my @args = split /\s+/, $data;
 
     # parameter check
@@ -655,7 +655,7 @@ sub handle_part {
 
             # make sure they're in the channel
             if (!$user->ison($channel)) {
-                $user->numeric(422,$channel->name);
+                $user->numeric(422, $channel->name);
                 return
             }
 
@@ -734,7 +734,7 @@ sub handle_locops {
 
 # view or set a channel topic
 sub handle_topic {
-    my ($user,$data) = @_;
+    my ($user, $data) = @_;
     my @args = split /\s+/, $data, 3;
 
     # parameter check
@@ -807,6 +807,7 @@ sub handle_kick {
     return 1
 }
 
+# invite a user to a channel
 sub handle_invite {
     my($user, @args) = (shift,(split /\s+/, shift));
     if (!defined $args[2]) {
@@ -867,40 +868,64 @@ sub handle_invite {
 
 }
 
+# view channel information
 sub handle_list {
-    my($user,@s) = (shift, (split /\s+/, shift));
+    my ($user, @args) = (shift, (split /\s+/, shift));
     $user->numeric(321);
-    if ($s[1]) {
-        foreach (split ',', $s[1]) {
-            my $channel = channel::chanexists($_);
-            if ($channel) {
-                $channel->list($user);
-            } else {
-                $user->numeric(401,$_);
-            }
-        }
-    } else {
+
+    # if there are no arguments, give them the entire list
+    if (!defined $args[1]) {
         $_->list($user) foreach values %channel::channels;
     }
-    $user->numeric(323);
-}
 
-sub handle_ison {
-    my($user,@s,@final) = (shift, (split /\s+/, shift), ());
-    if (defined $s[1]) {
-        foreach (@s[1..$#s]) {
-            my $u = user::nickexists($_);
-            push @final, $u->nick if $u;
+    # arguments means they want info on specific channels
+    # separated by commas, of course
+    else {
+        foreach my $chan (split q/,/, $args[1]) {
+
+            # find the channel
+            if (my $channel = channel::chanexists($chan)) {
+                $channel->list($user);
+            }
+
+            # no such channel
+            else {
+                $user->numeric(401, $chan);
+            }
+
         }
-        $user->numeric(303,(join ' ', @final));
-    } else {
-        $user->numeric(461,'ISON');
     }
+
+    $user->numeric(323);
+    return 1
 }
 
+# find online users
+sub handle_ison {
+    my ($user, @args) = (shift, (split /\s+/, shift));
+    my @final = ();
+
+    # parameter check
+    if (!defined $args[1]) {
+        $user->numeric(461, 'ISON');
+    }
+
+    # in ISON, nicks are separated by spaces
+    foreach my $nick (@args[1..$#args]) {
+        my $usr = user::nickexists($nick);
+        push @final, $usr->nick if $usr
+    }
+
+    # and replied in a single numeric
+    $user->numeric(303, (join q. ., @final));
+
+    return 1
+}
+
+# change a user's displayed host
 sub handle_chghost {
-    my ($user, @s) = (shift, (split /\s+/, shift));
-    if (!defined $s[2]) {
+    my ($user, @args) = (shift, (split /\s+/, shift));
+    if (!defined $args[2]) {
         $user->numeric(461, 'CHGHOST');
         return
     }
@@ -908,26 +933,45 @@ sub handle_chghost {
         $user->numeric(481);
         return
     }
-    my $target = user::nickexists($s[1]);
-    if ($target) {
-        if (validcloak($s[2])) {
-            snotice(sprintf '%s used CHGHOST to change %s\'s cloak to %s', $user->nick, $target->nick, $s[2]);
-            $target->setcloak($s[2]);
-            $user->snt('CHGHOST', $target->nick.'\'s cloak has been changed to '.$s[2]);
+
+    # check that the nickname exists
+
+    if (my $target = user::nickexists($args[1])) {
+
+        # make sure the host is valid
+        if (validcloak($args[2])) {
+
+            # success
+            $target->setcloak($args[2]);
+            snotice(sprintf '%s used CHGHOST to change %s\'s cloak to %s', $user->nick, $target->nick, $args[2]);
+            $user->snt('CHGHOST', $target->nick.'\'s cloak has been changed to '.$args[2]);
             return 1
-        } else {
-            $user->snt('CHGHOST', 'invalid characters');
+
         }
-    } else {
-        $user->numeric(401, $s[1]);
+
+        # not a valid cloak
+        $user->snt('CHGHOST', 'invalid characters');
+
     }
+
+    # no such nick
+    else {
+        $user->numeric(401, $args[1])
+    }
+
+    return
 }
 
+# view the registered command list
 sub handle_commands {
     my $user = shift;
+
+    # send a notice for each command
     while (my ($command, $cv) = each %user::commands) {
         $user->servernotice($cv->{'source'}.q(.).$command.': '.$cv->{'desc'})
     }
+
+    # always success
     return 1
 }
 

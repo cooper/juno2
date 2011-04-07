@@ -634,57 +634,102 @@ sub handle_names {
     return 1
 }
 
+# PART a channel
 sub handle_part {
-    my ($user,$data) = @_;
-    my @s = split /\s+/, $data;
-    my $reason = col((split /\s+/, $data,3)[2]);
-    if ($s[1]) {
-        foreach (split ',', $s[1]) {
-            my $channel = channel::chanexists($_);
-            if ($channel) {
-                if ($user->ison($channel)) {
-                    $channel->allsend(':%s PART %s%s',0,$user->fullcloak,$channel->name,(defined $reason?' :'.$reason:''));
-                    $channel->remove($user);
-                } else { $user->numeric(422,$channel->name); }
-            } else {
-                $user->numeric(401,$_);
+    my ($user, $data) = @_;
+    my @args = split /\s+/, $data;
+
+    # parameter check
+    if (!defined $args[1]) {
+        $user->numeric(461, 'PART');
+        return
+    }
+
+    my $reason = col((split ' ', $data, 3)[2]);
+
+    # channels separated by commas
+    foreach my $chan (split q/,/, $args[1]) {
+
+        # find the channel
+        if (my $channel = channel::chanexists($chan)) {
+
+            # make sure they're in the channel
+            if (!$user->ison($channel)) {
+                $user->numeric(422,$channel->name);
+                return
             }
+
+            # send the part to all users of the channel and delete the user's data in the channel
+            $channel->allsend(':%s PART %s%s', 0, $user->fullcloak, $channel->name, (defined $reason ? " :$reason" : q..));
+            $channel->remove($user);
+            next
         }
-    } else { $user->numeric(461,'PART'); }
+
+        # no such channel
+        $user->numeric(401, $chan);
+        next
+
+    }
+    return 1
 }
 
+# quit from the server
 sub handle_quit {
-    my ($user,$reason) = (shift,col((split /\s+/, shift, 2)[1]));
-    $user->quit('Quit: '.$reason);
+    my ($user, $reason) = (shift, col((split /\s+/, shift, 2)[1]));
+
+    # delete the user's data
+    $user->quit("Quit: $reason");
+
+    # not much can go wrong in a quit...
+    return 1
+
 }
 
+# reload server configuration file
 sub handle_rehash {
     my $user = shift;
+
+    # needs rehash flag
     if ($user->can('rehash')) {
-        undef %::config;
-        undef %::oper;
-        undef %::kline;
         snotice($user->nick.' is rehashing server configuration file');
-        ::confparse($::CONFIG);
-    } else {
-        $user->numeric(481);
+
+        # as of 0.8.*, confparse() automatically clears former values.
+        main::confparse($main::CONFIG);
+
+        return 1
     }
+
+    # user doesn't have privs to rehash
+    else {
+        $user->numeric(481)
+    }
+
+    return
 }
 
+# send a notice to all operators with mode S enabled
 sub handle_locops {
     my ($user, $data) = @_;
-    my @s = split /\s+/, $data, 2;
-    if (defined $s[1]) {
-        if ($user->can('globops') || $user->can('locops')) {
-            my @s = split /\s+/, $data, 2;
-            snotice('LOCOPS from '.$user->nick.': '.$s[1]);
-            return 1
-        } else {
-            $user->numeric(481)
-        }
-    } else {
-        $user->numeric(461,uc $s[0])
+    my @args = split /\s+/, $data, 2;
+
+    # parameter check
+    if (!defined $args[1]) {
+        $user->numeric(461, uc $args[0]);
+        return
     }
+
+    # either locops or globops works here; they're the same.
+    if ($user->can('globops') || $user->can('locops')) {
+        snotice('LOCOPS from '.$user->nick.': '.$args[1]);
+        return 1
+    }
+
+    # incorrect privs
+    else {
+        $user->numeric(481);
+    }
+
+    return
 }
 
 sub handle_topic {

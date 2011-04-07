@@ -346,3 +346,6 @@ VERSIONING
 
             * Bug fix: no such nick/channel in MODE when setting or viewing a channel mode.
             * Bug fix: parameter messups in OPER command.
+            * up module's UP command no longer sets modes that are already set.
+            * Added sync module.
+            * Cleanup.

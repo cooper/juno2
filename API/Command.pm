@@ -41,13 +41,13 @@ sub register_command {
     }
 
     # see if user.pm will accept it
-    if (user::register_handler($command, $code, $API::Module::MODULE{$package}{'name'}, $desc)) {
+    if (user::register_handler($command, $code, $API::Module::MODULE{$package}{'name'}.q[-].$API::Module::MODULE{$package}{'version'}, $desc)) {
         # success
         say 'Command '.$command.' registered successfully by '.$package
     }
 
     # failed
-        else {
+    else {
         say 'Command '.$command.' refused to load by user package';
         return
     }

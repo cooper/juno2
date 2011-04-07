@@ -499,19 +499,23 @@ sub handlestatus {
             $modename = 'owners';
             @needs = 'owner';
             $longname = 'owner'
-        } when ('a') {
+        }
+        when ('a') {
             $modename = 'admins';
             @needs = ('owner','admin');
             $longname = 'administrator'
-        } when ('o') {
+        }
+        when ('o') {
             $modename = 'ops';
             @needs = ('owner','admin','op');
             $longname = 'operator'
-        } when ('h') {
+        }
+        when ('h') {
             $modename = 'halfops';
             @needs = ('owner','admin','op');
             $longname = 'operator'
-        } when ('v') {
+        }
+        when ('v') {
             $modename = 'voices';
             @needs = ('owner','admin','op','halfop');
             $longname = 'half-operator'
@@ -701,14 +705,18 @@ sub handlemaskmode {
     given ($mode) {
         when ('b') {
             $modename = 'bans'
-        } when ('Z') {
+        }
+        when ('Z') {
             $modename = 'mutes'
-        } when ('I') {
+        }
+        when ('I') {
             $modename = 'invexes'
-        } when ('A') {
+        }
+        when ('A') {
             $modename = 'autoops';
             return unless $channel->canAmode($user, (split ':', $mask)[0])
-        } when ('e') {
+        }
+        when ('e') {
             $modename = 'exempts'
         }
     }
@@ -737,13 +745,17 @@ sub sendmasklist {
         given ($_) {
             when ('b') {
                 @list = (367, 368, 'bans', 0)
-            } when ('Z') {
+            }
+            when ('Z') {
                 @list = (728, 729, 'mutes', 0)
-            } when ('e') {
+            }
+            when ('e') {
                 @list = (348, 349, 'exempts', 1)
-            } when ('A') {
+            }
+            when ('A') {
                 @list = (388, 389, 'autoops', 1)
-            } when ('I') {
+            }
+            when ('I') {
                 @list = (346, 347, 'invexes', 1)
             }
         }
@@ -826,7 +838,7 @@ sub handleparmode {
 sub doauto {
     # apply automatic status (A mode)
     my ($channel, $user) = @_;
-    my ($modes, @parameters, %done) = '';
+    my (@modes, @parameters, %done);
     foreach (keys %{$channel->{'autoops'}}) {
         my @s = split ':', $_, 2;
 
@@ -835,36 +847,24 @@ sub doauto {
 
         # if their displayed or actual cloak match, apply the status
         if (hostmatch($user->fullcloak, $s[1]) || hostmatch($user->fullhost, $s[1])) {
-            $modes .= $s[0];
 
             # to keep us from setting the same mode twice
             $done{$s[0]} = 1;
 
+            my $name = mode2name($s[0]);
+
+            # they already have that mode
+            next if $channel->has($user, $name);
             
             push @parameters, $user->nick;
-            given ($s[0]) {
-                when ('q') {
-                    # set owner
-                    $channel->{'owners'}->{$user->{'id'}} = time
-                } when ('a') {
-                    # set administrator
-                    $channel->{'admins'}->{$user->{'id'}} = time
-                } when ('o') {
-                    # set operator
-                    $channel->{'ops'}->{$user->{'id'}} = time
-                } when ('h') {
-                    # set half-operator
-                    $channel->{'halfops'}->{$user->{'id'}} = time
-                } when ('v') {
-                    # set voice
-                    $channel->{'voices'}->{$user->{'id'}} = time
-                }
-            }
+            push @modes, $s[0];
+            $channel->{$name.'s'}->{$user->{'id'}} = time
         }
     }
 
     # relay the mode change unless it's blank
-    $channel->allsend(':%s MODE %s +%s %s', 0, conf('server', 'name'), $channel->name, $modes, (join ' ', @parameters)) unless $modes eq '';
+    $channel->allsend(':%s MODE %s +%s %s', 0, conf('server', 'name'), $channel->name, (join q.., @modes), (join q. ., @parameters)) if scalar @modes;
+
     return 1
 }
 
@@ -881,21 +881,24 @@ sub canAmode {
                 $user->numeric(482, $channel->name, 'owner');
                 return
             }
-        } when ('a') {
+        }
+        when ('a') {
             # check for admin or greater
             if (!$channel->has($user, qw(owner admin))) {
                 # they don't have it
                 $user->numeric(482, $channel->name, 'administrator');
                 return
             }
-        } when ('o') {
+        }
+        when ('o') {
             # check for op or greater
             if (!$channel->has($user, qw(owner admin op))) {
                 # they don't have it
                 $user->numeric(482, $channel->name, 'operator');
                 return
             }
-        } when ('h') {
+        }
+        when ('h') {
             # check for op or greater
             if (!$channel->has($user, qw(owner admin op))) {
                 # they don't have it
@@ -909,4 +912,29 @@ sub canAmode {
     return 1
 }
 
+# change a mode to a mode name
+sub mode2name {
+    my $mode = shift;
+    given ($mode) {
+        when ('q') {
+            return 'owner'
+        }
+        when ('a') {
+            return 'admin'
+        }
+        when ('o') {
+            return 'op'
+        }
+        when ('h') {
+            return 'halfop'
+        }
+        when ('v') {
+            return 'voice'
+        }
+    }
+
+    # unknown
+    return
+
+}
 1

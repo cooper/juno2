@@ -135,7 +135,6 @@ API TODO
 API::Loop
 Module: KLINE command
 Module: ZLINE command
-Module: SYNC command
 Module: some way to force mode changes
 
 user commands

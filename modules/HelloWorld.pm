@@ -20,7 +20,7 @@ use API::Command 'register_command';
 #   description
 #   init coderef
 #   void coderef
-register_module('HelloWord', '0.0.1', 'Hello world!', \&init, \&void);
+register_module('HelloWord', 0.1, 'Hello world!', \&init, \&void);
 
 sub init {
     # this will be called my API::Module upon loading of the module

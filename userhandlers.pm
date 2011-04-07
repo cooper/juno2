@@ -616,7 +616,7 @@ sub handle_names {
     my $user = shift;
 
     # channels separated by commas
-    foreach (split q/,/, (split /\s+/,shift)[1]) {
+    foreach my $channel (split q/,/, (split /\s+/,shift)[1]) {
 
         # find the channel
         my $target = channel::chanexists($channel);
@@ -626,7 +626,7 @@ sub handle_names {
 
         # no such channel, but still send the end of query.
         # like WHO, NAMES never fails.
-        $user->numeric(366, $_) unless $target;
+        $user->numeric(366, $channel) unless $target;
 
     }
 

@@ -342,4 +342,6 @@ VERSIONING
               Expect new bugs to come about.
               I'm completely ignoring the versioning system for a while so that new bugs from here on can be marked as "caused by userhandlers cleanup."
 
-        8.
+        8. April 6, 2011
+
+            * Bug fix: no such nick/channel in MODE when setting or viewing a channel mode.

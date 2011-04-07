@@ -390,7 +390,7 @@ sub handle_mode {
 
     # parameter check
     if (!defined $args[1]) {
-        $user->numeric(461,'MODE');
+        $user->numeric(461, 'MODE');
         return
     }
 
@@ -398,7 +398,7 @@ sub handle_mode {
     if (lc $args[1] eq lc $user->nick) {
 
         # yes it is!
-        $user->hmodes($args[2]);
+        $user->hmodes($args[2]) if defined $args[2];
 
     }
 
@@ -407,7 +407,7 @@ sub handle_mode {
 
         # find the channel
 
-        if (my $target = channel::chanexists($args[2])) {
+        if (my $target = channel::chanexists($args[1])) {
             $target->handlemode($user, (split /\s+/, $data, 3)[2]);
         }
 

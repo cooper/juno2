@@ -376,7 +376,7 @@ sub handle_ping {
     my $reason = (split /\s+/, shift, 2)[1];
 
     # only send a parameter if they supplied one
-    $user->sendserv('PONG '.conf('server','name').(defined $reason ? q. ..$reason : q..));
+    $user->sendserv('PONG '.(conf qw/server name/).(defined $reason ? q. ..$reason : q..));
 
     return 1
 }
@@ -496,7 +496,7 @@ sub handle_oper {
     if (my $oper = $user->canoper($args[1], $args[2])) {
 
         # set their cloak if the oper block has a vhost
-        my $vhost = oper($oper,'vhost');
+        my $vhost = oper($oper, 'vhost');
         $user->setcloak($vhost) if defined $vhost;
 
         # set oper-up modes
@@ -609,6 +609,7 @@ sub handle_who {
 
     # always success
     return 1
+
 }
 
 # view users in a channel
@@ -632,6 +633,7 @@ sub handle_names {
 
     # always success
     return 1
+
 }
 
 # PART a channel
@@ -670,6 +672,7 @@ sub handle_part {
         next
 
     }
+
     return 1
 }
 
@@ -811,7 +814,7 @@ sub handle_kick {
 sub handle_invite {
     my($user, @args) = (shift,(split /\s+/, shift));
     if (!defined $args[2]) {
-        $user->numeric(461,'INVITE');
+        $user->numeric(461, 'INVITE');
         return
     }
 

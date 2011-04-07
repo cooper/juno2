@@ -127,15 +127,16 @@ USERHOST command
 VERSION command
 WHO user
 channel names may not contain ASCII character 7
-add a channel mode similar to inspircd's +J - you may not rejoin after being kicked until it has been x seconds
 make the modules be (un)loaded on rehash
 fix weird bug where it sometimes adds mode a to finished_string in mode handler even if it doesn't work
 
 API TODO
 -----------------------
+API::Loop
 Module: KLINE command
 Module: ZLINE command
 Module: SYNC command
+Module: some way to force mode changes
 
 user commands
 -----------------------

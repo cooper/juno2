@@ -732,45 +732,70 @@ sub handle_locops {
     return
 }
 
+# view or set a channel topic
 sub handle_topic {
     my ($user,$data) = @_;
-    my @s = split /\s+/, $data, 3;
-    if (defined $s[1]) {
-        my $channel = channel::chanexists($s[1]);
-        if ($channel) {
-            if (defined $s[2]) {
-                $s[2] = substr($s[2],0,-(length($s[2])-(conf('limit','topic')+1))) if (length $s[2] > conf('limit','topic'));
-                $channel->settopic($user,col($s[2]));
-            } else {
-                $channel->showtopic($user);
-            }
-        } else { $user->numeric(401,$s[1]); }
-    } else {
-        $user->numeric(461,'TOPIC');
+    my @args = split /\s+/, $data, 3;
+
+    # parameter check
+    if (!defined $args[1]) {
+        $user->numeric(461, 'TOPIC');
+        return
     }
+
+    # find the channel
+    if (my $channel = channel::chanexists($args[1])) {
+
+        # if they gave a parameter, they probably want to set the topic
+        if (defined $s[2]) {
+
+            # limit it to the number of chars defined by limit:topic
+            my $overflow = (length $s[2]) - (conf qw/limit topic/) + 1;
+            my $topic = substr $s[2], 0, -$overflow if length $s[2] > conf qw/limit topic/;
+
+            # set the topic
+            $channel->settopic($user, col($topic));
+            return 1
+
+        }
+
+        # no parameter means viewing the topic
+        else {
+            $channel->showtopic($user);
+            return 1
+        }
+    }
+
+    # no such channel
+    else {
+        $user->numeric(401, $args[1])
+    }
+
+    return
 }
 
+# forcibly remove user from channel
 sub handle_kick {
     my($user, $data) = @_;
-    my @s = split /\s+/, $data, 4;
+    my @args = split /\s+/, $data, 4;
 
     # not enough parameters
-    if (!defined $s[2]) {
+    if (!defined $args[2]) {
         $user->numeric(461, 'KICK');
         return
     }
-    my $channel = channel::chanexists($s[1]);
-    my $target = user::nickexists($s[2]);
+    my $channel = channel::chanexists($args[1]);
+    my $target = user::nickexists($args[2]);
 
     # no such channel or nick
     # or they aren't in this channel
     if (!$channel || !$target || !$target->ison($channel)) {
-        $user->numeric(401, $s[1]);
+        $user->numeric(401, $args[1]);
         return
     }
 
     my $reason = $target->nick;
-    $reason = col($s[3]) if defined $s[3];
+    $reason = col($args[3]) if defined $args[3];
 
     # give them an error for not having correct status
     $user->numeric(482.1, $channel->name) and return
@@ -783,37 +808,63 @@ sub handle_kick {
 }
 
 sub handle_invite {
-    my($user,@s) = (shift,(split /\s+/, shift));
-    if (defined $s[2]) {
-        my $someone = user::nickexists($s[1]);
-        my $somewhere = channel::chanexists($s[2]);
-        if (!$someone) {
-            $user->numeric(401,$s[1]);
-            return
-        }
-        return if $someone == $user;
-        if (!$somewhere) {
-            $user->numeric(401,$s[2]); 
-            return
-        }
-        if (!$user->ison($somewhere)) {
-            $user->numeric(422,$somewhere->name);
-            return
-        }
-        if (!$somewhere->basicstatus($user)) {
-            $user->numeric(482,$somewhere->name,'half-operator');
-            return
-        }
-        if ($someone->ison($somewhere)) {
-            $user->numeric(433,$someone->nick,$somewhere->name);
-            return
-        }
-        $somewhere->{'invites'}->{$someone->{'id'}} = time;
-        $someone->sendfrom($user->nick,' INVITE '.$someone->nick.' :'.$somewhere->name);
-        $user->numeric(341,$someone->nick,$somewhere->name)
-    } else {
-        $user->numeric(461,'INVITE')
+    my($user, @args) = (shift,(split /\s+/, shift));
+    if (!defined $args[2]) {
+        $user->numeric(461,'INVITE');
+        return
     }
+
+    # find the user and the channel
+    my $someone = user::nickexists($args[1]);
+    my $somewhere = channel::chanexists($args[2]);
+
+    # make sure the user exists
+    if (!$someone) {
+        $user->numeric(401, $args[1]);
+        return
+    }
+
+    # ignore dumb invitations
+    return if $someone == $user;
+
+    # make sure the channel exists
+    if (!$somewhere) {
+        $user->numeric(401, $args[2]); 
+        return
+    }
+
+
+    # make sure the user is there in the first place
+    if ($user->ison($somewhere)) {
+
+        # INVITE requires halfop and above.
+        if (!$somewhere->basicstatus($user)) {
+            $user->numeric(482, $somewhere->name, 'half-operator');
+            return
+        }
+
+        # make sure the user isn't already there
+        if ($someone->ison($somewhere)) {
+            $user->numeric(433, $someone->nick, $somewhere->name);
+            return 
+        }
+
+        # cool, no problems
+        $somewhere->{'invites'}->{$someone->{'id'}} = time;
+        $someone->sendfrom($user->nick, ' INVITE '.$someone->nick.' :'.$somewhere->name);
+        $user->numeric(341, $someone->nick, $somewhere->name)
+        return 1
+
+    }
+
+    # you have to be on a channel to invite someone to it
+    else {
+        $user->numeric(422,$somewhere->name)
+    }
+
+    # :(
+    return
+
 }
 
 sub handle_list {

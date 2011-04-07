@@ -389,7 +389,8 @@ sub handlemode {
         if ($mode ~~ @normal_modes) {
             if ($state) {
                 $channel->setmode($mode)
-            } else {
+            }
+            else {
                 $channel->unsetmode($mode)
             }
         }
@@ -401,7 +402,8 @@ sub handlemode {
                     push @finished_parameters, $cool_it_worked
                 }
                 # that'll send a numeric if there's a problem
-            } else {
+            }
+            else {
                 # we need a parameter.
                 $ok = 0
             }
@@ -415,11 +417,13 @@ sub handlemode {
                 if (defined $result) {
                     # worked!
                     push @finished_parameters, $result
-                } else {
+                }
+                else {
                     # uh-oh?
                     $ok = 0
                 }
-            } else {
+            }
+            else {
                 # no parameter, so send the list and continue
                 $channel->sendmasklist($user, $mode);
                 next
@@ -436,7 +440,8 @@ sub handlemode {
             if (my $nickname = $channel->handlestatus($user, $state, $mode, $target_nick)) {
                 # handlestatus returns the user's nickname in proper case
                 push @finished_parameters, $nickname
-            } else {
+            }
+            else {
                 # handlestatus returned false! :(
                 $ok = 0
             }
@@ -539,7 +544,8 @@ sub handlestatus {
     if ($state) {
         # give them the status
         $channel->{$modename}->{$target->{'id'}} = time
-    } else {
+    }
+    else {
         # remove their status
         delete $channel->{$modename}->{$target->{'id'}}
     }
@@ -568,7 +574,8 @@ sub settopic {
     # see if they can set it
     if ($channel->ismode('t')) {
         $success = 1 if $channel->basicstatus($user);
-    } else {
+    }
+    else {
         $success = 1
     }
     if ($success) {
@@ -583,7 +590,8 @@ sub settopic {
             )
         };
         $channel->allsend(':%s TOPIC %s :%s', 0, $user->fullcloak, $channel->name, $topic)
-    } else {
+    }
+    else {
         # they can't.
         $user->numeric(482, $channel->name, 'half-operator')
     }
@@ -643,7 +651,8 @@ sub privmsgnotice {
             return 1
 
         # otherwise give them an error
-        } else {
+        }
+        else {
             $user->numeric(404, $channel->name);
             return
         }
@@ -669,14 +678,17 @@ sub handlemaskmode {
             if ($mask !~ m/\!/) {
                 $mask = '*!'.$mask
             }
-        } else {
+        }
+        else {
             if ($mask =~ m/\!/) {
                 $mask = $mask.'@*'
-            } else {
+            }
+            else {
                 $mask = $mask.'!*@*'
             }
         }
-    } else {
+    }
+    else {
         # handle an auto-access mask
         if ($mask !~ m/^(q|a|o|h|v):/) {
             # we'll assume they meant o
@@ -705,7 +717,8 @@ sub handlemaskmode {
     if ($state) {
         # set the mode
         $channel->{$modename}->{lc $mask} = [$user->fullcloak, time, $mask]
-    } else {
+    }
+    else {
         # delete the mode
         delete $channel->{$modename}->{lc $mask}
     }

@@ -94,7 +94,7 @@ sub col {
 }
 
 sub validnick {
-    my ($str,$limit,$i) = @_;
+    my ($str, $limit, $i) = @_;
     return if length $str < 1 || length $str > $limit;
     return if $str =~ m/^\d/ && !$i;
     return if $str =~ m/[^A-Za-z-0-9-\[\]\\\`\^\|\{\}\_]/;
@@ -102,7 +102,7 @@ sub validnick {
 }
 
 sub hostmatch {
-    my ($mask,@list) = @_;
+    my ($mask, @list) = @_;
     my @aregexps;
     foreach my $regexp (@list) {
         $regexp =~ s/\./\\\./g;

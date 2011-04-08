@@ -11,8 +11,9 @@ use Exporter;
 use Class::Unload;
 
 use API::Command;
+use utils 'snotice';
 
-our @EXPORT = qw/register_module module_exists/;
+our @EXPORT = qw/register_module module_exists module2package/;
 our %MODULE;
 our $LAST_INIT;
 
@@ -24,19 +25,19 @@ sub register_module {
 
     # make sure that this module hasn't already registered itself.
     if (exists $MODULE{$package}) {
-        say 'Package '.$package.' attempted to register multiple modules; aborting register.';
+        notice('Package '.$package.' attempted to register multiple modules; aborting register.');
         return
     }
 
     # make sure they have all of the required parameters
     if ($#_ < 4) {
-        say 'Incorrect number of parameters for register_module; aborting register.';
+        notice('Incorrect number of parameters for register_module; aborting register.');
         return
     }
 
     # make sure that they aren't attempting to register from main
     if ($package eq 'main') {
-        say 'Modules must have unique package names; main is not acceptable. Aborting register.';
+        notice('Modules must have unique package names; main is not acceptable. Aborting register.');
         return
     }
 
@@ -46,7 +47,7 @@ sub register_module {
     # I was gonna make it check if a module with the same name already exists, but that's kinda
     # pointless because it uses package names; there shouldn't be any issues.
 
-    say 'API module registered: '.$module{'name'}.' from '.$package;
+    notice('API module registered: '.$module{'name'}.' from '.$package);
     $MODULE{$package} = \%module;
 
     # success
@@ -68,7 +69,7 @@ sub module_exists {
 sub delete_package {
     # by package name, not module name
     my $package = shift;
-    say 'Unloading package '.$package.' by force';
+    notice('Unloading package '.$package.' by force');
 
     # make sure it exists
     if (exists $MODULE{$package}) {
@@ -82,13 +83,13 @@ sub delete_package {
         # unload the package (supposedly)
         Class::Unload->unload($package);
 
-        say 'Unloaded package '.$package;
+        notice('Unloaded package '.$package);
         return 1
     }
 
     # it hasn't registered, so give up
     else {
-        say 'I can\'t unload a module that hasn\'t registered. ('.$package.')';
+        notice('I can\'t unload a module that hasn\'t registered. ('.$package.')');
         return
     }
 
@@ -101,27 +102,27 @@ sub package_init {
 
     # make sure the module is registered
     if (!exists $MODULE{$package}) {
-        say 'Package '.$package.' has not registered to API::Module; aborting initialization.';
+        notice('Package '.$package.' has not registered to API::Module; aborting initialization.');
         return
     }
 
     # make sure it's a coderef
     if (ref $MODULE{$package}{'init'} eq 'CODE') {
-        say 'Initializing module '.$MODULE{$package}{'name'};
+        notice('Initializing module '.$MODULE{$package}{'name'});
         # it is, so run it
-        if ($MODULE{$package}{'init'}(caller 0)) {
+        if ($MODULE{$package}{'init'}(caller)) {
             # it returned true
-            say 'Module initialized successfully.';
+            notice('Module initialized successfully.');
             return 1
         } else {
             # it failed
-            say 'Module refused to load; aborting.';
+            notice('Module refused to load; aborting.');
             delete_package($package);
             return
         }
     } else {
         # it's not a coderef, so force the package to unload
-        say 'Module '.$MODULE{$package}{'name'}.' did not provide a init CODE ref; forcing unload.';
+        notice('Module '.$MODULE{$package}{'name'}.' did not provide a init CODE ref; forcing unload.');
         delete_package($package);
         return
     }
@@ -134,6 +135,53 @@ sub package_exists {
     my $package = shift;
     return $MODULE{$package} if exists $MODULE{$package};
     return
+}
+
+# call void() and unlod
+sub package_unload {
+    my $package = shift;
+
+    notice('Calling void subroutine for '.$package);
+
+    # make sure it exists
+    if (exists $MODULE{$package}) {
+
+        # found it; call void()
+        if ($MODULE{$package}{'void'}()) {
+            notice('Success.');
+            return delete_package($package)
+        }
+
+        # it refuses to unload
+        else {
+            notice($package.' refused to unload.');
+            return
+        }
+
+    }
+
+    # it hasn't registered, so give up
+    else {
+        notice('I can\'t unload a module that hasn\'t registered. ('.$package.')');
+        return
+    }
+}
+
+sub module2package {
+    my $request = shift;
+    foreach my $module (keys %MODULE) {
+        return $module if $MODULE{$module}{name} eq $request
+    }
+
+    # no such module
+    return
+}
+
+sub notice {
+    my $msg = shift;
+    say $msg;
+    snotice($msg);
+    return 1
 }
 
 1

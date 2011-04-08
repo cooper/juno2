@@ -51,9 +51,6 @@ our $id = conf('server', 'id');
 # begin listening on clients
 &createsockets;
 
-# load API modules
-&loadapi;
-
 # if not in debug mode, become a daemon
 if (!$NOFORK) {
     say 'Becoming a daemon...';
@@ -398,6 +395,12 @@ sub loadrequirements {
         &user::DigestImport
     }
 
+    if (conf qw/enabled api/) {
+        say '    Loading module API';
+        require API::Core;
+        &API::Core::begin
+    }
+
     # no problems!
     say 'All required modules have been loaded successfully.';
     return 1
@@ -410,29 +413,6 @@ sub getversion {
     close $versionfile;
     $version =~ s/\s+$//;
     return $version
-}
-
-sub loadapi {
-    # load API modules
-    # is API loaded?
-    return unless conf('enabled', 'api');
-
-    # make sure it's not set to 0 (none)
-    if (my $modules = conf('main', 'modules')) {
-        # modules are separated by spaces
-        foreach my $module (split /\s+/, $modules) {
-            # load it
-            say 'Loading module '.$module;
-            $module = 'modules/'.$module.'.pm';
-            do $module
-
-            # or die due to an error
-            or fatal('Can\'t load '.$module.': '.($! ? $! : $@))
-        }
-    }
-
-    # success
-    return 1
 }
 
 1

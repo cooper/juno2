@@ -9,6 +9,7 @@ use base 'Exporter';
 
 use Exporter;
 use API::Module;
+use utils 'snotice';
 
 our @EXPORT = qw/register_command command_exists/;
 our %COMMAND;
@@ -24,31 +25,31 @@ sub register_command {
     #  init sub returns a false value, causing the command to register without
     #  a parent package)
     if (!scalar @caller) {
-        say 'Command '.$command.' can\'t be registered from outside of a subroutine';
+        notice('Command '.$command.' can\'t be registered from outside of a subroutine');
         return
     }
 
     # see if it already exists
     if (exists $COMMAND{$command}{$package}) {
-        say 'Command '.$command.' has already been registered by '.$package.'; aborting register.';
+        notice('Command '.$command.' has already been registered by '.$package.'; aborting register.');
         return
     }
 
     # make sure they gave the required arguments
     if ($#_ < 2) {
-        say 'Not enough arguments for command_register given by package '.$package;
+        notice('Not enough arguments for command_register given by package '.$package);
         return
     }
 
     # see if user.pm will accept it
     if (user::register_handler($command, $code, $API::Module::MODULE{$package}{'name'}.q[-].$API::Module::MODULE{$package}{'version'}, $desc)) {
         # success
-        say 'Command '.$command.' registered successfully by '.$package
+        notice('Command '.$command.' registered successfully by '.$package)
     }
 
     # failed
     else {
-        say 'Command '.$command.' refused to load by user package';
+        notice('Command '.$command.' refused to load by user package');
         return
     }
 
@@ -67,7 +68,7 @@ sub register_command {
 sub delete_package {
     # delete all commands registered by a package
     my $package = shift;
-    say 'Deleting all commands registered by '.$package;
+    notice('Deleting all commands registered by '.$package);
 
     # check each command for a hook to this module
     foreach my $command (keys %COMMAND) {
@@ -76,7 +77,7 @@ sub delete_package {
             # delete it
             delete $COMMAND{$command};
             user::delete_handler($command);
-            say 'Deleted command '.$command.' by '.$package
+            notice('Deleted command '.$command.' by '.$package)
         }
     }
 
@@ -86,6 +87,13 @@ sub delete_package {
 
 sub command_exists {
     my $command = shift;
+}
+
+sub notice {
+    my $msg = shift;
+    say $msg;
+    snotice($msg);
+    return 1
 }
 
 1

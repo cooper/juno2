@@ -358,17 +358,15 @@ A
 
 oper flags
 -----------------------
-kill
-    The kill flag grants use of the KILL command.
-rehash
-    The rehash flag grants use of the REHASH command.
-locops
-    The locops flag grants use of the LOCOPS command.
-globops
-    The globops flag grants use of the GLOBOPS command.
-chghost
-    The CHGHOST flag grants use of the CHGHOST command.
+In juno-ircd, oper flags are specific to each command. The following are available:
 
+- kill
+- rehash
+- locops
+- globops
+- chghost
+- modload
+- modunload
 
 * unfinished
 ** (this is just a joke; don't be alarmed)

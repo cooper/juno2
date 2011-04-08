@@ -13,7 +13,7 @@ use API::Module 'register_module';
 use API::Command 'register_command';
 
 # register the module
-register_module('sync', 0.1, 'Sync channel access modes to the auto-access list.', \&init, sub {});
+register_module('sync', 0.1, 'Sync channel access modes to the auto-access list.', \&init, sub { return 1 });
 
 # initialization subroutine
 sub init {

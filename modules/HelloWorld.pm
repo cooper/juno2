@@ -20,7 +20,7 @@ use API::Command 'register_command';
 #   description
 #   init coderef
 #   void coderef
-register_module('HelloWord', 0.1, 'Hello world!', \&init, \&void);
+register_module('HelloWorld', 0.1, 'Hello world!', \&init, \&void);
 
 sub init {
     # this will be called my API::Module upon loading of the module
@@ -55,6 +55,11 @@ sub void {
     # by API::Module now.
 
     say 'Goodbye world!';
+
+    # once again, the module will not unload unless this subroutine returns
+    # a true value. If in any case a module should not be unloaded, return
+    # a false value here, and API::Module will consider it to be permanent
+    # and ignore the attempt to unload it.
     return 1
 }
 

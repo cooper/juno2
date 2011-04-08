@@ -16,7 +16,7 @@ use API::Command 'register_command';
 use utils 'conf';
 
 # register the module
-register_module('updown', 0.2, 'Grant or remove a user\'s channel access according to mode A.', \&init, sub {});
+register_module('updown', 0.2, 'Grant or remove a user\'s channel access according to mode A.', \&init, sub { return 1 });
 
 sub init {
     # register the commands

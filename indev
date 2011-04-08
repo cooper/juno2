@@ -349,3 +349,7 @@ VERSIONING
             * up module's UP command no longer sets modes that are already set.
             * Added sync module.
             * Cleanup.
+            * Added API::Core: registers core API commands MODLOAD and MODUNLOAD.
+              In order to be considered a "successful" unload, modules must return a true value in their void subroutine.
+              This adds the modload and modunload oper flags.
+              Notices from API::Module and API::Command are now snotice()d as well as say()d.

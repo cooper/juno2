@@ -693,11 +693,38 @@ sub handlemaskmode {
         }
     }
     else {
+
         # handle an auto-access mask
-        if ($mask !~ m/^(q|a|o|h|v):/) {
+        my @m = split ':', $mask, 2;
+        if ($#m) {
+
+            # now we can do more than 1 setting in 1 mode :D
+            my $finished_modes = q..;
+            my %done;
+            foreach my $status_mode (split //, $m[0]) {
+
+                # make sure it's a legal mode first
+                # and it's not already been used
+                if ($status_mode =~ m/(q|a|o|h|v)/ && !$done{$status_mode}) {
+                    $done{$status_mode} = 1;
+                    $finished_modes .= $status_mode
+                }
+
+            }
+
+            # put in form of modes:mask
+            $mask = $finished_modes.q(:).$m[1]
+
+        }
+
+        # no mode type provided
+        else {
+
             # we'll assume they meant o
             $mask = 'o:'.$mask
+
         }
+
     }
 
     # get the name of the mode
@@ -733,6 +760,7 @@ sub handlemaskmode {
 
     # success
     return $mask
+
 }
 
 sub sendmasklist {
@@ -840,26 +868,28 @@ sub doauto {
     my ($channel, $user) = @_;
     my (@modes, @parameters, %done);
     foreach (keys %{$channel->{'autoops'}}) {
-        my @s = split ':', $_, 2;
+        my ($mode, $mask) = split ':', $_, 2;
 
-        # we've already set this mode
-        next if $done{$s[0]};
+        foreach my $status_mode (split //, $mode) {
+            # we've already set this mode
+            next if $done{$status_mode};
 
-        # if their displayed or actual cloak match, apply the status
-        if (hostmatch($user->fullcloak, $s[1]) || hostmatch($user->fullhost, $s[1])) {
+            # if their displayed or actual cloak match, apply the status
+            if (hostmatch($user->fullcloak, $mask) || hostmatch($user->fullhost, $mask)) {
 
-            # to keep us from setting the same mode twice
-            $done{$s[0]} = 1;
+                # to keep us from setting the same mode twice
+                $done{$status_mode} = 1;
 
-            my $name = mode2name($s[0]);
+                my $name = mode2name($status_mode);
 
-            # they already have that mode
-            next if $channel->has($user, $name);
-            
-            push @parameters, $user->nick;
-            push @modes, $s[0];
-            $channel->{$name.'s'}->{$user->{'id'}} = time
-        }
+                # they already have that mode
+                next if $channel->has($user, $name);
+                
+                push @parameters, $user->nick;
+                push @modes, $status_mode;
+                $channel->{$name.'s'}->{$user->{'id'}} = time
+            }
+       }
     }
 
     # relay the mode change unless it's blank
@@ -871,39 +901,42 @@ sub doauto {
 sub canAmode {
     # check if a user is capable of setting an A mode.
     # in order to set q:* for example, he must have owner status.
-    my ($channel, $user, $Amode) = @_;
+    my ($channel, $user, $modes) = @_;
 
-    given ($Amode) {
-        when ('q') {
-        # check for owner
-            if (!$channel->has($user, 'owner')) {
-                # they don't have it
-                $user->numeric(482, $channel->name, 'owner');
-                return
+    # we support more than 1 status in a single mode now :)
+    foreach my $Amode (split //, $modes) {
+        given ($Amode) {
+            when ('q') {
+            # check for owner
+                if (!$channel->has($user, 'owner')) {
+                    # they don't have it
+                    $user->numeric(482, $channel->name, 'owner');
+                    return
+                }
             }
-        }
-        when ('a') {
-            # check for admin or greater
-            if (!$channel->has($user, qw(owner admin))) {
-                # they don't have it
-                $user->numeric(482, $channel->name, 'administrator');
-                return
+            when ('a') {
+                # check for admin or greater
+                if (!$channel->has($user, qw(owner admin))) {
+                    # they don't have it
+                    $user->numeric(482, $channel->name, 'administrator');
+                    return
+                }
             }
-        }
-        when ('o') {
-            # check for op or greater
-            if (!$channel->has($user, qw(owner admin op))) {
-                # they don't have it
-                $user->numeric(482, $channel->name, 'operator');
-                return
+            when ('o') {
+                # check for op or greater
+                if (!$channel->has($user, qw(owner admin op))) {
+                    # they don't have it
+                    $user->numeric(482, $channel->name, 'operator');
+                    return
+                }
             }
-        }
-        when ('h') {
-            # check for op or greater
-            if (!$channel->has($user, qw(owner admin op))) {
-                # they don't have it
-                $user->numeric(482, $channel->name, 'operator');
-                return
+            when ('h') {
+                # check for op or greater
+                if (!$channel->has($user, qw(owner admin op))) {
+                    # they don't have it
+                    $user->numeric(482, $channel->name, 'operator');
+                    return
+                }
             }
         }
     }

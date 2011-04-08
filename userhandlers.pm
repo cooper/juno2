@@ -754,8 +754,8 @@ sub handle_topic {
 
             # limit it to the number of chars defined by limit:topic
             my $overflow = (length $args[2]) - (conf qw/limit topic/) + 1;
-            my $topic = substr $args[2], 0, -$overflow if length $args[2] > conf qw/limit topic/;
-
+            my $topic = $args[2];
+            $topic = substr $args[2], 0, -$overflow if length $args[2] > conf qw/limit topic/;
             # set the topic
             $channel->settopic($user, col($topic));
             return 1

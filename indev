@@ -358,4 +358,4 @@ VERSIONING
 
             * Bug fix: TOPIC was blank if less than the character limit.
             * Auto-status mode A now supports multiple statuses in a single mode.
-              For example, +A qao:*!*@* grants modes q, a, and o to all users.
+              For example, mode +A qao:*!*@* grants modes q, a, and o to all users.

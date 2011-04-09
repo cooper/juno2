@@ -15,6 +15,7 @@ our @EXPORT = 'register_command';
 our @EXPORT_OK = qw/command_exists/;
 our %COMMAND;
 
+# reigster a command
 sub register_command {
     # arguments: command coderef description
     my @caller = caller;
@@ -66,7 +67,9 @@ sub register_command {
     return 1
 }
 
+# delete a package by its name
 sub delete_package {
+
     # delete all commands registered by a package
     my ($obj, $package) = (shift, shift);
     notice('Deleting all commands registered by '.$package);
@@ -84,10 +87,7 @@ sub delete_package {
 
     # success
     return 1
-}
 
-sub command_exists {
-    my $command = shift;
 }
 
 sub notice {

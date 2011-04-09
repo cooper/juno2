@@ -119,6 +119,7 @@ sub handle_modunload {
         $user->snt('modunload', 'no such module');
         return
     }
+
 }
 
 1

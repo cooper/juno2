@@ -16,6 +16,7 @@ BEGIN {
 
     # no error
     push @INC, $DIR
+
 }
 
 use POSIX;
@@ -31,6 +32,8 @@ local $0 = 'juno';
 $SIG{$_} = \&sigdie foreach qw/INT TERM KILL/;
 $SIG{'HUP'} = \&sighup;
 
+
+# set a bunch of stuff we'll use later...
 our $VERSION = &getversion;
 our $TIME = time;
 our $CONFIG = $DIR.'/etc/ircd.conf';
@@ -66,6 +69,7 @@ if (!$NOFORK) {
     $PID = fork;
     say $pidfile $PID if $PID != 0;
     close $pidfile
+
 }
 
 exit unless $PID == 0;
@@ -79,33 +83,43 @@ our $select = new IO::Select @sel;
 # main loop that is run through every x seconds, as defined by main:timeout
 # or every time the IRC sockets read or write data.
 for (;;) {
+
     # read incoming data
-    foreach my $client ($select->can_read(conf('main', 'timeout'))) {
+    foreach my $client ($select->can_read(conf qw/main timeout/)) {
         my $time = time;
         my $user = user::lookup($client);
         $timer{$client} = 0 unless $timer{$client};
+
+        # this is a new socket waiting to be accepted, so we create a new user.
         if (exists $listensockets{$client}) {
-            # this is a new socket waiting to be accepted, so we create a new user.
-            user::new(($SSL{$client}?1:0), $client->accept)
-        } else {
+            user::new(($SSL{$client} ? 1 : 0), $client->accept)
+        }
+
+        # this is a user sending data
+        else {
             $time = time;
             $timer{$client} = $time if $timer{$client} < $time;
 
             # check for incoming data
             if (sysread $client, my $data, POSIX::BUFSIZ) {
+
                 # add the data to the incoming buffer
                 $inbuffer{$client} .= $data
-            } else {
-                # dead socket; force the user to quit
+
+            }
+
+            # dead socket; force the user to quit
+            else {
                 $user->quit('Connection closed', 1)
             }
+
         }
         delete $inbuffer{$client}, next unless $user;
         next unless exists $inbuffer{$client};
 
         # flood check
         my ($theline, $therest);
-        while (($timer{$client}-conf('flood', 'lines') <= $time) &&
+        while (($timer{$client}-(conf qw/flood lines/) <= $time) &&
           (($theline, $therest) = $inbuffer{$client} =~ m/([^\n]*)\n(.*)/s)) {
             $inbuffer{$client} = $therest;
             $theline =~ s/\r$//;
@@ -115,25 +129,30 @@ for (;;) {
 
             $timer{$client}++
         }
+
         # they've reached their limit; force them to quit
         $user->quit(conf('flood', 'msg')) if length $inbuffer{$client} > conf('flood', 'bytes')
+
     }
 
     # write outgoing data
     foreach my $client ($select->can_write(0)) {
+
         # nothing to write
         next unless $outbuffer{$client};
 
         # send the data
         my $sent = syswrite $client, $outbuffer{$client}, POSIX::BUFSIZ;
-        next unless defined $sent;
-        if ($sent <= length $outbuffer{$client} || $! == POSIX::EWOULDBLOCK) {
+        if (defined $sent && $sent <= length $outbuffer{$client} || $! == POSIX::EWOULDBLOCK) {
             (substr $outbuffer{$client}, 0, $sent) = '';
             delete $outbuffer{$client} unless length $outbuffer{$client}
-        } else {
-            # can't write to this socket, so give up and force the user to quit
+        }
+
+        # can't write to this socket, so give up and force the user to quit
+        else {
             user::lookup($client)->quit('Write error', 1)
         }
+
     }
 
     # check for ping timeouts
@@ -146,12 +165,15 @@ for (;;) {
 
             # make sure that they aren't just sitting there without registering...
             $client->quit('Registration timeout') unless $client->{'ready'}
+
         }
         if ((time-$client->{'last'}) > conf('ping', 'timeout')) {
+
             # too late; making them quit
             # (the quit message is defined in ping:msg)
             my $ping = sprintf conf('ping', 'msg'), (time-$client->{'last'});
             $client->quit($ping, undef)
+
         }
     }
 
@@ -162,14 +184,14 @@ for (;;) {
 
 }
 
+# add data to the outgoing buffer
 sub sendpeer {
-    # add data to the outgoing buffer
     my $peer = shift;
     $outbuffer{$peer} .= "$_\r\n" foreach @_
 }
 
+# force juno to exit
 sub sigdie {
-    # force juno to exit
     say 'Preparing to exit...';
 
     # remove each user properly
@@ -187,15 +209,15 @@ sub sigdie {
     fatal('Exiting by signal.', 1)
 }
 
+# HUP signal (rehash)
 sub sighup {
-    # HUP signal; rehashing
     snotice('Receieved SIGHUP, rehashing server configuration file.');
     say 'Receieved SIGHUP, rehashing server configuration file.';
     confparse($CONFIG)
 }
 
+# load a configuration file
 sub confparse {
-    # load a configuration file
     my $file = shift;
     say 'Loading configuration: '.$file;
     open my $CONF, '<', $file or fatal('Cannot open configuration file: '.$file);
@@ -225,27 +247,43 @@ sub confparse {
         next if $line =~ m/^#/;
         my @s = split / /, $line, 2;
         given($s[0]) {
+
+            # set the section name
             when ('sec') {
-                # set the section name
                 $reset->(0, $s[1])
-            } when ('inc') {
-                # include another file
+
+            }
+
+            # include another file
+            when ('inc') {
                 $reset->(0, 0);
                 confparse($s[1], 1)
-            } when ('oper') {
-                # oper block
+
+            }
+
+            # oper block
+            when ('oper') {
                 $reset->(1, $s[1])
-            } when ('kline') {
-                # kline block
+
+            }
+
+            # kline block
+            when ('kline') {
                 $reset->(2, $s[1])
-            } when ('listen') {
-                # listen block
+            }
+
+            # listen block
+            when ('listen') {
                 $reset->(3, $s[1])
-            } when ('zline') {
-                # zline block
+            }
+
+            # zline block
+            when ('zline') {
                 $reset->(4, $s[1])
-            } default {
-                # must be a key and value
+            }
+
+            # must be a key and value
+            default {
                 given ($current) {
                     when (0) {
                         $config{$sections[$current]}{$s[0]} = $s[1]
@@ -271,12 +309,14 @@ sub confparse {
         # check for a Z-Line
         foreach (keys %zline) {
             if (hostmatch($user->{'ip'}, $_)) {
+
                 # found a match!
                 $user->quit('Z-Lined: '.$zline{$_}{'reason'},
                     undef,
                     'Z-Lined'.(conf('main', 'showzline') ? ': '.$zline{$_}{'reason'} : '')
                 );
                 next usercheck
+
             }
         }
 
@@ -286,15 +326,17 @@ sub confparse {
 
     # load the MOTD file
     &loadmotd;
-    close $CONF
+    close $CONF;
+
+    return 1
 }
 
+# load the MOTD file.
 sub loadmotd {
-    # load the MOTD file.
-    say 'Loading MOTD: '.$DIR.'/'.conf('server', 'motd');
+    say 'Loading MOTD: '.$DIR.'/'.conf qw/server motd/;
 
     # if we can't open the file, replace the MOTD with a "not found" message
-    open my $MOTD, $DIR.'/'.conf('server', 'motd') or $utils::GV{'motd'} = 'MOTD file is missing.', return;
+    open my $MOTD, $DIR.'/'.conf qw/server motd/ or $utils::GV{'motd'} = 'MOTD file is missing.', return;
 
     # set the MOTD
     $utils::GV{'motd'} .= $_ while <$MOTD>;
@@ -303,14 +345,15 @@ sub loadmotd {
     return 1
 }
 
+# create listening sockets for clients
 sub createsockets {
-    # create listening sockets for clients
     say 'Opening client sockets...';
     foreach my $name (keys %listen) {
         my $socket;
 
         # non-SSL listening
         foreach my $port (split /\s+/, $listen{$name}{'port'}) {
+
             # false, so let's assume they wanted to disable it and continue to the next port
             last if $port == 0;
 
@@ -324,9 +367,10 @@ sub createsockets {
                     LocalPort => $port,
                     LocalAddr => $name
                 ) or fatal('Could not listen: block ['.$name.']:'.$port.': '.$!)
+            }
 
             # otherwise use IO::Socket::INET
-            } else {
+            else {
                 $socket = IO::Socket::INET->new(
                     Listen => 1,
                     ReuseAddr => 1,
@@ -338,10 +382,12 @@ sub createsockets {
             # success! add to IO::Select object
             push @sel, $socket if $socket;
             $listensockets{$socket} = $port if $socket
+
         }
 
         # SSL listening
         foreach my $port (split /\s+/, $listen{$name}{'ssl'}) {
+
             # false, so let's assume they wanted to disable it and continue to the next port
             last if $port == 0;
 
@@ -368,13 +414,15 @@ sub createsockets {
                 $listensockets{$socket} = $port;
                 $SSL{$socket} = 1
             }
+
             # IO::Socket::SSL is pretty ugly, by the way
+
         }
     }
 }
 
+# load the required Perl modules, as defined in the enabled section of the configuration
 sub loadrequirements {
-    # load the required Perl modules, as defined in the enabled section of the configuration
     say 'Loading required modules...';
 
     # IPv6 support
@@ -410,10 +458,11 @@ sub loadrequirements {
     # no problems!
     say 'All required modules have been loaded successfully.';
     return 1
+
 }
 
+# fetch the version of this juno installation
 sub getversion {
-    # fetch the version of this juno installation
     open my $versionfile, '<', $DIR.'/etc/version' or fatal("Couldn't read version file");
     my $version = <$versionfile>;
     close $versionfile;

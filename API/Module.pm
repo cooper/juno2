@@ -21,8 +21,10 @@ our $LAST_INIT;
 
 # functions that can be imported
 
+# register a module
 sub register_module {
     # parameters: module_name module_version module_description initiate_code void_code
+
     my $package = caller 0;
 
     # make sure that this module hasn't already registered itself.
@@ -54,8 +56,10 @@ sub register_module {
 
     # success
     return package_init($package)
+
 }
 
+# check if a module exists
 sub module_exists {
     # by module name, not package name
 
@@ -63,13 +67,17 @@ sub module_exists {
     foreach (keys %MODULE) {
         return 1 if $MODULE{$_}{'name'} eq $name
     }
+
+    # it doesn't
     return
 }
 
-# internal API functions
+### internal API functions
 
+# delete everything registered by a package
 sub delete_package {
     # by package name, not module name
+
     my $package = shift;
     notice('Unloading package '.$package.' by force');
 
@@ -90,14 +98,12 @@ sub delete_package {
     }
 
     # it hasn't registered, so give up
-    else {
-        notice('I can\'t unload a module that hasn\'t registered. ('.$package.')');
-        return
-    }
-
+    notice('I can\'t unload a module that hasn\'t registered. ('.$package.')');
     return
+
 }
 
+# inititalize a package
 sub package_init {
     my $package = shift;
     $LAST_INIT = $package;
@@ -111,19 +117,25 @@ sub package_init {
     # make sure it's a coderef
     if (ref $MODULE{$package}{'init'} eq 'CODE') {
         notice('Initializing module '.$MODULE{$package}{'name'});
+
         # it is, so run it
         if ($MODULE{$package}{'init'}(caller)) {
             # it returned true
             notice('Module initialized successfully.');
             return 1
-        } else {
-            # it failed
+        }
+
+        # it failed
+        else {
             notice('Module refused to load; aborting.');
             delete_package($package);
             return
         }
-    } else {
-        # it's not a coderef, so force the package to unload
+
+    }
+
+    # it's not a coderef, so force the package to unload
+    else {
         notice('Module '.$MODULE{$package}{'name'}.' did not provide a init CODE ref; forcing unload.');
         delete_package($package);
         return
@@ -133,13 +145,14 @@ sub package_init {
     return 1
 }
 
+# check if a package exists
 sub package_exists {
     my $package = shift;
     return $MODULE{$package} if exists $MODULE{$package};
     return
 }
 
-# call void() and unlod
+# call void() and unload
 sub package_unload {
     my $package = shift;
 
@@ -167,6 +180,7 @@ sub package_unload {
         notice('I can\'t unload a module that hasn\'t registered. ('.$package.')');
         return
     }
+
 }
 
 sub module2package {
@@ -177,6 +191,7 @@ sub module2package {
 
     # no such module
     return
+
 }
 
 sub notice {

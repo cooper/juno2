@@ -10,6 +10,7 @@ use utils qw/conf hostmatch snotice/;
 
 our %channels;
 
+# create a new channel
 sub new {
     my ($user, $name) = @_;
 
@@ -44,8 +45,8 @@ sub new {
     return $channel
 }
 
+# the actual join of a user
 sub dojoin {
-    # the actual join of a user
     my ($channel, $user) = @_;
     my @users = keys %{$channel->{'users'}};
 
@@ -97,11 +98,12 @@ sub dojoin {
 
         # success
         return 1
+
 }
 
+# check if a user's displayed or actual mask matches any channel bans
+# and if there are no exceptions
 sub banned {
-    # check if a user's displayed or actual mask matches any channel bans
-    # and if there are no exceptions
     my ($channel, $user) = @_;
     return 1 if (
         (hostmatch($user->fullcloak, keys %{$channel->{'bans'}})
@@ -114,10 +116,11 @@ sub banned {
 
     # not banned
     return
+
 }
 
+# send to all users of a channel, with an optional exception
 sub allsend {
-    # send to all users of a channel, with an optional exception
     my ($channel, $data, $exception) = (shift, shift, shift);
     foreach (keys %{$channel->{'users'}}) {
         my $usr = user::lookupbyid($_);
@@ -126,19 +129,19 @@ sub allsend {
     return 1
 }
 
+ # send to users with operator status and above, with an optional exception
 sub opsend {
-    # send to users with operator status and above, with an optional exception
     my ($channel, $data, $exception) = (shift, shift, shift);
     foreach (keys %{$channel->{'users'}}) {
         my $usr = user::lookupbyid($_);
         next unless $channel->basicstatus($usr, 1);
-        $usr->send(sprintf $data, @_) unless $exception == $usr;
+        $usr->send(sprintf $data, @_) unless $exception == $usr
     }
     return 1
 }
 
+# remove user from channel
 sub remove {
-    # remove user from channel
     my $channel = shift;
     my $id = shift->{'id'};
 
@@ -151,10 +154,9 @@ sub remove {
     return 1
 }
 
+# fail WHO command
+# (who knows why this is here and not in userhandlers.pm?)
 sub who {
-    # WHO command
-    # (who knows why this is here and not in userhandlers.pm?)
-    # and heck, this isn't a proper WHO query anyway.
     my $channel = shift;
     my $user = shift;
     foreach (keys %{$channel->{'users'}}) {
@@ -179,23 +181,31 @@ sub who {
             ':0',
             $u->{'gecos'}
         );
+
     }
     return 1
 }
 
+# check if a channel is empty
 sub check {
-    # check if a channel is empty
     my $channel = shift;
-    if (scalar keys %{$channel->{'users'}} <= 0) {
+
+    if (!scalar keys %{$channel->{'users'}}) {
+
         # it's empty, so delete its data
         delete $channels{lc $channel->name};
+        snotice('dead channel: '.$channel->name);
+        return
 
-        snotice('dead channel: '.$channel->name)
     }
+
+    # it still exists
+    return 1
+
 }
 
+# check if a user has status(es) (by name)
 sub has {
-    # check if a user has status(es) (by name)
     my ($channel, $user, @status) = @_;
     foreach (@status) {
         # say yes, they have this
@@ -204,11 +214,12 @@ sub has {
 
     # no matches
     return
+
 }
 
+# NAMES comamnd
+# (why is this here and not in userhandlers.pm?)
 sub names {
-    # NAMES comamnd
-    # (why is this here and not in userhandlers.pm?)
     my ($channel, $user) = @_;
     my @users = ();
 
@@ -226,8 +237,8 @@ sub names {
     return 1
 }
 
+# fetch a user's prefix
 sub prefix {
-    # fetch a user's prefix
     my ($channel, $user) = @_;
     if ($channel->has($user, 'owner')) {
         return '~'
@@ -249,8 +260,8 @@ sub prefix {
     return
 }
 
+# check if a channel exists (by name)
 sub chanexists {
-    # check if a channel exists (by name)
     my $name = lc shift;
 
     # found it
@@ -260,9 +271,9 @@ sub chanexists {
     return
 }
 
+# does this user have halfop or greater?
+# (halfop doesn't count if a third argument is true
 sub basicstatus {
-    # does this user have halfop or greater?
-    # (halfop doesn't count if a third argument is true
     my ($channel, $user) = (shift, shift);
     my $halfop = $channel->has($user, 'halfop');
 
@@ -274,12 +285,13 @@ sub basicstatus {
 
     # yep
     return 1
+
 }
 
+# do an actual mode set
+# note: the mode handler is handlemode()
+# this actually sets the mode
 sub setmode {
-    # do an actual mode set
-    # note: the mode handler is handlemode()
-    # this actually sets the mode
     my ($channel, $mode, $parameter) = @_;
 
     # set the mode
@@ -298,8 +310,8 @@ sub setmode {
     return 1
 }
 
+# check if a channel is a mode, returning it's value if so
 sub ismode {
-    # check if a channel is a mode, returning it's value if so
     my ($channel, $mode) = @_;
 
     # found it
@@ -309,21 +321,21 @@ sub ismode {
     return
 }
 
+# delete mode(s)
 sub unsetmode {
-    # delete mode(s)
     my $channel = shift;
     delete $channel->{'mode'}->{$_} foreach split //, shift;
     return 1
 }
 
+# fetch the channel's name
 sub name {
-    # fetch the channel's name
     return shift->{'name'}
 }
 
 
+# main mode handler for channels
 sub handlemode {
-    # main mode handler for channels
     my ($channel, $user) = (shift, shift);    
     if (!defined $_[0] || !length $_[0]) {
         # no string, so sending them a mode numeric
@@ -401,12 +413,16 @@ sub handlemode {
                 if (my $cool_it_worked = $channel->handleparmode($user, $mode, $par)) {
                     push @finished_parameters, $cool_it_worked
                 }
+
                 # that'll send a numeric if there's a problem
+
             }
+
+            # we need a parameter.
             else {
-                # we need a parameter.
                 $ok = 0
             }
+
         }
 
         # modes with masks as their parameters
@@ -415,36 +431,45 @@ sub handlemode {
             if (defined $par) {
                 my $result = $channel->handlemaskmode($user, $state, $mode, $par);
                 if (defined $result) {
+
                     # worked!
                     push @finished_parameters, $result
+
                 }
+
+                # uh-oh? handlemaskmode() said no
                 else {
-                    # uh-oh?
                     $ok = 0
+
                 }
+
             }
+
+            # no parameter, so send the list and continue
             else {
-                # no parameter, so send the list and continue
                 $channel->sendmasklist($user, $mode);
                 next
             }
+
         }
 
         # modes q, a, o, h, and v
         elsif ($mode ~~ @status_modes) {
-            # by the way, this does not use $needs_operator because
-            # handlestatus() itself deals with that
             my $target_nick = $parameter->() or next;
 
             # are they allowed to set this?
             if (my $nickname = $channel->handlestatus($user, $state, $mode, $target_nick)) {
+
                 # handlestatus returns the user's nickname in proper case
                 push @finished_parameters, $nickname
+
             }
+
+            # handlestatus returned false :(
             else {
-                # handlestatus returned false! :(
                 $ok = 0
             }
+
         }
 
         # unknown mode
@@ -474,8 +499,10 @@ sub handlemode {
 
     # success
     return 1
+
 }
 
+# send channel modes
 sub showmodes {
     my ($channel, $user) = @_;
     my (@modes, @parameters);
@@ -489,6 +516,7 @@ sub showmodes {
     $user->numeric(329, $channel->name, $channel->{'first'});
 }
 
+# handle modes q, a, o, h, and v
 sub handlestatus {
     my ($channel, $user, $state, $mode, $tuser) = @_;
     my (@needs, $modename, $longname);
@@ -524,66 +552,86 @@ sub handlestatus {
 
     # check if the user has what they need to set this mode
     if (!$channel->has($user, @needs)) {
+
         # they don't.
         $user->numeric(482, $channel->name, $longname);
         return
+
     }
 
     my $target = user::nickexists($tuser);
 
     # make sure the user exists
     if (!$target) {
+
         # they don't.
         $user->numeric(401, $tuser);
         return
+
     }
 
     # are they on the channel?
     if (!$target->ison($channel)) {
+
         # no, they aren't.
         $user->numeric(441, $target->nick, $channel->name);
         return
+
     }
 
     if ($state) {
+
         # give them the status
         $channel->{$modename}->{$target->{'id'}} = time
+
     }
     else {
+
         # remove their status
         delete $channel->{$modename}->{$target->{'id'}}
+
     }
 
     # success!
     # by the way, this returns the nickname to properly relay mode changes in handlemode()
     return $target->nick
+
 }
 
+# send topic numerics
 sub showtopic {
-    # send topic numerics
+    # $halt it used on channel join
+    # because if no topic is set when you join, these numerics aren't sent at all
     my ($channel, $user, $halt) = @_;
     if ($channel->{'topic'}) {
         $user->numeric(332, $channel->name, $channel->{'topic'}->{'topic'});
         $user->numeric(333, $channel->name, $channel->{'topic'}->{'setby'}, $channel->{'topic'}->{'time'});
         return 1
     }
+
+    # send "no topic is set"
     $user->numeric(331, $channel->name) unless $halt;
+    return
+
 }
 
+# set the topic
 sub settopic {
-    # set the topic
     my ($channel, $user, $topic) = @_;
     my $success = 0;
 
     # see if they can set it
     if ($channel->ismode('t')) {
-        $success = 1 if $channel->basicstatus($user);
+        $success = 1 if $channel->basicstatus($user)
     }
+
+    # if it's not +t, anyone can
     else {
         $success = 1
     }
+
+    # they can
     if ($success) {
-        # they can
         $channel->{'topic'} = {
             'topic' => $topic,
             'time' => time,
@@ -593,19 +641,23 @@ sub settopic {
                 : $user->nick
             )
         };
-        $channel->allsend(':%s TOPIC %s :%s', 0, $user->fullcloak, $channel->name, $topic)
+        $channel->allsend(':%s TOPIC %s :%s', 0, $user->fullcloak, $channel->name, $topic);
+        return 1
     }
+
+    # they can't.
     else {
-        # they can't.
         $user->numeric(482, $channel->name, 'half-operator')
     }
+
+    return
 }
 
+# check if a user can speak with the status they have
 sub canspeakwithstatus {
-    # check if a user can speak with the status they have
     my ($channel, $user) = @_;
 
-    # they don't
+    # they don't have what they need
     return
     if (!$channel->has($user, 'owner')
     && !$channel->has($user, 'admin')
@@ -613,13 +665,15 @@ sub canspeakwithstatus {
     && !$channel->has($user, 'halfop')
     && !$channel->has($user, 'voice'));
 
-    # they do
+    # they can speak
     return 1
+
 }
 
+# send a PRIVMSG or NOTICE
+# I am too lazy to make this prettier. it works the way it is.
+# since it's so messy, I commented it line-by-line
 sub privmsgnotice {
-    # send a PRIVMSG or NOTICE
-    # I am too lazy to make this prettier. it works the way it is.
     my ($channel, $user, $type, $msg) = @_;
 
     # you must be in the channel if n is set.
@@ -632,7 +686,7 @@ sub privmsgnotice {
     || ((hostmatch($user->fullcloak, keys %{$channel->{'bans'}}) || hostmatch($user->fullhost, keys %{$channel->{'bans'}})
 
     # is he muted?
-    || hostmatch($user->fullcloak, keys %{$channel->{'mutes'}}) || hostmatch($user->fullhost,keys %{$channel->{'mutes'}}))
+    || hostmatch($user->fullcloak, keys %{$channel->{'mutes'}}) || hostmatch($user->fullhost, keys %{$channel->{'mutes'}}))
 
     # does he have the required status he needs to speak here?
     && !$channel->canspeakwithstatus($user)
@@ -654,24 +708,27 @@ sub privmsgnotice {
             $channel->opsend(':'.$user->fullcloak.q( ).(join q. ., $type, $channel->name, ':'.$msg), $user);
             return 1
 
-        # otherwise give them an error
         }
+
+        # otherwise give them an error
         else {
             $user->numeric(404, $channel->name);
             return
         }
+
     }
 
     # cool, he can send it
     $channel->allsend(':%s %s %s :%s', $user, $user->fullcloak, $type, $channel->name, $msg);
     return 1
+
 }
 
+# handle modes such as b
 sub handlemaskmode {
-    # handle modes q, a, o, h, and v
     my ($channel, $user, $state, $mode, $mask) = @_;
 
-    # this user can't even set modes... why is he trying to give someone status?
+    # this user can't even set modes... why is he trying to do this in the first place?
     $user->numeric(482, $channel->name, 'half-operator'), return unless $channel->basicstatus($user);
 
     # A doesn't check masks because it's the odd one out
@@ -767,7 +824,10 @@ sub handlemaskmode {
 sub sendmasklist {
     my ($channel, $user, $modes) = @_;
     MODES: foreach (split //, $modes) {
+
+        # ignore non-mask modes
         next unless $_ =~ m/^(b|Z|e|I|A)$/;
+
         my @list;
 
         # set the numerics, mode names, requirements, etc.
@@ -806,6 +866,7 @@ sub sendmasklist {
             );
         }
         $user->numeric($list[1], $channel->name)
+
     }
     return 1
 }
@@ -825,47 +886,57 @@ sub kick {
     $channel->allsend(':%s KICK %s %s :%s', 0, $user->fullcloak, $channel->name, $target->nick, $reason);
     $channel->remove($target);
     return 1
+
 }
 
 sub list {
     # information for a channel shown in LIST command
     my ($channel, $user) = @_;
-    my @users = keys %{$channel->{'users'}};
 
     # send the name, number of users, and topic.
     $user->numeric(322,
         $channel->name,
-        $#users+1,
+        scalar keys %{$channel->{'users'}},
         $channel->{'topic'}
         ? $channel->{'topic'}->{'topic'}
-        : ''
+        : q..
     );
+
     return 1
 }
 
+# handle a mode with a single parameter
 sub handleparmode {
-    # handle a mode with a single parameter
     my ($channel, $user, $mode, $parameter) = @_;
     given ($mode) {
+
         # channel  limit
         when ('l') {
+
             # make sure the amount is valid
             if ($parameter !~ m/[^0-9]/ && $parameter != 0) {
+
                 # don't allow limits that are gigantic
                 $parameter = 9001 if int $parameter > 9000;
+
                 $channel->setmode('l', $parameter);
                 return $parameter
             }
+
+            # invalid amount
             return
-        } default {
-            # unknown mode ?
+
+        }
+        # unknown mode ?
+        default {
             return
         }
+
     }
 }
 
+# apply automatic status (A mode)
 sub doauto {
-    # apply automatic status (A mode)
     my ($channel, $user) = @_;
     my (@modes, @parameters, %done);
     foreach (keys %{$channel->{'autoops'}}) {
@@ -899,51 +970,65 @@ sub doauto {
     return 1
 }
 
+# check if a user is capable of setting an A mode.
+# in order to set q:* for example, he must have owner status.
 sub canAmode {
-    # check if a user is capable of setting an A mode.
-    # in order to set q:* for example, he must have owner status.
     my ($channel, $user, $modes) = @_;
 
     # we support more than 1 status in a single mode now :)
     foreach my $Amode (split //, $modes) {
         given ($Amode) {
-            when ('q') {
+
             # check for owner
+            when ('q') {
                 if (!$channel->has($user, 'owner')) {
+
                     # they don't have it
                     $user->numeric(482, $channel->name, 'owner');
                     return
+
                 }
             }
+
+            # check for admin or greater
             when ('a') {
-                # check for admin or greater
                 if (!$channel->has($user, qw(owner admin))) {
+
                     # they don't have it
                     $user->numeric(482, $channel->name, 'administrator');
                     return
+
                 }
             }
+
+            # check for op or greater
             when ('o') {
-                # check for op or greater
                 if (!$channel->has($user, qw(owner admin op))) {
+
                     # they don't have it
                     $user->numeric(482, $channel->name, 'operator');
                     return
+
                 }
             }
+
+            # check for op or greater
             when ('h') {
-                # check for op or greater
                 if (!$channel->has($user, qw(owner admin op))) {
+
                     # they don't have it
                     $user->numeric(482, $channel->name, 'operator');
                     return
+
                 }
             }
+
         }
     }
 
     # they have what they need
     return 1
+
 }
 
 # change a mode to a mode name
@@ -971,4 +1056,5 @@ sub mode2name {
     return
 
 }
+
 1

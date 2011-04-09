@@ -38,8 +38,8 @@ sub new {
     $channel->{'mode'}->{$_} = {
         'time' => time,
         'params' => undef
-    } foreach split //, conf('channel', 'automodes');
-    $channel->allsend(':%s MODE %s +%s', 0, conf('server', 'name'), $name, conf('channel','automodes')) if conf('channel', 'automodes');
+    } foreach split //, conf qw/channel automodes/;
+    $channel->allsend(':%s MODE %s +%s', 0, (conf qw/server name/), $name, (conf qw/channel automodes/)) if conf qw/channel automodes/;
 
     snotice('channel '.$name.' created by '.$user->fullhost);
     return $channel
@@ -175,7 +175,7 @@ sub who {
             $channel->name,
             $u->{'ident'},
             $u->{'cloak'},
-            conf('server','name'),
+            (conf qw/server name/),
             $u->nick,
             $flags,
             ':0',
@@ -384,7 +384,7 @@ sub handlemode {
         $ok = 1;
 
         # if the mode limit is reached
-        last if $i > conf('limit', 'chanmodes');
+        last if $i > qw/limit chanmodes/;
         $i++;
 
         # if they need op and don't have it, give up
@@ -636,7 +636,7 @@ sub settopic {
             'topic' => $topic,
             'time' => time,
             'setby' => (
-                conf('main','fullmasktopic')
+                (conf qw/main fullmasktopic/)
                 ? $user->fullcloak
                 : $user->nick
             )
@@ -965,7 +965,7 @@ sub doauto {
     }
 
     # relay the mode change unless it's blank
-    $channel->allsend(':%s MODE %s +%s %s', 0, conf('server', 'name'), $channel->name, (join q.., @modes), (join q. ., @parameters)) if scalar @modes;
+    $channel->allsend(':%s MODE %s +%s %s', 0, (conf qw/server name/), $channel->name, (join q.., @modes), (join q. ., @parameters)) if scalar @modes;
 
     return 1
 }

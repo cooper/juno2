@@ -361,3 +361,4 @@ VERSIONING
               For example, mode +A qao:*!*@* grants modes q, a, and o to all users.
             * Added Denny's API::Loop. This registers a code block to be executed each time juno runs through the main loop.
             * Added example::loop module.
+            * Cleanup.

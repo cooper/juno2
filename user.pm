@@ -292,7 +292,7 @@ sub quit {
     undef $user;
 
     # double-check if the server is ready to accept new connections
-    &acceptcheck
+    &acceptcheck;
 
     return 1
 }

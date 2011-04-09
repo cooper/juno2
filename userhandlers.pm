@@ -291,7 +291,7 @@ sub handle_whois {
         $server = $args[1];
 
         # make sure the server exists (nick is also acceptable)
-        if ((lc $server ne lc conf qw/server name/) && (lc $server ne lc $user->nick)) {
+        if ((lc $server ne lc conf qw/server name/) && (lc $server ne lc $nick)) {
             $user->numeric(402, $server);
             return
         }

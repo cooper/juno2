@@ -24,7 +24,7 @@ sub handle {
     if (exists $commands{$command}) {
 
         # call the CODE
-        $commands{$command}{'code'}($user, shift)
+        return $commands{$command}{'code'}($user, shift)
 
     }
 
@@ -33,6 +33,7 @@ sub handle {
         $user->numeric(421, $command)
     }
 
+    return
 }
 
 # create a new user

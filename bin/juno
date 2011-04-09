@@ -45,7 +45,7 @@ my (%listensockets, %SSL, @sel, $ipv6, $loop);
 # parse the configuration file (usually etc/ircd.conf)
 confparse($CONFIG);
 
-our $id = conf('server', 'id');
+our $id = conf qw/server id/;
 
 # load the modules required to run this juno installation -
 # most of these can be set in the enabled section of the configuration.
@@ -131,7 +131,7 @@ for (;;) {
         }
 
         # they've reached their limit; force them to quit
-        $user->quit(conf('flood', 'msg')) if length $inbuffer{$client} > conf('flood', 'bytes')
+        $user->quit(conf qw/flood msg/) if length $inbuffer{$client} > conf qw/flood bytes/;
 
     }
 
@@ -157,21 +157,21 @@ for (;;) {
 
     # check for ping timeouts
     foreach my $client (values %user::connection) {
-        if ((time-$client->{'ping'}) > conf('ping', 'freq')) {
+        if ((time-$client->{'ping'}) > conf qw/ping freq/) {
 
             # send a PING command and reset the ping time
-            $client->send('PING :'.conf('server', 'name'));
+            $client->send('PING :'.conf qw/server name/);
             $client->{'ping'} = time;
 
             # make sure that they aren't just sitting there without registering...
             $client->quit('Registration timeout') unless $client->{'ready'}
 
         }
-        if ((time-$client->{'last'}) > conf('ping', 'timeout')) {
+        if ((time-$client->{'last'}) > conf qw/ping timeout/) {
 
             # too late; making them quit
             # (the quit message is defined in ping:msg)
-            my $ping = sprintf conf('ping', 'msg'), (time-$client->{'last'});
+            my $ping = sprintf (conf qw/ping msg/), (time-$client->{'last'});
             $client->quit($ping, undef)
 
         }
@@ -313,7 +313,7 @@ sub confparse {
                 # found a match!
                 $user->quit('Z-Lined: '.$zline{$_}{'reason'},
                     undef,
-                    'Z-Lined'.(conf('main', 'showzline') ? ': '.$zline{$_}{'reason'} : '')
+                    'Z-Lined'.(conf qw/main showzline/ ? ': '.$zline{$_}{'reason'} : '')
                 );
                 next usercheck
 
@@ -392,7 +392,7 @@ sub createsockets {
             last if $port == 0;
 
             # first make sure they have SSL enabled in the first place
-            if (!conf('enabled', 'ssl')) {
+            if (!conf qw/enabled ssl/) {
                 fatal('You tried to listen using SSL, but SSL is not enabled in the configuration.')
             }
 
@@ -404,8 +404,8 @@ sub createsockets {
                 ReuseAddr => 1,
                 LocalPort => $port,
                 LocalAddr => $name,
-                SSL_cert_file => conf('ssl', 'cert'),
-                SSL_key_file => conf('ssl', 'key')
+                SSL_cert_file => conf qw/ssl cert/,
+                SSL_key_file => conf qw/ssl key/
             ) or fatal('Could not listen (SSL): block '.$name.':'.$port.': '.$!);
 
             # success! add to IO::Select object
@@ -426,24 +426,24 @@ sub loadrequirements {
     say 'Loading required modules...';
 
     # IPv6 support
-    if (conf('enabled', 'ipv6')) {
+    if (conf qw/enabled ipv6/) {
         say '    Loading IPv6 module';
         $ipv6 = 1;
         require IO::Socket::INET6 or fatal('Could not load IPv6 module. (Do you have IO::Socket::INET6 installed?)')
     }
 
     # SSL support (IO::Socket::SSL fails.)
-    if (conf('enabled', 'ssl')) {
+    if (conf qw/enabled ssl/) {
         say '    Loading SSL module';
         require IO::Socket::SSL or fatal('Could not load SSL module. (Do you have IO::Socket::SSL installed?)');
-        if (conf('enabled', 'ipv6')) {
+        if (conf qw/enabled ipv6/) {
             say '        Importing IPv6 support to SSL module';
             IO::Socket::SSL->import('inet6')
         }
     }
 
     # cloaking support
-    if (conf('enabled', 'cloaking')) {
+    if (conf qw/enabled cloaking/) {
         say '    Loading cloaking module';
         require Digest::SHA or fatal('Could not load cloaking module. (Do you have Digest::SHA installed?)');
         &user::DigestImport

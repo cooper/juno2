@@ -36,8 +36,8 @@ our $TIME = time;
 our $CONFIG = $DIR.'/etc/ircd.conf';
 my ($NOFORK, $PID) = (0, 0);
 our $ACCEPTING = 1;
-our (%config, %oper, %kline, %zline, %listen, %outbuffer, %inbuffer, %timer);
-my (%listensockets, %SSL, @sel, $ipv6);
+our (%config, %oper, %kline, %zline, %listen, %outbuffer, %inbuffer, %timer, %loops);
+my (%listensockets, %SSL, @sel, $ipv6, $loop);
 
 # parse the configuration file (usually etc/ircd.conf)
 confparse($CONFIG);
@@ -154,6 +154,12 @@ for (;;) {
             $client->quit($ping, undef)
         }
     }
+
+    # run through registered loops
+    while (my ($loop, $cv) = each %loops) {
+        $cv->{code}($loop)
+    }
+
 }
 
 sub sendpeer {
@@ -413,6 +419,28 @@ sub getversion {
     close $versionfile;
     $version =~ s/\s+$//;
     return $version
+}
+
+### denny's loop functions
+
+# add something to the main loop
+sub register_loop {
+    my ($name, $source, $code) = @_;
+    $loops{++$loop} = {
+        name => $name,
+        source => $source,
+        code => $code
+    };
+    say 'Registered loop: '.$name;
+    return $loop
+}
+
+# delete something from the main loop
+sub delete_loop {
+    my $id = shift;
+    say 'Deleting loop '.$loops{$id}{name}.':'.$id;
+    delete $loops{$id};
+    return 1
 }
 
 1

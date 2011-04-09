@@ -11,7 +11,8 @@ use Exporter;
 use API::Module;
 use utils 'snotice';
 
-our @EXPORT = qw/register_command command_exists/;
+our @EXPORT = 'register_command';
+our @EXPORT_OK = qw/command_exists/;
 our %COMMAND;
 
 sub register_command {
@@ -67,7 +68,7 @@ sub register_command {
 
 sub delete_package {
     # delete all commands registered by a package
-    my $package = shift;
+    my ($obj, $package) = (shift, shift);
     notice('Deleting all commands registered by '.$package);
 
     # check each command for a hook to this module

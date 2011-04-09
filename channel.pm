@@ -159,13 +159,13 @@ sub who {
     my $user = shift;
     foreach (keys %{$channel->{'users'}}) {
         my $u = user::lookupbyid($_);
-        my $flags = (defined $u->{'away'}?'G':'H').
-        (defined $u->{'oper'}?'*':'').
-        (defined $channel->{'owners'}->{$_}?'~':'').
-        (defined $channel->{'admins'}->{$_}?'&':'').
-        (defined $channel->{'ops'}->{$_}?'@':'').
-        (defined $channel->{'halfops'}->{$_}?'%':'').
-        (defined $channel->{'voices'}->{$_}?'+':'');
+        my $flags = (defined $u->{'away'} ? 'G' : 'H').
+        (defined $u->{'oper'} ? '*' : q..).
+        (defined $channel->{'owners'}->{$_} ? '~' : q..).
+        (defined $channel->{'admins'}->{$_} ? '&' : q..).
+        (defined $channel->{'ops'}->{$_} ? '@' : q..).
+        (defined $channel->{'halfops'}->{$_}? '%': q..).
+        (defined $channel->{'voices'}->{$_}? '+' : q..);
 
         # this is ugly, but I could care less.
         $user->sendservj(352,
@@ -220,7 +220,7 @@ sub names {
     }
 
     # send the info
-    $user->numeric(353, $channel->name, (join ' ', @users)) unless $#users < 0;
+    $user->numeric(353, $channel->name, (join q. ., @users)) unless $#users < 0;
     $user->numeric(366, $channel->name);
 
     return 1
@@ -502,22 +502,22 @@ sub handlestatus {
         }
         when ('a') {
             $modename = 'admins';
-            @needs = ('owner','admin');
+            @needs = qw/owner admin/;
             $longname = 'administrator'
         }
         when ('o') {
             $modename = 'ops';
-            @needs = ('owner','admin','op');
+            @needs = qw/owner admin op/;
             $longname = 'operator'
         }
         when ('h') {
             $modename = 'halfops';
-            @needs = ('owner','admin','op');
+            @needs = qw/owner admin op/;
             $longname = 'operator'
         }
         when ('v') {
             $modename = 'voices';
-            @needs = ('owner','admin','op','halfop');
+            @needs = qw/owner admin op halfop/;
             $longname = 'half-operator'
         }
     }
@@ -632,13 +632,13 @@ sub privmsgnotice {
     || ((hostmatch($user->fullcloak, keys %{$channel->{'bans'}}) || hostmatch($user->fullhost, keys %{$channel->{'bans'}})
 
     # is he muted?
-    || hostmatch($user->fullcloak,keys %{$channel->{'mutes'}}) || hostmatch($user->fullhost,keys %{$channel->{'mutes'}}))
+    || hostmatch($user->fullcloak, keys %{$channel->{'mutes'}}) || hostmatch($user->fullhost,keys %{$channel->{'mutes'}}))
 
     # does he have the required status he needs to speak here?
     && !$channel->canspeakwithstatus($user)
 
     # and doesn't have an exception?
-    && !hostmatch($user->fullcloak,keys %{$channel->{'exempts'}}))) {
+    && !hostmatch($user->fullcloak, keys %{$channel->{'exempts'}}))) {
 
         # show the ops if z is set
         if ($channel->ismode('z')) {
@@ -651,7 +651,7 @@ sub privmsgnotice {
             }
 
             # okay, they're on the channel, so let's send it to the ops
-            $channel->opsend(':'.$user->fullcloak.q( ).(join ' ', $type, $channel->name, ':'.$msg), $user);
+            $channel->opsend(':'.$user->fullcloak.q( ).(join q. ., $type, $channel->name, ':'.$msg), $user);
             return 1
 
         # otherwise give them an error
@@ -692,9 +692,10 @@ sub handlemaskmode {
             }
         }
     }
-    else {
 
-        # handle an auto-access mask
+
+    # handle an auto-access mask
+    else {
         my @m = split ':', $mask, 2;
         if ($#m) {
 

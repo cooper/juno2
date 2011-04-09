@@ -352,10 +352,12 @@ VERSIONING
             * Added API::Core: registers core API commands MODLOAD and MODUNLOAD.
               In order to be considered a "successful" unload, modules must return a true value in their void subroutine.
               This adds the modload and modunload oper flags.
-              Notices from API::Module and API::Command are now snotice()d as well as say()d.
+            * Notices from API::Module and API::Command are now snotice()d as well as say()d.
 
         9. April 7, 2011
 
             * Bug fix: TOPIC was blank if less than the character limit.
             * Auto-status mode A now supports multiple statuses in a single mode.
               For example, mode +A qao:*!*@* grants modes q, a, and o to all users.
+            * Added Denny's API::Loop. This registers a code block to be executed each time juno runs through the main loop.
+            * Added example::loop module.

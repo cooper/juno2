@@ -36,7 +36,7 @@ sec main
   fullmasktopic 0
   # modules to be loaded on start
   # (if enabled:api is true, of course)
-  modules HelloWorld
+  modules examples/HelloWorld
 
 sec enabled
   # enable SSL (requires IO::Socket::SSL)

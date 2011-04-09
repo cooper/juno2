@@ -11,9 +11,11 @@ use Exporter;
 use Class::Unload;
 
 use API::Command;
+use API::Loop;
 use utils 'snotice';
 
-our @EXPORT = qw/register_module module_exists module2package/;
+our @EXPORT = 'register_module';
+our @EXPORT_OK = qw/module_exists module2package/;
 our %MODULE;
 our $LAST_INIT;
 
@@ -74,8 +76,8 @@ sub delete_package {
     # make sure it exists
     if (exists $MODULE{$package}) {
 
-        # delete any commands registered
-        API::Command::delete_package($package);
+        # delete anything that was registered
+        $_->delete_package($package) foreach qw/API::Command API::Loop/;
 
         # delete the module
         delete $MODULE{$package};

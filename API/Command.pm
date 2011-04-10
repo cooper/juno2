@@ -12,7 +12,6 @@ use API::Module;
 use utils 'snotice';
 
 our @EXPORT = 'register_command';
-our @EXPORT_OK = qw/command_exists/;
 our %COMMAND;
 
 # reigster a command

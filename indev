@@ -362,3 +362,5 @@ VERSIONING
             * Added Denny's API::Loop. This registers a code block to be executed each time juno runs through the main loop.
             * Added example::loop module.
             * Cleanup.
+            * Fix bug in WHOIS where it said "no such server" when doing WHOIS <nick> <nick>.
+            * New wiki: https://github.com/cooper879/juno/wiki

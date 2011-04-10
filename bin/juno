@@ -171,7 +171,7 @@ for (;;) {
 
             # too late; making them quit
             # (the quit message is defined in ping:msg)
-            my $ping = sprintf (conf qw/ping msg/), (time-$client->{'last'});
+            my $ping = sprintf conf(qw/ping msg/), (time-$client->{'last'});
             $client->quit($ping, undef)
 
         }

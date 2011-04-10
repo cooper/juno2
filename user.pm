@@ -140,7 +140,7 @@ sub unsetmode {
 }
 
 sub hmodes {
-    my ($user,$modes) = @_;
+    my ($user, $modes) = @_;
     return unless $modes;
 
     # modes that always exist, whether or not a feature is enabled or disabled

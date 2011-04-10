@@ -365,3 +365,4 @@ VERSIONING
             * Fix bug in WHOIS where it said "no such server" when doing WHOIS <nick> <nick>.
             * New wiki: https://github.com/cooper879/juno/wiki
             * Modes in 004 are accurate now I think.
+            * Fixed bug in ping timeout.

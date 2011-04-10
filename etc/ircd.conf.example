@@ -13,7 +13,8 @@
 # die <reason> [...] # execute perl die
 # oper <name>
 #   password <password>
-#   hosts <host> [<host>] [...]
+#   salt <salt>
+#   host <host> [<host>] [...]
 #   privs <priv> [<priv>] [...]
 #   snotice 0|1
 #   vhost <vhost>

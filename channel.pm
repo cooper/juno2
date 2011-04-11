@@ -358,6 +358,10 @@ sub handlemode {
     # modes with a parameter
     my @parameter_modes = qw/l/;
 
+    # some modes such as l do not need a parameter to unset but do to set.
+    # these must also be in @parameter_modes.
+    my @no_unset = qw/l/;
+
     # some modes (such as mask lists) do not require operator status.
     # qaohv are not here because they handle it in handlestatus().
     # these modes require op
@@ -409,18 +413,29 @@ sub handlemode {
 
         # modes with a parameter
         elsif ($mode ~~ @parameter_modes) {
-            if (defined (my $par = $parameter->())) {
-                if (my $cool_it_worked = $channel->handleparmode($user, $mode, $par)) {
-                    push @finished_parameters, $cool_it_worked
-                }
 
-                # that'll send a numeric if there's a problem
-
+            # if it's a mode like l that doesn't need a parameter on unset,
+            # just unset it
+            if (!$state && $mode ~~ @no_unset) {
+                $channel->unsetmode($mode)
             }
 
-            # we need a parameter.
+            # it needs a parameter for both unset and set
+            # or this a set not an unset.
             else {
-                $ok = 0
+                if (defined (my $par = $parameter->())) {
+                    if (my $cool_it_worked = $channel->handleparmode($user, $mode, $state, $par)) {
+                        push @finished_parameters, $cool_it_worked
+                    }
+                    else {
+                        $ok = 0
+                    }
+                }
+
+                # we need a parameter.
+                else {
+                    $ok = 0
+                }
             }
 
         }
@@ -465,7 +480,7 @@ sub handlemode {
 
             }
 
-            # handlestatus returned false :(
+            # handlestatus() returned false :(
             else {
                 $ok = 0
             }
@@ -647,7 +662,7 @@ sub settopic {
 
     # they can't.
     else {
-        $user->numeric(482, $channel->name, 'half-operator')
+        $user->numeric(482, $channel->name, 'half-operatgror')
     }
 
     return
@@ -907,11 +922,14 @@ sub list {
 
 # handle a mode with a single parameter
 sub handleparmode {
-    my ($channel, $user, $mode, $parameter) = @_;
+    my ($channel, $user, $mode, $state, $parameter) = @_;
     given ($mode) {
 
         # channel  limit
         when ('l') {
+
+            # -l does not required a parameter, so this is not the right place to handle it.
+            return unless $state;
 
             # make sure the amount is valid
             if ($parameter !~ m/[^0-9]/ && $parameter != 0) {
@@ -927,6 +945,7 @@ sub handleparmode {
             return
 
         }
+
         # unknown mode ?
         default {
             return

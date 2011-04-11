@@ -379,3 +379,4 @@ VERSIONING
         1. April 10, 2011
 
             * Fixed fatal bug where ./juno rehash crashes server. :(
+            * Fixed bug in channel mode handler where l could not be unset and other stuff failed.

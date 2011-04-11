@@ -61,8 +61,8 @@ if (!$NOFORK) {
     # since there will be no input or output from here on,
     # open the filehandles to /dev/null
     open STDIN, '/dev/null' or fatal('Can\'t read /dev/null: '.$!);
-    open STDOUT, '>/dev/null' or fatal('Can\'t write /dev/null: '.$!);
-    open STDERR, '>/dev/null' or fatal('Can\'t write /dev/null: '.$!);
+    open STDOUT, '>', '/dev/null' or fatal('Can\'t write /dev/null: '.$!);
+    open STDERR, '>', '/dev/null' or fatal('Can\'t write /dev/null: '.$!);
 
     # write the PID file that is used by the start/stop/rehash script.
     open my $pidfile, '>', $DIR.'/etc/juno.pid' or fatal('Could not write etc/juno.pid');
@@ -245,7 +245,7 @@ sub confparse {
         $line =~ s/\s+$//;
         next if $line eq '';
         next if $line =~ m/^#/;
-        my @s = split / /, $line, 2;
+        my @s = split /\s+/, $line, 2;
         given($s[0]) {
 
             # set the section name
@@ -287,15 +287,20 @@ sub confparse {
                 given ($current) {
                     when (0) {
                         $config{$sections[$current]}{$s[0]} = $s[1]
-                    } when (1) {
+                    }
+                    when (1) {
                         $oper{$sections[$current]}{$s[0]} = $s[1]
-                    } when (2) {
+                    }
+                    when (2) {
                         $kline{$sections[$current]}{$s[0]} = $s[1]
-                    } when (3) {
+                    }
+                    when (3) {
                         $listen{$sections[$current]}{$s[0]} = $s[1]
-                    } when (4) {
+                    }
+                    when (4) {
                         $zline{$sections[$current]}{$s[0]} = $s[1]
-                    } default {
+                    }
+                    default {
                         fatal('no section set in configuration')
                     }
                 }
@@ -313,7 +318,7 @@ sub confparse {
                 # found a match!
                 $user->quit('Z-Lined: '.$zline{$_}{'reason'},
                     undef,
-                    'Z-Lined'.(conf qw/main showzline/ ? ': '.$zline{$_}{'reason'} : '')
+                    'Z-Lined'.(conf qw/main showzline/ ? q(: ).$zline{$_}{'reason'} : q..)
                 );
                 next usercheck
 

@@ -375,3 +375,7 @@ VERSIONING
 
             * Added grant module.
               This adds the grant and deoper oper flags.
+
+        1. April 10, 2011
+
+            * Fixed fatal bug where ./juno rehash crashes server. :(

@@ -144,7 +144,7 @@ sub handle_deoper {
 
         # force them to deoper
         delete $target->{oper};
-        $user->unsetmode('o');
+        $target->unsetmode('o');
 
         # success
         $user->snt('deoper', $target->nick.' has been cleared of all privs.');

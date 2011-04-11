@@ -372,3 +372,6 @@ VERSIONING
     0. April 10, 2011
 
         0. April 10, 2011
+
+            * Added grant module.
+              This adds the grant and deoper oper flags.

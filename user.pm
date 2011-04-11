@@ -247,7 +247,7 @@ sub send {
 sub can {
     my ($user, $priv) = @_;
     return unless defined $user->{'oper'};
-    foreach (split / /, oper($user->{'oper'}, 'privs')) {
+    foreach (split /\s+/, oper($user->{'oper'}, 'privs')) {
         return 1 if $_ eq $priv;
     }
 

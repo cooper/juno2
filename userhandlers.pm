@@ -8,8 +8,7 @@ use feature qw/switch say/;
 
 use utils qw/col conf oper hostmatch snotice validnick validcloak/;
 
-# command hash
-# this will contain more information later when the module API is complete.
+# core commands hash
 my %commands = (
     PONG => {
         'code' => sub {},

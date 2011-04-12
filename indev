@@ -386,3 +386,5 @@ VERSIONING
               The lines are defined by admin:line1, admin:line2, and admin:line3.
             * Redid oper privs system to be based on individual flags, not oper accounts.
               $user->{oper} no longer exists; use $user->ismode('o').
+            * Added grant module.
+              It requires 1.0.1 and above.

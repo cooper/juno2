@@ -162,7 +162,7 @@ sub who {
     foreach (keys %{$channel->{'users'}}) {
         my $u = user::lookupbyid($_);
         my $flags = (defined $u->{'away'} ? 'G' : 'H').
-        (defined $u->{'oper'} ? '*' : q..).
+        ($u->ismode('o') ? '*' : q..).
         (defined $channel->{'owners'}->{$_} ? '~' : q..).
         (defined $channel->{'admins'}->{$_} ? '&' : q..).
         (defined $channel->{'ops'}->{$_} ? '@' : q..).

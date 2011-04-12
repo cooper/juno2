@@ -75,7 +75,8 @@ sub new {
         'ipv' => $ipv,
         'host' => $ip,
         'cloak' => $ip,
-        'time' => time
+        'time' => time,
+        'privs' => []
     };
 
     # set PING rate, idle time, and other timers
@@ -129,8 +130,8 @@ sub unsetmode {
         }
         elsif ($_ eq 'o') {
 
-            # delete the user's IRCop
-            delete $user->{'oper'};
+            # remove all privs
+            undef $user->{privs};
 
             # unset server notices if set
             $user->unsetmode('S') if $user->ismode('S');
@@ -246,10 +247,8 @@ sub send {
 # check for an oper flag
 sub can {
     my ($user, $priv) = @_;
-    return unless defined $user->{'oper'};
-    foreach (split /\s+/, oper($user->{'oper'}, 'privs')) {
-        return 1 if $_ eq $priv;
-    }
+
+    return 1 if $priv ~~ @{$user->{privs}};
 
     # they don't have that priv
     return
@@ -265,7 +264,7 @@ sub quit {
     foreach my $channel (values %channel::channels) {
         if ($user->ison($channel)) {
             foreach (keys %{$channel->{'users'}}) {
-                lookupbyid($_)->send(':'.$user->fullcloak.' QUIT :'.($display?$display:$reason)) unless $sent{$_};
+                lookupbyid($_)->send(':'.$user->fullcloak.' QUIT :'.($display ? $display : $reason)) unless $sent{$_};
                 $sent{$_} = 1
             }
 
@@ -594,4 +593,36 @@ sub delete_handler {
 
 }
 
+# add oper privs
+sub add_privs {
+    my $user = shift;
+    foreach my $priv (@_) {
+
+        # already has it
+        next if $priv ~~ @{$user->{privs}};
+
+        # doesn't have it
+        push @{$user->{privs}}, $priv
+
+    }
+
+    # check if they are still opered just in case
+    $user->unsetmode('o') unless scalar @{$user->{privs}};
+
+    return 1
+}
+
+sub del_privs {
+    my $user = shift;
+    foreach my $priv (@_) {
+        while (my ($k, $p) = @{$user->{privs}}) {
+            delete $user->{privs}->[$k] if $p eq $priv
+        }
+    }
+
+    # check if they are still opered just in case
+    $user->unsetmode('o') unless scalar @{$user->{privs}};
+
+    return 1
+}
 1

@@ -382,3 +382,7 @@ VERSIONING
             * Fixed bug in channel mode handler where l could not be unset and other stuff failed.
             * Added rules module by ebest97.
               The directory to the rules file is set by rules:file configuration option.
+            * Added admin module by ebest97.
+              The lines are defined by admin:line1, admin:line2, and admin:line3.
+            * Redid oper privs system to be based on individual flags, not oper accounts.
+              $user->{oper} no longer exists; use $user->ismode('o').

@@ -502,10 +502,12 @@ sub handle_oper {
         # set oper-up modes
         $user->setmode('o'.(oper($oper, 'snotice') ? 'S' : q..));
 
-        # cool
-        $user->{'oper'} = $oper;
+        # give them their privs
+        $user->add_privs(split /\s+/, oper($oper, 'privs'));
+
+        # success
         snotice($user->fullhost." is now an IRC operator using name $oper");
-        snotice("user $$user{nick} now has oper privs: ".oper($oper, 'privs'));
+        snotice("user $$user{nick} now has oper privs: ".(join q. ., @{$user->{privs}}));
         return 1
     }
 

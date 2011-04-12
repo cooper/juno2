@@ -160,6 +160,25 @@ oper cooper
   # (comment to disable)
   vhost is.an.oper
 
+### OPER CLASSES
+# oper classes only work for privs right now, but there are
+# more plans for host, vhost, etc.
+# in the below example, some_oper has a total set of the
+# following privs: rehash globops kill grant locops
+
+oper some_class
+  privs kill grant locops
+
+oper some_oper
+  password seIDIAoMCMcTc
+  host *@*
+  salt sea
+  class some_class
+  privs rehash globops
+  snotice 1
+  vhost is.an.oper
+
+
 kline *@*.mx
   # the reason for the K-Line
   reason Mexico is prohibited

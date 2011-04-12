@@ -502,13 +502,32 @@ sub handle_oper {
         # set oper-up modes
         $user->setmode('o'.(oper($oper, 'snotice') ? 'S' : q..));
 
+        # check for oper class
+        if (my $set = oper($oper, 'class')) {
+            foreach my $class (split /\s+/, $set) {
+                my $privs = oper($class, 'privs');
+
+                # no such class
+                if (!$privs) {
+                    snotice('no such oper class: '.$class)
+                }
+
+                else {
+                    $user->add_privs(split /\s+/, oper($class, 'privs'))
+                }
+            }
+        }
+
         # give them their privs
-        $user->add_privs(split /\s+/, oper($oper, 'privs'));
+        if (my $privs = oper($oper, 'privs')) {
+            $user->add_privs(split /\s+/, $privs);
+        }
 
         # success
         snotice($user->fullhost." is now an IRC operator using name $oper");
         snotice("user $$user{nick} now has oper privs: ".(join q. ., @{$user->{privs}}));
         return 1
+
     }
 
     # incorrect credentials!

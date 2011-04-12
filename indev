@@ -388,3 +388,7 @@ VERSIONING
               $user->{oper} no longer exists; use $user->ismode('o').
             * Added grant module.
               It requires 1.0.1 and above.
+
+        2. April 12, 2011
+
+            * Added an easy way to setup "oper classes" (sorta.) See the example configuration.

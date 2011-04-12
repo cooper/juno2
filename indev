@@ -380,3 +380,5 @@ VERSIONING
 
             * Fixed fatal bug where ./juno rehash crashes server. :(
             * Fixed bug in channel mode handler where l could not be unset and other stuff failed.
+            * Added rules module by ebest97.
+              The directory to the rules file is set by rules:file configuration option.

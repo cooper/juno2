@@ -392,3 +392,4 @@ VERSIONING
         2. April 12, 2011
 
             * Added an easy way to setup "oper classes" (sorta.) See the example configuration.
+            * Fix bug: set o if granted flags when o is not set.

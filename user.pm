@@ -606,8 +606,8 @@ sub add_privs {
 
     }
 
-    # check if they are still opered just in case
-    $user->unsetmode('o') unless scalar @{$user->{privs}};
+    # set o if not opered
+    $user->setmode('o') if scalar @{$user->{privs}};
 
     return 1
 }

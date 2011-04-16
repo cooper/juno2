@@ -614,15 +614,19 @@ sub add_privs {
 
 sub del_privs {
     my $user = shift;
-    foreach my $priv (@_) {
-        while (my ($k, $p) = @{$user->{privs}}) {
-            delete $user->{privs}->[$k] if $p eq $priv
-        }
+    my @finished;
+
+    foreach my $priv (@{$user->{privs}}) {
+        next if $priv ~~ @_;
+        push @finished, $priv
     }
+
+    $user->{privs} = [@finished];
 
     # check if they are still opered just in case
     $user->unsetmode('o') unless scalar @{$user->{privs}};
 
     return 1
 }
+
 1

@@ -393,3 +393,9 @@ VERSIONING
 
             * Added an easy way to setup "oper classes" (sorta.) See the example configuration.
             * Fix bug: set o if granted flags when o is not set.
+
+        3. April 16, 2011
+
+            * Fixed a bug in del_privs that caused an endless loop. :(
+            * Added UNGRANT command to grant module.
+            

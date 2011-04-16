@@ -166,8 +166,8 @@ sub who {
         (defined $channel->{'owners'}->{$_} ? '~' : q..).
         (defined $channel->{'admins'}->{$_} ? '&' : q..).
         (defined $channel->{'ops'}->{$_} ? '@' : q..).
-        (defined $channel->{'halfops'}->{$_}? '%': q..).
-        (defined $channel->{'voices'}->{$_}? '+' : q..);
+        (defined $channel->{'halfops'}->{$_} ? '%': q..).
+        (defined $channel->{'voices'}->{$_} ? '+' : q..);
 
         # this is ugly, but I could care less.
         $user->sendservj(352,
@@ -436,6 +436,7 @@ sub handlemode {
                 else {
                     $ok = 0
                 }
+
             }
 
         }

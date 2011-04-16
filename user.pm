@@ -131,7 +131,7 @@ sub unsetmode {
         elsif ($_ eq 'o') {
 
             # remove all privs
-            undef $user->{privs};
+            $user->{privs} = [];
 
             # unset server notices if set
             $user->unsetmode('S') if $user->ismode('S');
@@ -596,6 +596,10 @@ sub delete_handler {
 # add oper privs
 sub add_privs {
     my $user = shift;
+
+    # set o if not opered
+    $user->setmode('o') unless scalar @{$user->{privs}};
+
     foreach my $priv (@_) {
 
         # already has it
@@ -605,9 +609,6 @@ sub add_privs {
         push @{$user->{privs}}, $priv
 
     }
-
-    # set o if not opered
-    $user->setmode('o') if scalar @{$user->{privs}};
 
     return 1
 }

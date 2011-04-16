@@ -398,4 +398,5 @@ VERSIONING
 
             * Fixed a bug in del_privs that caused an endless loop. :(
             * Added UNGRANT command to grant module.
+            * Fixed several bugs in new oper system, one of which was fatal.
             

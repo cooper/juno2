@@ -118,6 +118,8 @@ sec limit
   clients 50
   # the maximum number of clients from a single IP address
   perip 3
+  # maximum characters in a PRIVMSG or NOTICE
+  msg 500
 
 sec cloak
   # the "cloak key"

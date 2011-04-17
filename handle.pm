@@ -125,8 +125,7 @@ sub user_reset_timer {
     # if they're sending a PING or PONG, don't reset their idle time
     if $command !~ m/^(ping|pong)$/i;
 
-    $user->{'last'} = time;
-    $user->{'ping'} = time;
+    $user->{'last'} = $user->{'ping'} = time;
     return 1
 }
 

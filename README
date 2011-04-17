@@ -371,5 +371,7 @@ In juno-ircd, oper flags are specific to each command. The following are availab
 - modload
 - modunload
 
+There are several more provided by different API modules.
+
 * unfinished
 ** (this is just a joke; don't be alarmed)

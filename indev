@@ -399,4 +399,6 @@ VERSIONING
             * Fixed a bug in del_privs that caused an endless loop. :(
             * Added UNGRANT command to grant module.
             * Fixed several bugs in new oper system, one of which was fatal.
+            * Fixed bug in topic char limit.
+            * Added message char limit (PRIVMSG and NOTICE), defined by limit:msg.
             

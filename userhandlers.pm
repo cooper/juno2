@@ -6,125 +6,125 @@ use warnings;
 use strict;
 use feature qw/switch say/;
 
-use utils qw/col conf oper hostmatch snotice validnick validcloak/;
+use utils qw/col conf oper hostmatch snotice validnick validcloak cut_to_limit/;
 
 # core commands hash
 my %commands = (
     PONG => {
-        'code' => sub {},
-        'desc' => 'Reply to PING command'
+        code => sub {},
+        desc => 'Reply to PING command'
     },
     SACONNECT => {
-        'code' => sub {},
-        'desc' => 'Force a user to connect to the server'
+        code => sub {},
+        desc => 'Force a user to connect to the server'
     },
     USER => {
-        'code' => sub { shift->numeric(462) },
-        'desc' => 'fake user command'
+        code => sub { shift->numeric(462) },
+        desc => 'fake user command'
     },
     LUSERS => {
-        'code' => \&handle_lusers,
-        'desc' => 'View the server user statistics'
+        code => \&handle_lusers,
+        desc => 'View the server user statistics'
     },
     MOTD => {
-        'code' => \&handle_motd,
-        'desc' => 'View the message of the day'
+        code => \&handle_motd,
+        desc => 'View the message of the day'
     },
     NICK => { 
-        'code' => \&handle_nick,
-        'desc' => 'Change your nickname'
+        code => \&handle_nick,
+        desc => 'Change your nickname'
     },
     PING => {
-        'code' => \&handle_ping,
-        'desc' => 'Send a ping to the server'
+        code => \&handle_ping,
+        desc => 'Send a ping to the server'
     },
     WHOIS => {
-        'code' => \&handle_whois,
-        'desc' => 'View information on a user'
+        code => \&handle_whois,
+        desc => 'View information on a user'
     },
     MODE => {
-        'code' => \&handle_mode,
-        'desc' => 'Set or view a user or channel mode'
+        code => \&handle_mode,
+        desc => 'Set or view a user or channel mode'
     },
     PRIVMSG => {
-        'code' => \&handle_privmsgnotice,
-        'desc' => 'Send a message to a channel or user'
+        code => \&handle_privmsgnotice,
+        desc => 'Send a message to a channel or user'
     },
     NOTICE => {
-        'code' => \&handle_privmsgnotice,
-        'desc' => 'Send a notice to a channel or user'
+        code => \&handle_privmsgnotice,
+        desc => 'Send a notice to a channel or user'
     },
     AWAY => {
-        'code' => \&handle_away,
-        'desc' => 'Mark yourself as being away'
+        code => \&handle_away,
+        desc => 'Mark yourself as being away'
     },
     OPER => {
-        'code' => \&handle_oper,
-        'desc' => 'Gain IRCop privileges'
+        code => \&handle_oper,
+        desc => 'Gain IRCop privileges'
     },
     KILL => {
-        'code' => \&handle_kill,
-        'desc' => 'Forcibly remove a user from the server'
+        code => \&handle_kill,
+        desc => 'Forcibly remove a user from the server'
     },
     JOIN => {
-        'code' => \&handle_join,
-        'desc' => 'Join a channel'
+        code => \&handle_join,
+        desc => 'Join a channel'
     },
     WHO => {
-        'code' => \&handle_who,
-        'desc' => 'View user information'
+        code => \&handle_who,
+        desc => 'View user information'
     },
     NAMES => {
-        'code' => \&handle_names,
-        'desc' => 'View the users on a channel'
+        code => \&handle_names,
+        desc => 'View the users on a channel'
     },
     QUIT => {
-        'code' => \&handle_quit,
-        'desc' => 'Leave the server'
+        code => \&handle_quit,
+        desc => 'Leave the server'
     },
     PART => {
-        'code' => \&handle_part,
-        'desc' => 'Leave a channel'
+        code => \&handle_part,
+        desc => 'Leave a channel'
     },
     REHASH => {
-        'code' => \&handle_rehash,
-        'desc' => 'Reload the server configuration file(s)'
+        code => \&handle_rehash,
+        desc => 'Reload the server configuration file(s)'
     },
     LOCOPS => {
-        'code' => \&handle_locops,
-        'desc' => 'Send a message to all IRCops with mode S enabled'
+        code => \&handle_locops,
+        desc => 'Send a message to all IRCops with mode S enabled'
     },
     GLOBOPS => {
-        'code' => \&handle_locops,
-        'desc' => 'Alias for LOCOPS'
+        code => \&handle_locops,
+        desc => 'Alias for LOCOPS'
     },
     TOPIC => {
-        'code' => \&handle_topic,
-        'desc' => 'View or set a channel\'s topic'
+        code => \&handle_topic,
+        desc => 'View or set a channel\'s topic'
     },
     KICK => {
-        'code' => \&handle_kick,
-        'desc' => 'Forcibly remove a user from a channel'
+        code => \&handle_kick,
+        desc => 'Forcibly remove a user from a channel'
     },
     INVITE => {
-        'code' => \&handle_invite,
-        'desc' => 'Invite a user to a channel'
+        code => \&handle_invite,
+        desc => 'Invite a user to a channel'
     },
     LIST => {
-        'code' => \&handle_list,
-        'desc' => 'View channels and their information'
+        code => \&handle_list,
+        desc => 'View channels and their information'
     },
     ISON => {
-        'code' => \&handle_ison,
-        'desc' => 'Check if users are on the server'
+        code => \&handle_ison,
+        desc => 'Check if users are on the server'
     },
     CHGHOST => {
-        'code' => \&handle_chghost,
-        'desc' => 'Change a user\'s visible hostname'
+        code => \&handle_chghost,
+        desc => 'Change a user\'s visible hostname'
     },
     COMMANDS => {
-        'code' => \&handle_commands,
-        'desc' => 'List commands and their information'
+        code => \&handle_commands,
+        desc => 'List commands and their information'
     }
 );
 
@@ -437,7 +437,7 @@ sub handle_privmsgnotice {
     }
 
     # make sure the message is at least 1 character
-    my $msg = col((split q. ., $data, 3)[2]);
+    my $msg = cut_to_limit('msg', col((split q. ., $data, 3)[2]));
     if (!length $msg) {
         $user->numeric(412);
         return
@@ -773,11 +773,8 @@ sub handle_topic {
         if (defined $args[2]) {
 
             # limit it to the number of chars defined by limit:topic
-            my $overflow = (length $args[2]) - (conf qw/limit topic/) + 1;
-            my $topic = $args[2];
-            $topic = substr $args[2], 0, -$overflow if length $args[2] > conf qw/limit topic/;
-            # set the topic
-            $channel->settopic($user, col($topic));
+            my $topic = cut_to_limit('topic', col($args[2]));
+            $channel->settopic($user, $topic);
             return 1
 
         }

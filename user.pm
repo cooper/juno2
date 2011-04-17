@@ -500,6 +500,7 @@ sub checkkline {
     }
 
     # they're free to go
+
     return
 
 }

@@ -9,7 +9,7 @@ use base 'Exporter';
 
 use Exporter;
 
-our @EXPORT_OK = qw/col validnick validcloak hostmatch snotice fatal conf oper/;
+our @EXPORT_OK = qw/col validnick validcloak hostmatch snotice fatal conf oper cut_to_limit/;
 our %GV;
 
 # numeric hash
@@ -142,6 +142,15 @@ sub oper {
 sub validcloak {
     return if $_[0] =~ m/[^A-Za-z-0-9-\.\/\-]/;
     return 1
+}
+
+sub cut_to_limit {
+    my ($limit, $string) = (conf('limit', shift), shift);
+    return $string unless $limit;
+    my $overflow = (length $string) - $limit;
+    print "$string: $limit\n";
+    $string = substr $string, 0, -$overflow if length $string > $limit;
+    return $string
 }
 
 1

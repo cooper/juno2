@@ -50,7 +50,7 @@ sub user {
                 $user->numeric(421, uc $args[0])
 
                 # ignore pings, pongs, and CAP
-                unless lc $args[0] != m/^(PONG|PING|CAP)$/
+                unless lc $args[0] !~ m/^(PONG|PING|CAP)$/
 
             }
         }

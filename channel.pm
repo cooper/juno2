@@ -16,15 +16,15 @@ sub new {
 
     # create the channel object
     bless my $channel = {
-        'name' => $name,
-        'time' => time,
-        'first' => time,
-        'creator' => $user->nick,
-        'owners' => {
+        name => $name,
+        time => time,
+        first => time,
+        creator => $user->nick,
+        owners => {
             # they get owner on join
             $user->{'id'} => time
         },
-        'ops' => {
+        ops => {
             # they get op on join
             $user->{'id'} => time
         }
@@ -36,8 +36,8 @@ sub new {
 
     # set auto modes
     $channel->{'mode'}->{$_} = {
-        'time' => time,
-        'params' => undef
+        time => time,
+        params => undef
     } foreach split //, conf qw/channel automodes/;
     $channel->allsend(':%s MODE %s +%s', 0, (conf qw/server name/), $name, (conf qw/channel automodes/)) if conf qw/channel automodes/;
 
@@ -129,7 +129,7 @@ sub allsend {
     return 1
 }
 
- # send to users with operator status and above, with an optional exception
+# send to users with operator status and above, with an optional exception
 sub opsend {
     my ($channel, $data, $exception) = (shift, shift, shift);
     foreach (keys %{$channel->{'users'}}) {
@@ -296,8 +296,8 @@ sub setmode {
 
     # set the mode
     $channel->{'mode'}->{$mode} = {
-        'time' => time,
-        'params' => (
+        time => time,
+        params => (
             # if there's a parameter, set it
             defined $parameter ?
                 $parameter
@@ -649,9 +649,9 @@ sub settopic {
     # they can
     if ($success) {
         $channel->{'topic'} = {
-            'topic' => $topic,
-            'time' => time,
-            'setby' => (
+            topic => $topic,
+            time => time,
+            setby => (
                 (conf qw/main fullmasktopic/)
                 ? $user->fullcloak
                 : $user->nick

@@ -67,16 +67,16 @@ sub new {
 
     # create the user
     bless my $user = {
-        'ssl' => $ssl,
-        'server' => $::id,
-        'id' => $::id.&newid,
-        'obj' => $peer,
-        'ip' => $ip,
-        'ipv' => $ipv,
-        'host' => $ip,
-        'cloak' => $ip,
-        'time' => time,
-        'privs' => []
+        ssl => $ssl,
+        server => $::id,
+        id => $::id.&newid,
+        obj => $peer,
+        ip => $ip,
+        ipv => $ipv,
+        host => $ip,
+        cloak => $ip,
+        time => time,
+        privs => []
     };
 
     # set PING rate, idle time, and other timers
@@ -217,7 +217,7 @@ sub host2cloak {
     }
 
     # since split requires . to be escaped
-    $sep = '.' if $sep eq '\.';
+    $sep = q(.) if $sep eq '\.';
 
     return (join $sep, @pieces)
 }
@@ -278,7 +278,7 @@ sub quit {
     snotice('client exiting: '.$user->fullhost.' ['.$user->{'ip'}.'] ('.$reason.')') if $user->{'ready'};
 
     # we can't use main::sendpeer here because the outbuffer will be cleared before the main loop gets a chance to send the data
-    $user->obj->syswrite('ERROR :Closing Link: ('.(defined $user->{'ident'}?$user->{'ident'}:'*').'@'.$user->host.') ['.$reason.']'."\r\n", POSIX::BUFSIZ) unless $silent;
+    $user->obj->syswrite('ERROR :Closing Link: ('.(defined $user->{'ident'} ? $user->{'ident'} : q(*)).'@'.$user->host.') ['.$reason.']'."\r\n", POSIX::BUFSIZ) unless $silent;
 
     # delete their data
     delete $connection{$user->obj};
@@ -315,7 +315,7 @@ sub snt {
 # or at least until the VERSION command is complete.)
 sub sendnum {
     my $user = shift;
-    return $user->send(':'.(conf qw/server name/).' '.shift().' '.$user->nick." @_")
+    return $user->send(':'.(conf qw/server name/).q( ).shift().q( ).$user->nick." @_")
 }
 
 # new way to send a numeric
@@ -328,22 +328,22 @@ sub numeric {
 
 # send data from the server
 sub sendserv {
-    return shift->send(':'.(conf qw/server name/).' '.(sprintf shift, @_))
+    return shift->send(':'.(conf qw/server name/).q( ).(sprintf shift, @_))
 }
 
 # send from the server, join()ing the arguments by a space
 sub sendservj {
-    return shift->send(':'.(conf qw/server name/).' '.(join q. ., @_))
+    return shift->send(':'.(conf qw/server name/).q( ).(join q. ., @_))
 }
 
 # send data from a server or user
 sub sendfrom {
-    return shift->send(':'.shift().' '.(sprintf shift, @_))
+    return shift->send(':'.shift().q( ).(sprintf shift, @_))
 }
 
-# send from a server or user, using join(' ') for each argument
+# send from a server or user, using join(q( )) for each argument
 sub sendfromj {
-    return shift->send(':'.shift().' '.(join q. ., @_))
+    return shift->send(':'.shift().q( ).(join q. ., @_))
 }
 
 # the entire mask, using the displayed host
@@ -402,7 +402,7 @@ sub start {
     userhandlers::handle_motd($user);
 
     # set automatic modes as defined in the configuration
-    $user->setmode((conf qw/user automodes/).($user->{'ssl'}?'Z':''));
+    $user->setmode((conf qw/user automodes/).($user->{'ssl'} ? 'Z' : q..));
 
     return 1
 }
@@ -568,9 +568,9 @@ sub register_handler {
 
     # success
     $commands{$handler} = {
-        'code' => $code,
-        'desc' => $desc,
-        'source' => $source
+        code => $code,
+        desc => $desc,
+        source => $source
     };
     say $source.' registered handler '.$handler.': '.$desc;
     return 1

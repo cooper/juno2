@@ -35,11 +35,7 @@ sub new {
     $channel->dojoin($user);
 
     # set auto modes
-    $channel->{'mode'}->{$_} = {
-        time => time,
-        params => undef
-    } foreach split //, conf qw/channel automodes/;
-    $channel->allsend(':%s MODE %s +%s', 0, (conf qw/server name/), $name, (conf qw/channel automodes/)) if conf qw/channel automodes/;
+    $channel->automodes($user);
 
     snotice('channel '.$name.' created by '.$user->fullhost);
     return $channel
@@ -663,7 +659,7 @@ sub settopic {
 
     # they can't.
     else {
-        $user->numeric(482, $channel->name, 'half-operatgror')
+        $user->numeric(482, $channel->name, 'half-operator')
     }
 
     return
@@ -825,7 +821,12 @@ sub handlemaskmode {
     # cool, do the change
     if ($state) {
         # set the mode
-        $channel->{$modename}->{lc $mask} = [$user->fullcloak, time, $mask]
+        my $from = $user->fullcloak;
+
+        # if it's a server, remove anything but the server name
+        $from = (split '!', $from)[0] if $user->nick =~ m/\./;
+
+        $channel->{$modename}->{lc $mask} = [$from, time, $mask]
     }
     else {
         # delete the mode
@@ -1075,6 +1076,22 @@ sub mode2name {
     # unknown
     return
 
+}
+
+# set auto channel modes
+sub automodes {
+    my ($channel, $user) = @_;
+    my $modestr = conf qw/channel automodes/;
+    next unless $modestr;
+
+    # you'll find this funny, but I'm lazy.
+    # like, seriously.
+    my $oldnick = $user->nick;
+    $user->{nick} = conf qw/server name/;
+    $channel->handlemode($user, $modestr);
+    $user->{nick} = $oldnick;
+
+    return 1
 }
 
 1

@@ -134,9 +134,9 @@ sec user
 
 sec channel
   # modes to be set upon channel creation
-  # do not prepend the modes with +
-  # do not use nonexistent modes; they are not ignored.
-  # mode parameters are not yet supported.
+  # the + is optional.
+  # nonexistent modes will be ignored.
+  # mode parameters are supported.
   automodes nt
 
 sec flood

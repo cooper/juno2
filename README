@@ -368,8 +368,8 @@ In juno-ircd, oper flags are specific to each command. The following are availab
 - locops
 - globops
 - chghost
-- modload
-- modunload
+- modload (API only)
+- modunload (API only)
 
 There are several more provided by different API modules.
 

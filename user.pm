@@ -9,10 +9,8 @@ use feature qw/say switch/;
 use utils qw/col conf oper hostmatch snotice validnick validcloak/;
 use userhandlers;
 
-$utils::GV{'cid'} = 0;
-$utils::GV{'max'} = 0;
-our %connection;
-our %commands;
+$utils::GV{'cid'} = $utils::GV{'max'} = 0;
+our (%connection, %commands);
 
 # register the command handlers in userhandlers.pm
 &userhandlers::get;

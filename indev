@@ -402,3 +402,9 @@ VERSIONING
             * Fixed bug in topic char limit.
             * Added message char limit (PRIVMSG and NOTICE), defined by limit:msg.
             * Added PRIVS command to grant module.
+
+        4. April 18, 2011
+
+            * What's an operatgror? o_O
+            * Channel automodes now support parameters. (you'll probably laugh at how I made that possible.)
+              Also, nonexistent modes will be ignored.

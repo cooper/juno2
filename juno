@@ -78,43 +78,43 @@ stop() {
 main() {
     case "${args[0]}" in
         start)
-            start
-        ;;
+            start;;
+
         forcestart)
-            forcestart
-        ;;
+            forcestart;;
+
         rehash)
             check_if_running
             echo "Signaling $pid HUP"
-            kill -HUP $pid
-        ;;
+            kill -HUP $pid;;
+
         stop)
-            stop
-        ;;
+            stop;;
+
         restart)
             stop
             sleep 1
             runningq
-            forcestart
-        ;;
+            forcestart;;
+
         genssl)
             cd bin
             ./genssl
-            cd ..
-        ;;
+            cd ..;;
+
         mkpasswd)
-            bin/mkpasswd
-        ;;
+            bin/mkpasswd;;
+
         version)
-            echo juno-$version
-        ;;
+            echo juno-$version;;
+
         help)
-            showusage
-        ;;
+            showusage;;
+
         *)
             echo "Incorrect parameter: ${args[0]}"
-            echo "$0 help for help"
-        ;;
+            echo "$0 help for help";;
+
     esac
 }
 

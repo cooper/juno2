@@ -20,6 +20,8 @@ usage: $0 [action]
     forcestart  attempt to start juno under any circumstances
     stop        terminate juno IRCd (SIGTERM)
     rehash      rehash the server configuration file (SIGHUP)
+    genssl      generate an SSL certificate
+    mkpasswd    create a hashed operator password
     version     print the version of this copy of juno IRCd
     help        print this information
 EOF
@@ -94,6 +96,14 @@ main() {
             sleep 1
             runningq
             forcestart
+        ;;
+        genssl)
+            cd bin
+            ./genssl
+            cd ..
+        ;;
+        mkpasswd)
+            bin/mkpasswd
         ;;
         version)
             echo juno-$version

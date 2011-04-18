@@ -408,3 +408,4 @@ VERSIONING
             * What's an operatgror? o_O
             * Channel automodes now support parameters. (you'll probably laugh at how I made that possible.)
               Also, nonexistent modes will be ignored.
+            * Added genssl and mkpasswd options to ./juno script.

@@ -401,4 +401,4 @@ VERSIONING
             * Fixed several bugs in new oper system, one of which was fatal.
             * Fixed bug in topic char limit.
             * Added message char limit (PRIVMSG and NOTICE), defined by limit:msg.
-            
+            * Added PRIVS command to grant module.

@@ -1,0 +1,107 @@
+#!/usr/bin/perl
+# Copyright (c) 2011, Mitchell Cooper
+
+use warnings;
+use strict;
+use feature qw[say switch];
+
+use FindBin '$Bin';
+use IO::Socket;
+use IO::Select;
+use POSIX;
+
+open my $vfh, '<', qq($Bin/../etc/version) or die "Can't read version file.";
+my $VERSION = <$vfh>;
+$VERSION =~ s/\s+$//;
+my $READY = 0;
+$| = 1;
+
+# create the socket
+my @sel = \*STDIN;
+push @sel, my $socket = &create_socket;
+socksend('begin');
+my $sel = new IO::Select @sel;
+
+main: for (;;) {
+    foreach my $sock ($sel->can_read(1)) {
+        sysread $sock, my $data, POSIX::BUFSIZ, 0 or die "Connection lost\n";
+        if ($sock == $socket) {
+            handle_incoming($data)
+        }
+        else {
+            handle_stdin($data)
+        }
+    }
+
+    die "Connection lost\n" unless $socket
+}
+
+sub create_socket {
+    my $sock = IO::Socket::INET->new(
+        PeerAddr => 'juno.notroll.net',
+        PeerPort => 9002,
+        Proto => 'tcp'
+    ) or die
+        "Could not connect to module server.\n".
+        ($@ ? $@ : ( $! ? $! : 'unknown error')).
+        "\nThis is most likely due to maintenance.\n";
+    return $sock
+}
+
+sub ready {
+    $READY = 1;
+    print "[ juno $VERSION ] ~> ";
+    return 1
+}
+
+sub handle_stdin {
+    return unless $READY;
+    $READY = 0;
+    my $line = shift;
+    chomp $line;
+    socksend('> '.$line);
+    return 1
+}
+
+sub handle_incoming {
+    my $line = shift;
+    my @args = split /\s+/, $line;
+    $line =~ s/(\n|\0)//;
+
+    given ($args[0]) {
+
+        when ('ping') {
+            socksend('pong')
+        }
+
+        when ('ready') {
+            &ready
+        }
+
+        when ('say') {
+            say "@args[1..$#args]"
+        }
+
+    }
+
+}
+
+sub socksend {
+    syswrite $socket, shift()."\n", POSIX::BUFSIZ, 0 or die "can't write\n"
+}
+
+sub help {
+print <<EOF
+
+    juno module manager for juno $VERSION
+    
+    usage: <option> [...]
+
+        help or ?           show this help
+        install <module>    install a module
+        remove <module>     remove a module
+        list                view your installed modules
+        available           view the available modules
+
+EOF
+}

@@ -409,3 +409,4 @@ VERSIONING
             * Channel automodes now support parameters. (you'll probably laugh at how I made that possible.)
               Also, nonexistent modes will be ignored.
             * Added genssl and mkpasswd options to ./juno script.
+            * Added currently nonfunctional module manager.

@@ -23,6 +23,7 @@ usage: $0 [action]
     genssl      generate an SSL certificate
     mkpasswd    create a hashed operator password
     version     print the version of this copy of juno IRCd
+    mod         start the juno module manager
     help        print this information
 EOF
 }
@@ -108,6 +109,9 @@ main() {
 
         version)
             echo juno-$version;;
+
+        mod)
+            bin/modulemanager;;
 
         help)
             showusage;;

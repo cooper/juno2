@@ -410,3 +410,4 @@ VERSIONING
               Also, nonexistent modes will be ignored.
             * Added genssl and mkpasswd options to ./juno script.
             * Added currently nonfunctional module manager.
+            * Added ./juno mod to enter the module manager.

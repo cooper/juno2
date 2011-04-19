@@ -64,26 +64,26 @@ sub handle_stdin {
 }
 
 sub handle_incoming {
-    my $line = shift;
-    my @args = split /\s+/, $line;
-    $line =~ s/(\n|\0)//;
+    foreach my $line (split /\n/, shift) {
+        my @args = split /\s+/, $line;
+        $line =~ s/(\n|\0)//;
 
-    given ($args[0]) {
+        given ($args[0]) {
 
-        when ('ping') {
-            socksend('pong')
+            when ('ping') {
+                socksend('pong')
+            }
+
+            when ('ready') {
+                &ready
+            }
+
+            when ('say') {
+                say "@args[1..$#args]"
+            }
+
         }
-
-        when ('ready') {
-            &ready
-        }
-
-        when ('say') {
-            say "@args[1..$#args]"
-        }
-
     }
-
 }
 
 sub socksend {

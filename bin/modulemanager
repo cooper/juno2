@@ -62,6 +62,7 @@ sub create_socket {
 }
 
 sub ready {
+    $READY = 1;
     print "[ juno $VERSION ] ~> ";
     return 1
 }
@@ -270,7 +271,8 @@ sub install {
             $INSTALLED{"$mod.pm"} = { loc => "$mod.pm" };
             $INSTALLED{"$mod.pm"}{time} = time;
             $INSTALLED{"$mod.pm"}{$_} = $MODULES{$mod}{$_} foreach qw[name ver desc req pm];
-            add2db("$mod.pm")
+            add2db("$mod.pm");
+            say 'module installed.'
         }
 
         else {

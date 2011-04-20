@@ -105,8 +105,7 @@ sub handle_stdin {
             }
 
             default {
-                socksend('> '.$line);
-                return &ready
+                socksend('> '.$line)
             }
 
         }

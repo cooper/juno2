@@ -170,7 +170,7 @@ sub handle_incoming {
             }
 
             when ('clear') {
-                say q();
+                say ''
             }
 
         }

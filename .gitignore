@@ -3,3 +3,4 @@ etc/*.conf
 etc/*.pem
 etc/*.pid
 etc/*.db
+modules/

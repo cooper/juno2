@@ -169,6 +169,10 @@ sub handle_incoming {
                 &getinput
             }
 
+            when ('clear') {
+                say q();
+            }
+
         }
     }
 }

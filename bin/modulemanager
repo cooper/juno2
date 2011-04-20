@@ -247,7 +247,7 @@ sub parsedb {
 
 sub add2db {
     my $mod = shift;
-    my %m = $INSTALLED{$mod};
+    my %m = %{$INSTALLED{$mod}};
     open my $dbfh, '>>', qq($Bin/../etc/modules.db) or die "Can't write modules db\n";
     say $dbfh "module $m{loc} $m{name} $m{time} $m{ver} $m{desc} $m{req} $m{deps}";
     close $dbfh

@@ -60,15 +60,15 @@ if (!$NOFORK) {
 
     # since there will be no input or output from here on,
     # open the filehandles to /dev/null
-    open STDIN, '/dev/null' or fatal('Can\'t read /dev/null: '.$!);
-    open STDOUT, '>', '/dev/null' or fatal('Can\'t write /dev/null: '.$!);
-    open STDERR, '>', '/dev/null' or fatal('Can\'t write /dev/null: '.$!);
+    open STDIN, '<', '/dev/null' or fatal("Can't read /dev/null: $!");
+    open STDOUT, '>', '/dev/null' or fatal("Can't write /dev/null: $!");
+    open STDERR, '>', '/dev/null' or fatal("Can't write /dev/null: $!");
 
     # write the PID file that is used by the start/stop/rehash script.
-    open my $pidfile, '>', $DIR.'/etc/juno.pid' or fatal('Could not write etc/juno.pid');
+    open my $pidfh, '>', $DIR.'/etc/juno.pid' or fatal("Can't write $DIR/etc/juno.pid");
     $PID = fork;
-    say $pidfile $PID if $PID != 0;
-    close $pidfile
+    say $pidfh $PID if $PID;
+    close $pidfh
 
 }
 

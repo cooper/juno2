@@ -22,7 +22,8 @@ my $READY = 0;
 my (%MODULES, %INSTALLED);
 
 my $ua = new LWP::UserAgent;
-$ua->show_progess(1);
+$ua->show_progress(1);
+$ua->timeout(10);
 
 # load and parse our stored info
 &check_modules;
@@ -80,10 +81,20 @@ sub handle_stdin {
         my @args = split /\s+/, $line;
         $line =~ s/(\n|\0)//;
 
-        given ($args[0]) {
+        given (shift @args) {
 
             when ('installed') {
                 &view_installed
+            }
+
+            when ('install') {
+                if (!$args[0]) {
+                    say 'no module specified.';
+                }
+                install(shift @args)
+            }
+
+            when ('remove') {
             }
 
             when (/^(help|\?)/) {
@@ -94,14 +105,12 @@ sub handle_stdin {
 
             default {
                 socksend('> '.$line);
-                return
+                return &ready
             }
 
         }
 
     }
-
-    &ready;
     return 1
 }
 
@@ -216,7 +225,7 @@ sub check_modules {
 sub view_installed {
     print "$$_{name}-$$_{ver} " foreach values %INSTALLED;
     print "\n";
-    return 1
+    return &ready
 }
 
 
@@ -234,6 +243,47 @@ sub parsedb {
     $INSTALLED{$file}{$_} = shift @args foreach qw[name time ver desc req];
     $INSTALLED{$file}{pm} = @args;
     return 1
+}
+
+sub add2db {
+    my $mod = shift;
+    my %m = $INSTALLED{$mod};
+    open my $dbfh, '>>', qq($Bin/../etc/modules.db) or die "Can't write modules db\n";
+    say $dbfh "module $m{loc} $m{name} $m{time} $m{ver} $m{desc} $m{req} $m{deps}";
+    close $dbfh
+}
+
+sub install {
+    my $mod = shift;
+
+    if (exists $INSTALLED{$mod}) {
+        say 'you already have that module.';
+        return &ready
+    }
+
+    if (exists $MODULES{$mod}) {
+        say "Fetching module $mod...";
+        my $res = $ua->get($MODULES{$mod}{url}, ':content_file' => "$Bin/../modules/$mod.pm");
+
+        if ($res->is_success) {
+            say 'module fetched.';
+            $INSTALLED{"$mod.pm"} = { loc => "$mod.pm" };
+            $INSTALLED{"$mod.pm"}{time} = time;
+            $INSTALLED{"$mod.pm"}{$_} = $MODULES{$mod}{$_} foreach qw[name ver desc req pm];
+            add2db($mod)
+        }
+
+        else {
+            say 'there was an error fetching the module.';
+            return &ready
+        }
+
+    }
+    else {
+        say 'no such module'
+    }
+
+    return &ready
 }
 
 sub help {

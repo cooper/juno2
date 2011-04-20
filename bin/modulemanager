@@ -297,7 +297,6 @@ juno module manager for juno $VERSION
 help or ?           show this help
 install <module>    install a module
 remove <module>     remove a module
-list                view the available modules
 installed           view the modules you have installed
 
     server-provided commands:

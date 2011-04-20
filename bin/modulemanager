@@ -149,7 +149,7 @@ sub handle_incoming {
                 $MODULES{$mod} = { name => $mod };
                 $MODULES{$mod}{$_} = shift @args foreach qw[url ver desc req];
                 $MODULES{$mod}{pm} = @args;
-                $MODULES{$mod} =~ s/\.\_\./ /g
+                $MODULES{$mod}{desc} =~ s/\.\_\./ /g
             }
 
             when ('unsupported') {

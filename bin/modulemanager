@@ -147,14 +147,13 @@ sub handle_incoming {
                 say((split ' ', $line, 2)[1])
             }
 
-            # module <module name> <url> <version> <description> <required juno version> <module required> [...]
-            # module HelloWorld http://google.com/something.pm 0.3 Hello._.World! 1.0.0 Some::Module Some::Other::Module
+            # module <module name> <url> <version> <modules required> <required juno version> <description> [...]
             when ('module') {
                 my $mod = shift @args;
                 $MODULES{$mod} = { name => $mod };
-                $MODULES{$mod}{$_} = shift @args foreach qw[url ver desc req];
-                $MODULES{$mod}{pm} = @args;
-                $MODULES{$mod}{desc} =~ s/\.\_\./ /g
+                $MODULES{$mod}{$_} = shift @args foreach qw[url ver deps req];
+                $MODULES{$mod}{desc} = @args;
+                $MODULES{$mod}{deps} = s/&/ /g
             }
 
             when ('server') {
@@ -165,7 +164,7 @@ sub handle_incoming {
             }
 
             when ('unsupported') {
-                say 'your version of juno is not supported by the juno module manager.';
+                say 'unsupported :(';
                 exit 1
             }
 
@@ -246,17 +245,17 @@ sub view_installed {
 
 
 ### DB
-# module <location in modules/> <module name> <time added> <version> <description> <required juno version> <module required> [...]
+# module <location in modules/> <module name> <time added> <version> 
 
 sub parsedb {
     my $line = shift;
     $line =~ s/\s+$//;
     my @args = split /\s+/, $line;
-    die "broken DB\n" unless defined $args[7];
+    die "broken DB\n" unless defined $args[4];
     die "broken DB\n" unless shift @args eq 'module';
     my $file = shift @args;
     $INSTALLED{$file} = { loc => $file };
-    $INSTALLED{$file}{$_} = shift @args foreach qw[name time ver desc req];
+    $INSTALLED{$file}{$_} = shift @args foreach qw[name time ver];
     $INSTALLED{$file}{pm} = @args;
     return 1
 }
@@ -265,14 +264,14 @@ sub add2db {
     my $mod = shift;
     my %m = %{$INSTALLED{$mod}};
     open my $dbfh, '>>', qq($Bin/../etc/modules.db) or die "Can't write modules db\n";
-    say $dbfh "module $m{loc} $m{name} $m{time} $m{ver} $m{desc} $m{req} $m{pm}";
+    say $dbfh "module $m{loc} $m{name} $m{time} $m{ver}";
     close $dbfh
 }
 
 sub install {
     my $mod = shift;
 
-    if (exists $INSTALLED{$mod}) {
+    if (exists $INSTALLED{"$mod.pm"}) {
         say 'you already have that module.';
         return &ready
     }
@@ -283,9 +282,12 @@ sub install {
 
         if ($res->is_success) {
             say 'module fetched.';
-            $INSTALLED{"$mod.pm"} = { loc => "$mod.pm" };
-            $INSTALLED{"$mod.pm"}{time} = time;
-            $INSTALLED{"$mod.pm"}{$_} = $MODULES{$mod}{$_} foreach qw[name ver desc req pm];
+            $INSTALLED{"$mod.pm"} = {
+                loc => "$mod.pm",
+                time => time,
+                name => $MODULES{$mod}{name},
+                ver => $MODULES{$mod}{ver}
+            };
             add2db("$mod.pm");
             say 'module installed.'
         }

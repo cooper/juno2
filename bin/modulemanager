@@ -19,7 +19,7 @@ close $vfh;
 
 $VERSION =~ s/\s+$//;
 my $READY = 0;
-my (%MODULES, %INSTALLED);
+my (%SERVER, %MODULES, %INSTALLED);
 
 my $ua = new LWP::UserAgent;
 $ua->show_progress(1);
@@ -98,6 +98,11 @@ sub handle_stdin {
             when ('remove') {
             }
 
+            when ('sync') {
+                say 'Syncing to server...';
+                socksend('sync')
+            }
+
             when (/^(help|\?)/) {
                 &help;
                 socksend('?');
@@ -122,8 +127,8 @@ sub getinput {
 
 sub handle_incoming {
     foreach my $line (split /\n/, shift) {
-        my @args = split /\s+/, $line;
         $line =~ s/(\n|\0)//;
+        my @args = split /\s+/, $line;
 
         given (shift @args) {
 
@@ -139,7 +144,7 @@ sub handle_incoming {
             }
 
             when ('say') {
-                say "@args[0..$#args]"
+                say((split ' ', $line, 2)[1])
             }
 
             # module <module name> <url> <version> <description> <required juno version> <module required> [...]
@@ -150,6 +155,13 @@ sub handle_incoming {
                 $MODULES{$mod}{$_} = shift @args foreach qw[url ver desc req];
                 $MODULES{$mod}{pm} = @args;
                 $MODULES{$mod}{desc} =~ s/\.\_\./ /g
+            }
+
+            when ('server') {
+                $SERVER{$_} = shift @args foreach qw[name ver mods cmds usrs time start];
+                say "* your host is $SERVER{name}, running version $SERVER{ver}";
+                say '* this server has been running since '.POSIX::strftime('%a %b %d %Y at %H:%M:%S %Z', localtime $SERVER{start});
+                say "* this server hosts $SERVER{mods} modules and provides $SERVER{cmds} commands to $SERVER{usrs} connected users";
             }
 
             when ('unsupported') {
@@ -192,7 +204,7 @@ sub check_modules {
     }
 
     else {
-        print 'database doesn\'t exist; creating it... ';
+        print "\ndatabase doesn't exist; creating it... ";
         open my $dbw, '>', qq($Bin/../etc/modules.db) or die "error: $!\n";
         close $dbw;
         say 'done'
@@ -211,14 +223,14 @@ sub check_modules {
 
 
     else {
-        print 'module directory doesn\'t exist; creating it... ';
+        print "\nmodule directory doesn\'t exist; creating it... ";
         mkdir qq($Bin/../modules) or die "error: $!\n";
         say 'done'
     }
 
     print 'checking that stored modules are installed... ';
     foreach my $mod (keys %INSTALLED) {
-        die "module $mod not found.\n" unless -e qq($Bin/../modules/$mod)
+        die "\nmodule $mod not found.\n" unless -e qq($Bin/../modules/$mod)
     }
     say 'done';
 
@@ -298,10 +310,12 @@ juno module manager for juno $VERSION
 
     built-in commands:
 
-help or ?           show this help
-install <module>    install a module
-remove <module>     remove a module
-installed           view the modules you have installed
+?             same as 'help'
+help          show this help
+install       install a module
+remove        remove a module
+installed     view the modules you have installed
+sync          sync to the module server
 
     server-provided commands:
 

@@ -159,7 +159,7 @@ sub handle_incoming {
             when ('server') {
                 $SERVER{$_} = shift @args foreach qw[name ver mods cmds usrs time start];
                 say "* your host is $SERVER{name}, running version $SERVER{ver}";
-                say '* this server has been running since '.POSIX::strftime('%a %b %d %Y at %H:%M:%S %Z', localtime $SERVER{start});
+                say '* this server has been running since '.POSIX::strftime('%A, %B %d, %Y at %H:%M:%S %Z', localtime $SERVER{start});
                 say "* this server hosts $SERVER{mods} modules and provides $SERVER{cmds} commands to $SERVER{usrs} connected users";
             }
 

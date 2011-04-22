@@ -13,7 +13,7 @@ BEGIN {
 
     # we *must* have this argument to load modules properly,
     # so die if we don't
-    die "No directory specified\n" unless defined $DIR;
+    die "No directory specified (you probably want to use the juno script in your installation directory)\n" unless defined $DIR;
 
     # no error
     push @INC, $DIR;
@@ -76,7 +76,7 @@ if (!$NOFORK) {
 
 }
 
-exit unless $PID == 0;
+exit if $PID;
 &POSIX::setsid;
 
 # create the IO::Select object for listening sockets,
@@ -96,7 +96,7 @@ for (;;) {
 
         # this is a new socket waiting to be accepted, so we create a new user.
         if (exists $listensockets{$client}) {
-            user::new(($SSL{$client} ? 1 : 0), $client->accept)
+            new user (($SSL{$client} ? 1 : 0), $client->accept)
         }
 
         # this is a user sending data

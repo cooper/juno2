@@ -36,7 +36,7 @@ sub handle {
 
 # create a new user
 sub new {
-    my ($ssl, $peer) = @_;
+    my ($this, $ssl, $peer) = @_;
     return unless $peer;
 
     # the server is not accepting connections
@@ -75,7 +75,7 @@ sub new {
         cloak => $ip,
         time => time,
         privs => []
-    };
+    }, $this;
 
     # set PING rate, idle time, and other timers
     handle::user_reset_timer($user, 0);

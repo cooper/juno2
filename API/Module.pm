@@ -49,7 +49,7 @@ sub register_module {
     $module{$_} = shift foreach qw/name version desc init void/;
 
     # make sure this name isn't taken
-    if (module2package($module{name}) {
+    if (module2package($module{name})) {
         snotice("two modules may not have the same name ($module{name} is taken) from $package");
         return
     }

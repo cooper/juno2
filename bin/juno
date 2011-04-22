@@ -37,7 +37,7 @@ $SIG{'HUP'} = \&sighup;
 our $VERSION = &getversion;
 our $TIME = time;
 our $CONFIG = $DIR.'/etc/ircd.conf';
-my ($NOFORK, $PID) = (0, 0);
+my $NOFORK = my $PID = my $API = 0;
 our $ACCEPTING = 1;
 our (%config, %oper, %kline, %zline, %listen, %outbuffer, %inbuffer, %timer, %loops);
 my (%listensockets, %SSL, @sel, $ipv6, $loop);
@@ -461,6 +461,7 @@ sub loadrequirements {
     if (conf qw/enabled api/) {
         say '    Loading module API';
         require API::Core;
+        $API = 1;
         &API::Core::begin
     }
 
@@ -502,7 +503,7 @@ sub delete_loop {
 }
 
 sub event {
-    return unless conf qw/enabled api/;
+    return unless $API;
     API::Core->event(@_)
 }
 

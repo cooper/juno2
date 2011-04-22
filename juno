@@ -70,6 +70,12 @@ forcestart() {
     dostart
 }
 
+debug() {
+    echo "Running in NOFORK mode."
+    splash
+    $dir/bin/juno $dir NOFORK
+}
+
 stop() {
     check_if_running
     echo "Signaling $pid TERM"
@@ -81,6 +87,9 @@ main() {
 
         start)
             start;;
+
+        debug)
+            debug;;
 
         forcestart)
             forcestart;;

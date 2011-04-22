@@ -6,6 +6,7 @@ use strict;
 use feature qw/say switch/;
 
 # this allows juno to be started properly from any directory
+my $NOFORK;
 our $DIR;
 BEGIN {
     $DIR = shift @ARGV;
@@ -15,7 +16,10 @@ BEGIN {
     die "No directory specified\n" unless defined $DIR;
 
     # no error
-    push @INC, $DIR
+    push @INC, $DIR;
+
+    # NOFORK
+    $NOFORK = 1 if 'NOFORK' ~~ @ARGV
 
 }
 
@@ -37,7 +41,7 @@ $SIG{'HUP'} = \&sighup;
 our $VERSION = &getversion;
 our $TIME = time;
 our $CONFIG = $DIR.'/etc/ircd.conf';
-my $NOFORK = my $PID = my $API = 0;
+my $PID = my $API = 0;
 our $ACCEPTING = 1;
 our (%config, %oper, %kline, %zline, %listen, %outbuffer, %inbuffer, %timer, %loops);
 my (%listensockets, %SSL, @sel, $ipv6, $loop);

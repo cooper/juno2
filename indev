@@ -414,3 +414,7 @@ VERSIONING
             * Moved API modules to juno-mods repository.
             * Two modules can no longer have the same name.
             * Added API::Event.
+
+        5. April 19, 2011
+
+            * The module manager isn't quite finished but is now officially supported in dev-1.0.5.

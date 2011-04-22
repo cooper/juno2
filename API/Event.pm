@@ -9,7 +9,7 @@ use feature 'say';
 
 use Exporter;
 
-my @EXPORT = qw/register_event delete_event/;
+our @EXPORT = qw/register_event delete_event/;
 our %EVENT;
 
 # register an event

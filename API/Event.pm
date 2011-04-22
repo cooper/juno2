@@ -60,7 +60,7 @@ sub delete_event {
 
 }
 
-# run an event
+# run an event (you probably don't want to use this in a module)
 sub event {
     my ($package, $event) = ((caller)[0], shift);
     say "event $event called by $package";

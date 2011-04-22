@@ -9,6 +9,8 @@ use feature 'say';
 
 use Exporter;
 
+use utils 'snotice';
+
 our @EXPORT = qw/register_event delete_event/;
 our %EVENT;
 
@@ -19,7 +21,7 @@ sub register_event {
 
     # parameter check
     if ($#_ < 1) {
-        say "not enough parameters for register_event by $package";
+        notice("not enough parameters for register_event by $package");
         return
     }
 
@@ -27,12 +29,12 @@ sub register_event {
 
     # make sure this package hasn't registered this event.
     if (exists $EVENT{$event}{$package}) {
-        say "$package already registered the $event event; aborting."
+        notice("$package already registered the $event event; aborting.")
     }
 
     # only accept CODE to prevent fatal errors
     if (ref $code ne 'CODE') {
-        say "not a CODE ref for event $event in register_event by $package\n";
+        notice("not a CODE ref for event $event in register_event by $package\n");
         return
     }
 
@@ -49,12 +51,12 @@ sub delete_event {
     # parameter check
     my $event = shift;
     if (!defined $event) {
-        say "no event specified in delete_event by $package; aborting.";
+        notice("no event specified in delete_event by $package; aborting.");
         return
     }
 
     # success
-    say "deleting event $event from $package";
+    notice("deleting event $event from $package");
     delete $EVENT{$event}{$package};
     return 1
 
@@ -71,6 +73,20 @@ sub event {
         $code->(@_)
     }
 
+    return 1
+}
+
+# remove all events by a package
+sub delete_package {
+    my ($obj, $package) = @_;
+    notice('Deleting all events registered by '.$package);
+    delete $EVENT{$_}{$package} foreach keys %EVENT;
+}
+
+sub notice {
+    my $msg = shift;
+    say $msg;
+    snotice($msg);
     return 1
 }
 

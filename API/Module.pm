@@ -12,6 +12,7 @@ use Class::Unload;
 
 use API::Command;
 use API::Loop;
+use API::Event;
 use utils 'snotice';
 
 our @EXPORT = 'register_module';
@@ -91,7 +92,7 @@ sub delete_package {
     if (exists $MODULE{$package}) {
 
         # delete anything that was registered
-        $_->delete_package($package) foreach qw/API::Command API::Loop/;
+        $_->delete_package($package) foreach qw/API::Command API::Loop API::Event/;
 
         # delete the module
         delete $MODULE{$package};

@@ -103,8 +103,10 @@ module API
 -----------------------
 juno's module API can be enabled by the enabled:api option in the configuration.
 the module API requires a significant amount of memory to function, and it also
-requires the Class::Unload Perl module to properly unload the modules.
-see modules/HelloWorld.pm for an example module.
+requires the Class::Unload Perl module to properly unload the modules. as of
+juno-dev-1.0.4, juno modules are no longer included in juno's git, in promotion
+of juno's new module manager. the module manager is an easy-to-use interface to
+juno's module respository. it can be started with ./juno mod.
 
 
 plans**
@@ -134,7 +136,6 @@ fix: you can't set +S even if you have snotice enabled in oper block
 
 API TODO
 -----------------------
-API::Loop
 Module: KLINE command
 Module: ZLINE command
 Module: some way to force mode changes

@@ -68,7 +68,7 @@ sub event {
     say "event $event called by $package";
 
     # run through each registration of this event
-    while (my ($pkg, $code) = each %EVENT) {
+    while (my ($pkg, $code) = each %{$EVENT{$event}}) {
         say "calling $pkg for event $event";
         $code->(@_)
     }

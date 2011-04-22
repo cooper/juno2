@@ -222,6 +222,9 @@ sub confparse {
     say 'Loading configuration: '.$file;
     open my $CONF, '<', $file or fatal('Cannot open configuration file: '.$file);
 
+    # call API event
+    event('rehash', $file);
+
     # unset the former options
     if (!shift) {
         undef %kline; undef %zline; undef %config; undef %oper;
@@ -309,7 +312,7 @@ sub confparse {
     }
 
     # check each user for a Z-Line or a K-Line
-    usercheck: foreach my $user (values %user::connection) {
+    foreach my $user (values %user::connection) {
 
         # check for a Z-Line
         foreach (keys %zline) {
@@ -318,10 +321,8 @@ sub confparse {
                 # found a match!
                 $user->quit('Z-Lined: '.$zline{$_}{'reason'},
                     undef,
-                    'Z-Lined'.(conf qw/main showzline/ ? q(: ).$zline{$_}{'reason'} : q..)
+                    'Z-Lined'.((conf qw/main showzline/) ? q(: ).$zline{$_}{'reason'} : q..)
                 );
-                next usercheck
-
             }
         }
 
@@ -332,6 +333,9 @@ sub confparse {
     # load the MOTD file
     &loadmotd;
     close $CONF;
+
+    # call API event
+    event('rehash_done', $file);
 
     return 1
 }
@@ -495,6 +499,11 @@ sub delete_loop {
     say 'Deleting loop '.$loops{$id}{name}.':'.$id;
     delete $loops{$id};
     return 1
+}
+
+sub event {
+    return unless conf qw/enabled api/;
+    API::Core->event(@_)
 }
 
 1

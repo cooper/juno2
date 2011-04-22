@@ -7,7 +7,8 @@ use strict;
 use feature 'say';
 
 use API::Module qw/register_module module2package module_exists/;
-use API::Command 'register_command';
+use API::Command;
+use API::Event;
 use utils qw/fatal conf snotice/;
 
 # called by main if API is enabled
@@ -120,6 +121,10 @@ sub handle_modunload {
         return
     }
 
+}
+
+sub event {
+    return API::Event::event(@_)
 }
 
 1

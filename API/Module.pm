@@ -48,6 +48,12 @@ sub register_module {
     my %module = ();
     $module{$_} = shift foreach qw/name version desc init void/;
 
+    # make sure this name isn't taken
+    if (module2package($module{name}) {
+        snotice("two modules may not have the same name ($module{name} is taken) from $package");
+        return
+    }
+
     # I was gonna make it check if a module with the same name already exists, but that's kinda
     # pointless because it uses package names; there shouldn't be any issues.
 

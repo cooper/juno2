@@ -412,3 +412,5 @@ VERSIONING
             * Added currently nonfunctional module manager.
             * Added ./juno mod to enter the module manager.
             * Moved API modules to juno-mods repository.
+            * Two modules can no longer have the same name.
+            * Added API::Event.

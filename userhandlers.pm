@@ -939,10 +939,22 @@ sub handle_chghost {
 sub handle_commands {
     my $user = shift;
 
+    my $i = 0;
+
+    # get the width
+    foreach my $command (keys %user::commands) {
+        $i = length $command if length $command > $i
+    }
+
+    $i++;
+    $user->servernotice('List of available commands');
+
     # send a notice for each command
     while (my ($command, $cv) = each %user::commands) {
-        $user->servernotice("$command [$$cv{source}] $$cv{desc}")
+        $user->servernotice(sprintf "%-${i}s [\2%s\2] %-${i}s", $command, $cv->{source}, $cv->{desc})
     }
+
+    $user->servernotice('End of command list.');
 
     # always success
     return 1

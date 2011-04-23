@@ -11,7 +11,7 @@ use Exporter;
 
 use utils 'snotice';
 
-our @EXPORT = qw/register_event delete_event/;
+our @EXPORT = qw/register_event delete_event event/;
 our %EVENT;
 
 # register an event
@@ -62,7 +62,7 @@ sub delete_event {
 
 }
 
-# run an event (you probably don't want to use this in a module)
+# run an event
 sub event {
     my ($package, $event) = ((caller)[0], shift);
     say "event $event called by $package";

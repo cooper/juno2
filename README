@@ -134,7 +134,6 @@ VERSION command
 WHO user
 make the modules be (un)loaded on rehash
 fix weird bug where it sometimes adds mode a to finished_string in mode handler even if it doesn't work
-fix: you can't set +S even if you have snotice enabled in oper block
 
 API TODO
 -----------------------

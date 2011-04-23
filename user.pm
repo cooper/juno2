@@ -58,7 +58,7 @@ sub new {
         return
     }
 
-    # check and make sure the IP is not Z-Lined, blacklisted, or if it has reached its max-per-IP limit
+    # check and make sure the IP is not D-Lined, blacklisted, or if it has reached its max-per-IP limit
     my @ip_accept = ip_accept($peer->peerhost);
     if (!$ip_accept[0]) {
 
@@ -549,8 +549,8 @@ sub ip_accept {
     return (undef, 'Too many connections from this host') if $count >= conf qw/limit perip/;
 
     foreach (keys %::dline) {
-            # IP matches a Z-Line in the configuration
-            return (undef, 'Z-Lined: '.$::dline{$_}{'reason'}) if hostmatch($ip, $_)
+            # IP matches a D-Line in the configuration
+            return (undef, 'D-Lined: '.$::dline{$_}{'reason'}) if hostmatch($ip, $_)
     }
 
     # they're free to go

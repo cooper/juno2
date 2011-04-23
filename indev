@@ -420,3 +420,4 @@ VERSIONING
             * The module manager isn't quite finished but is now officially supported in dev-1.0.5.
             * Added ./juno debug to start in NOFORK mode.
             * Fixed fatal bug in API events.
+            * Strip whitespace from the end of a snotice().

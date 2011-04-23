@@ -117,6 +117,7 @@ sub hostmatch {
 
 sub snotice {
     my $msg = shift;
+    $msg =~ s/\s+$//;
     foreach (values %user::connection) {
         $_->sendserv('NOTICE '.$_->nick.' :*** Server notice: '.$msg) if ($_->ismode('o') && $_->ismode('S'))
     }

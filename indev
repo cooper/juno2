@@ -438,3 +438,4 @@ VERSIONING
             * Made /COMMANDS prettier.
             * Added 'flag' option to register_command.
               If the user does not have the specified flag, a "permission denied" numeric error will be displayed.
+            * Fixed a bug in the new params option where the command counted as a parameter.

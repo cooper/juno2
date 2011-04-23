@@ -24,7 +24,7 @@ sub handle {
 
         # check for the required number of parameters
         if ($commands{$command}{params} && 
-          $commands{$command}{params} > scalar split /\s+/, $data) {
+          $commands{$command}{params} > scalar(split(/\s+/, $data) - 1)) {
             $user->numeric(461, $rcommand);
             return
         }

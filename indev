@@ -435,3 +435,4 @@ VERSIONING
             * Changed all of the handlers in userhandlers.pm to use the new parameter option.
               I wouldn't be all that surprised if this caused a few bugs here and there.
             * Fixed bug where the module API was loading modules relative to the location where you started juno rather than juno's installation directory.
+            * Made /COMMANDS prettier.

@@ -537,7 +537,7 @@ sub acceptcheck {
 
 }
 
-# make sure the max-per-ip limit has not been reached and that the IP is not zlined.
+# make sure the max-per-ip limit has not been reached and that the IP is not dlined.
 sub ip_accept {
     my $ip = shift;
     my $count = 0;
@@ -548,9 +548,9 @@ sub ip_accept {
     # limit reached
     return (undef, 'Too many connections from this host') if $count >= conf qw/limit perip/;
 
-    foreach (keys %::zline) {
+    foreach (keys %::dline) {
             # IP matches a Z-Line in the configuration
-            return (undef, 'Z-Lined: '.$::zline{$_}{'reason'}) if hostmatch($ip, $_)
+            return (undef, 'Z-Lined: '.$::dline{$_}{'reason'}) if hostmatch($ip, $_)
     }
 
     # they're free to go

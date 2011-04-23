@@ -143,7 +143,7 @@ my %commands = (
     ISON => {
         code => \&handle_ison,
         desc => 'Check if users are on the server',
-        params => 0
+        params => 1
     },
     CHGHOST => {
         code => \&handle_chghost,
@@ -223,12 +223,6 @@ sub handle_nick {
     my $user = shift;
     my @args = split /\s+/, shift;
 
-    # parameter check
-    if (!defined $args[1]) {
-        $user->numeric(431);
-        return
-    }
-
     # I don't feel that this is necessary, but just in case...
     my $newnick = col($args[1]);
 
@@ -305,12 +299,6 @@ sub handle_whois {
     my $user = shift;
     my @args = split /\s+/, shift;
     my (@modes, @channels);
-
-    # parameter check
-    if (!defined $args[1]) {
-        $user->numeric(461, 'WHOIS');
-        return
-    }
 
     # WHOIS can take a server parameter optionally
     my ($nick, $server);
@@ -416,12 +404,6 @@ sub handle_mode {
     my ($user, $data) = @_;
     my @args = split /\s+/, $data;
 
-    # parameter check
-    if (!defined $args[1]) {
-        $user->numeric(461, 'MODE');
-        return
-    }
-
     # is it a user mode?
     if (lc $args[1] eq lc $user->nick) {
 
@@ -458,12 +440,6 @@ sub handle_privmsgnotice {
     my ($user, $data) = @_;
     my @args = split /\s+/, $data;
     my $command = uc $args[0];
-
-    # parameter check
-    if (!defined $args[2]) {
-        $user->numeric(461, $command);
-        return
-    }
 
     # make sure the message is at least 1 character
     my $msg = cut_to_limit('msg', col((split q. ., $data, 3)[2]));
@@ -513,12 +489,6 @@ sub handle_away {
 sub handle_oper {
     my ($user, $data) = @_;
     my @args = split /\s+/, $data;
-
-    # parameter check
-    if (!defined $args[2]) {
-        $user->numeric(461, 'OPER');
-        return
-    }
 
     # attempt to oper
     if (my $oper = $user->canoper($args[1], $args[2])) {
@@ -571,12 +541,6 @@ sub handle_kill {
     my ($user, $data) = @_;
     my @args = split /\s+/, $data;
 
-    # parameter check
-    if (!defined $args[2]) {
-        $user->numeric(461, 'KILL');
-        return
-    }
-
     # make sure the user has kill flag
     if (!$user->can('kill')) {
         $user->numeric(481);
@@ -604,12 +568,6 @@ sub handle_kill {
 sub handle_join {
     my ($user, $data) = @_;
     my @args = split /\s+/, $data;
-
-    # parameter check
-    if (!defined $args[1]) {
-        $user->numeric(461, 'JOIN');
-        return
-    }
 
     # channels are separated by commas.
     foreach my $channel (split q/,/, col($args[1])) {
@@ -690,12 +648,6 @@ sub handle_part {
     my ($user, $data) = @_;
     my @args = split /\s+/, $data;
 
-    # parameter check
-    if (!defined $args[1]) {
-        $user->numeric(461, 'PART');
-        return
-    }
-
     my $reason = col((split ' ', $data, 3)[2]);
 
     # channels separated by commas
@@ -764,12 +716,6 @@ sub handle_locops {
     my ($user, $data) = @_;
     my @args = split /\s+/, $data, 2;
 
-    # parameter check
-    if (!defined $args[1]) {
-        $user->numeric(461, uc $args[0]);
-        return
-    }
-
     # either locops or globops works here; they're the same.
     if ($user->can('globops') || $user->can('locops')) {
         snotice('LOCOPS from '.$user->nick.': '.$args[1]);
@@ -788,12 +734,6 @@ sub handle_locops {
 sub handle_topic {
     my ($user, $data) = @_;
     my @args = split /\s+/, $data, 3;
-
-    # parameter check
-    if (!defined $args[1]) {
-        $user->numeric(461, 'TOPIC');
-        return
-    }
 
     # find the channel
     if (my $channel = channel::chanexists($args[1])) {
@@ -828,11 +768,6 @@ sub handle_kick {
     my($user, $data) = @_;
     my @args = split /\s+/, $data, 4;
 
-    # not enough parameters
-    if (!defined $args[2]) {
-        $user->numeric(461, 'KICK');
-        return
-    }
     my $channel = channel::chanexists($args[1]);
     my $target = user::nickexists($args[2]);
 
@@ -859,10 +794,6 @@ sub handle_kick {
 # invite a user to a channel
 sub handle_invite {
     my($user, @args) = (shift,(split /\s+/, shift));
-    if (!defined $args[2]) {
-        $user->numeric(461, 'INVITE');
-        return
-    }
 
     # find the user and the channel
     my $someone = user::nickexists($args[1]);
@@ -954,11 +885,6 @@ sub handle_ison {
     my ($user, @args) = (shift, (split /\s+/, shift));
     my @final = ();
 
-    # parameter check
-    if (!defined $args[1]) {
-        $user->numeric(461, 'ISON');
-    }
-
     # in ISON, nicks are separated by spaces
     foreach my $nick (@args[1..$#args]) {
         my $usr = user::nickexists($nick);
@@ -974,10 +900,8 @@ sub handle_ison {
 # change a user's displayed host
 sub handle_chghost {
     my ($user, @args) = (shift, (split /\s+/, shift));
-    if (!defined $args[2]) {
-        $user->numeric(461, 'CHGHOST');
-        return
-    }
+
+    # oper flag check
     if (!$user->can('chghost')) {
         $user->numeric(481);
         return

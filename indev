@@ -429,3 +429,8 @@ VERSIONING
               If the Required parameters are not met, a numerical "not enough parameters" error will be displayed.
               Example: register_command('hello', 'Hello World!', \&handle_hello, { params => 2 }); # says that two parameters are required.
               /HELLO Hello (incorrect) /HELLO Hello World! (correct)
+
+        6. April 23, 2011
+
+            * Changed all of the handlers in userhandlers.pm to use the new parameter option.
+              I wouldn't be all that surprised if this caused a few bugs here and there.

@@ -12,125 +12,154 @@ use utils qw/col conf oper hostmatch snotice validnick validcloak cut_to_limit/;
 my %commands = (
     PONG => {
         code => sub {},
-        desc => 'Reply to PING command'
+        desc => 'Reply to PING command',
+        params => 0
     },
     SACONNECT => {
         code => sub {},
-        desc => 'Force a user to connect to the server'
+        desc => 'Force a user to connect to the server',
+        params => 0
     },
     USER => {
         code => sub { shift->numeric(462) },
-        desc => 'fake user command'
+        desc => 'fake user command',
+        params => 0
     },
     LUSERS => {
         code => \&handle_lusers,
-        desc => 'View the server user statistics'
+        desc => 'View the server user statistics',
+        params => 0
     },
     MOTD => {
         code => \&handle_motd,
-        desc => 'View the message of the day'
+        desc => 'View the message of the day',
+        params => 0
     },
     NICK => { 
         code => \&handle_nick,
-        desc => 'Change your nickname'
+        desc => 'Change your nickname',
+        params => 1
     },
     PING => {
         code => \&handle_ping,
-        desc => 'Send a ping to the server'
+        desc => 'Send a ping to the server',
+        params => 1
     },
     WHOIS => {
         code => \&handle_whois,
-        desc => 'View information on a user'
+        desc => 'View information on a user',
+        params => 1
     },
     MODE => {
         code => \&handle_mode,
-        desc => 'Set or view a user or channel mode'
+        desc => 'Set or view a user or channel mode',
+        params => 2
     },
     PRIVMSG => {
         code => \&handle_privmsgnotice,
-        desc => 'Send a message to a channel or user'
+        desc => 'Send a message to a channel or user',
+        params => 2
     },
     NOTICE => {
         code => \&handle_privmsgnotice,
-        desc => 'Send a notice to a channel or user'
+        desc => 'Send a notice to a channel or user',
+        params => 2
     },
     AWAY => {
         code => \&handle_away,
-        desc => 'Mark yourself as being away'
+        desc => 'Mark yourself as being away',
+        params => 1
     },
     OPER => {
         code => \&handle_oper,
-        desc => 'Gain IRCop privileges'
+        desc => 'Gain IRCop privileges',
+        params => 2
     },
     KILL => {
         code => \&handle_kill,
-        desc => 'Forcibly remove a user from the server'
+        desc => 'Forcibly remove a user from the server',
+        params => 2
     },
     JOIN => {
         code => \&handle_join,
-        desc => 'Join a channel'
+        desc => 'Join a channel',
+        params => 1
     },
     WHO => {
         code => \&handle_who,
-        desc => 'View user information'
+        desc => 'View user information',
+        params => 1
     },
     NAMES => {
         code => \&handle_names,
-        desc => 'View the users on a channel'
+        desc => 'View the users on a channel',
+        params => 1
     },
     QUIT => {
         code => \&handle_quit,
-        desc => 'Leave the server'
+        desc => 'Leave the server',
+        params => 0
     },
     PART => {
         code => \&handle_part,
-        desc => 'Leave a channel'
+        desc => 'Leave a channel',
+        params => 1
     },
     REHASH => {
         code => \&handle_rehash,
-        desc => 'Reload the server configuration file(s)'
+        desc => 'Reload the server configuration file(s)',
+        params => 0
     },
     LOCOPS => {
         code => \&handle_locops,
-        desc => 'Send a message to all IRCops with mode S enabled'
+        desc => 'Send a message to all IRCops with mode S enabled',
+        params => 1
     },
     GLOBOPS => {
         code => \&handle_locops,
-        desc => 'Alias for LOCOPS'
+        desc => 'Alias for LOCOPS',
+        params => 1
     },
     TOPIC => {
         code => \&handle_topic,
-        desc => 'View or set a channel\'s topic'
+        desc => 'View or set a channel\'s topic',
+        params => 1
     },
     KICK => {
         code => \&handle_kick,
-        desc => 'Forcibly remove a user from a channel'
+        desc => 'Forcibly remove a user from a channel',
+        params => 2
     },
     INVITE => {
         code => \&handle_invite,
-        desc => 'Invite a user to a channel'
+        desc => 'Invite a user to a channel',
+        params => 2
     },
     LIST => {
         code => \&handle_list,
-        desc => 'View channels and their information'
+        desc => 'View channels and their information',
+        params => 0
     },
     ISON => {
         code => \&handle_ison,
-        desc => 'Check if users are on the server'
+        desc => 'Check if users are on the server',
+        params => 0
     },
     CHGHOST => {
         code => \&handle_chghost,
-        desc => 'Change a user\'s visible hostname'
+        desc => 'Change a user\'s visible hostname',
+        params => 2
     },
     COMMANDS => {
         code => \&handle_commands,
-        desc => 'List commands and their information'
+        desc => 'List commands and their information',
+        params => 0
     }
 );
 
 # register the handlers
 sub get {
-    user::register_handler($_, $commands{$_}{'code'}, 'core', $commands{$_}{'desc'}) foreach keys %commands;
+    user::register_handler($_, $commands{$_}{'code'}, 'core', $commands{$_}{'desc'}, $commands{$_}{'params'}) foreach keys %commands;
     undef %commands;
 }
 

@@ -17,18 +17,26 @@ our (%connection, %commands);
 
 # main command handler
 sub handle {
-    my ($user, $command) = (shift, uc shift);
+    my ($user, $rcommand, $data) = @_;
+    my $command = uc $rcommand;
 
     if (exists $commands{$command}) {
 
-        # call the CODE
-        return $commands{$command}{'code'}($user, shift)
+        # check for the required number of parameters
+        if ($commands{$command}{params} && 
+          $commands{$command}{params} > scalar split /\s+/, $data) {
+            $user->numeric(461, $rcommand);
+            return
+        }
+
+        # they have the required number of parameters
+        return $commands{$command}{'code'}($user, $data)
 
     }
 
     # unknown command
     else {
-        $user->numeric(421, $command)
+        $user->numeric(421, $rcommand)
     }
 
     return
@@ -555,7 +563,9 @@ sub DigestImport {
 # do NOT call this from an API module.
 # see API::Command to do that.
 sub register_handler {
-    my ($handler, $code, $source, $desc) = (uc shift, shift, shift, shift);
+    my ($handler, $code, $source, $desc, $params) = @_;
+    $handler = uc $handler;
+
     if (exists $commands{$handler}) {
 
         # command already exists
@@ -568,7 +578,8 @@ sub register_handler {
     $commands{$handler} = {
         code => $code,
         desc => $desc,
-        source => $source
+        source => $source,
+        params => $params
     };
     say $source.' registered handler '.$handler.': '.$desc;
     return 1

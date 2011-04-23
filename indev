@@ -423,3 +423,9 @@ VERSIONING
             * Strip whitespace from the end of a snotice().
             * API::Core's MODUNLOAD command now requires the modload flag rather than modunload.
             * API::Core's MODLOAD and MODUNLOAD commands now accept the 'modules' oper flag.
+            * Since just about every command has a parameter check, juno's command handler now has built-in parameter check.
+              API::Command now has an optional parameter for extended options. This will be used for future options as well.
+              The params option sets the required number of parameters for the command to be successful.
+              If the Required parameters are not met, a numerical "not enough parameters" error will be displayed.
+              Example: register_command('hello', 'Hello World!', \&handle_hello, { params => 2 }); # says that two parameters are required.
+              /HELLO Hello (incorrect) /HELLO Hello World! (correct)

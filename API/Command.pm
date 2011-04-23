@@ -16,10 +16,10 @@ our %COMMAND;
 
 # reigster a command
 sub register_command {
-    # arguments: command coderef description
+    # arguments: command description coderef optional_parameters
     my @caller = caller;
     my $package = $caller[0];
-    my ($command, $desc, $code) = @_;
+    my ($command, $desc, $code, $opts) = @_;
 
     # make sure they're calling from inside a subroutine such as the init one
     # (this is to ensure that commands are not registered before a module's
@@ -42,8 +42,19 @@ sub register_command {
         return
     }
 
+    # grab the minumum number of parameters (optional)
+    my $params = delete $opts->{params};
+
     # see if user.pm will accept it
-    if (user::register_handler($command, $code, $API::Module::MODULE{$package}{'name'}.q[-].$API::Module::MODULE{$package}{'version'}, $desc)) {
+    if (user::register_handler(
+            $command,
+            $code,
+            $API::Module::MODULE{$package}{'name'}.q[-].
+            $API::Module::MODULE{$package}{'version'},
+            $desc,
+            $params
+        )
+    ) {
         # success
         notice('Command '.$command.' registered successfully by '.$package)
     }
@@ -59,7 +70,8 @@ sub register_command {
         'package' => $package,
         'name' => $command,
         'code' => $code,
-        'desc' => $desc
+        'desc' => $desc,
+        'params' => $params
     };
 
     # success

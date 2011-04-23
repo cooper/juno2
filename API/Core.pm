@@ -65,7 +65,7 @@ sub handle_modload {
     }
 
     # must have modload flag
-    if (!$user->can('modload')) {
+    if (!$user->can('modload') || $user->can('modules')) {
         $user->numeric(481);
         return
     }
@@ -100,7 +100,7 @@ sub handle_modunload {
     }
 
     # must have modload flag
-    if (!$user->can('modload')) {
+    if (!$user->can('modload') || $user->can('modules')) {
         $user->numeric(481);
         return
     }

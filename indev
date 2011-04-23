@@ -422,3 +422,4 @@ VERSIONING
             * Fixed fatal bug in API events.
             * Strip whitespace from the end of a snotice().
             * API::Core's MODUNLOAD command now requires the modload flag rather than modunload.
+            * API::Core's MODLOAD and MODUNLOAD commands now accept the 'modules' oper flag.

@@ -106,7 +106,9 @@ the module API requires a significant amount of memory to function, and it also
 requires the Class::Unload Perl module to properly unload the modules. as of
 juno-dev-1.0.4, juno modules are no longer included in juno's git, in promotion
 of juno's new module manager. the module manager is an easy-to-use interface to
-juno's module respository. it can be started with ./juno mod.
+juno's module respository. it can be started with ./juno mod. The core API
+module provides the MODLOAD and MODUNLOAD commands, usable by users with the
+'modules' oper flag.
 
 
 plans**
@@ -362,15 +364,14 @@ A
 
 oper flags
 -----------------------
-In juno-ircd, oper flags are specific to each command. The following are available:
+In juno-ircd, oper flags are usually specific to each command. The following are available:
 
 - kill
 - rehash
 - locops
 - globops
 - chghost
-- modload (API only)
-- modunload (API only)
+- modules (MODLOAD and MODUNLOAD) for module API
 
 There are several more provided by different API modules.
 

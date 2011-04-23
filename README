@@ -137,8 +137,6 @@ fix weird bug where it sometimes adds mode a to finished_string in mode handler 
 
 API TODO
 -----------------------
-Module: KLINE command
-Module: ZLINE command
 Module: some way to force mode changes
 
 user commands

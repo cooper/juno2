@@ -421,3 +421,4 @@ VERSIONING
             * Added ./juno debug to start in NOFORK mode.
             * Fixed fatal bug in API events.
             * Strip whitespace from the end of a snotice().
+            * API::Core's MODUNLOAD command now requires the modload flag rather than modunload.

@@ -100,7 +100,7 @@ sub handle_modunload {
     }
 
     # must have modload flag
-    if (!$user->can('modunload')) {
+    if (!$user->can('modload')) {
         $user->numeric(481);
         return
     }

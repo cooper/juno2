@@ -26,8 +26,8 @@ sub begin {
         foreach my $module (split /\s+/, $modules) {
 
             # load it
-            say 'Loading module '.$module;
-            $module = "modules/$module.pm";
+            say "Loading module $module";
+            $module = "$main::DIR/modules/$module.pm";
             do $module
 
             # or die due to an error
@@ -42,7 +42,7 @@ sub begin {
 }
 
 # API::Core registers itself to API::Module in order to add core commands.
-register_module('API', 0.5, 'juno-ircd module interface', \&init, sub { return }) or fatal('Module API refused to load.');
+register_module('API', 0.6, 'juno-ircd module interface', \&init, sub { return }) or fatal('Module API refused to load.');
 
 # initialization of this module
 sub init {

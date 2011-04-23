@@ -43,7 +43,7 @@ our $TIME = time;
 our $CONFIG = $DIR.'/etc/ircd.conf';
 my $PID = my $API = 0;
 our $ACCEPTING = 1;
-our (%config, %oper, %kline, %zline, %listen, %outbuffer, %inbuffer, %timer, %loops);
+our (%config, %oper, %kline, %dline, %listen, %outbuffer, %inbuffer, %timer, %loops);
 my (%listensockets, %SSL, @sel, $ipv6, $loop);
 
 # parse the configuration file (usually etc/ircd.conf)
@@ -231,7 +231,7 @@ sub confparse {
 
     # unset the former options
     if (!shift) {
-        undef %kline; undef %zline; undef %config; undef %oper;
+        undef %kline; undef %dline; undef %config; undef %oper;
         delete $utils::GV{'motd'};
     }
 
@@ -284,8 +284,8 @@ sub confparse {
                 $reset->(3, $s[1])
             }
 
-            # zline block
-            when ('zline') {
+            # dline block
+            when (/^(d|z)line$/) {
                 $reset->(4, $s[1])
             }
 
@@ -305,7 +305,7 @@ sub confparse {
                         $listen{$sections[$current]}{$s[0]} = $s[1]
                     }
                     when (4) {
-                        $zline{$sections[$current]}{$s[0]} = $s[1]
+                        $dline{$sections[$current]}{$s[0]} = $s[1]
                     }
                     default {
                         fatal('no section set in configuration')
@@ -319,13 +319,13 @@ sub confparse {
     foreach my $user (values %user::connection) {
 
         # check for a Z-Line
-        foreach (keys %zline) {
+        foreach (keys %dline) {
             if (hostmatch($user->{'ip'}, $_)) {
 
                 # found a match!
-                $user->quit('Z-Lined: '.$zline{$_}{'reason'},
+                $user->quit('Z-Lined: '.$dline{$_}{'reason'},
                     undef,
-                    'Z-Lined'.((conf qw/main showzline/) ? q(: ).$zline{$_}{'reason'} : q..)
+                    'Z-Lined'.((conf qw/main showdline/) ? q(: ).$dline{$_}{'reason'} : q..)
                 );
             }
         }

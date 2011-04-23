@@ -185,6 +185,6 @@ kline *@*.mx
   # the reason for the K-Line
   reason Mexico is prohibited
 
-zline 127.0.0.*
-  # the reason for the Z-Line
+dline 127.0.0.*
+  # the reason for the D-Line
   reason Please do not connect from localhost.

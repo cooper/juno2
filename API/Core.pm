@@ -42,7 +42,7 @@ sub begin {
 }
 
 # API::Core registers itself to API::Module in order to add core commands.
-register_module('API', 0.3, 'juno-ircd module interface', \&init, sub { return }) or fatal('Module API refused to load.');
+register_module('API', 0.4, 'juno-ircd module interface', \&init, sub { return }) or fatal('Module API refused to load.');
 
 # initialization of this module
 sub init {

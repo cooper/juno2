@@ -70,7 +70,7 @@ sub user_handle_user {
 
     # if it's valid, ok
     if (validnick($args[1], (conf qw/limit ident/), 1)) {
-        $user->{'gecos'} = col((split / /, $data, 5)[4]);
+        $user->{'gecos'} = col((split /\s+/, $data, 5)[4]);
         $user->{'ident'} = '~'.$args[1];
         user_start($user) if exists $user->{'nick'};
         return 1

@@ -508,7 +508,7 @@ sub delete_loop {
 
 sub event {
     return unless $API;
-    API::Core::event(@_)
+    API::Event::event(@_)
 }
 
 1

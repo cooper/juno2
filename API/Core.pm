@@ -123,8 +123,4 @@ sub handle_modunload {
 
 }
 
-sub event {
-    return API::Event::event(@_)
-}
-
 1

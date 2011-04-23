@@ -436,3 +436,5 @@ VERSIONING
               I wouldn't be all that surprised if this caused a few bugs here and there.
             * Fixed bug where the module API was loading modules relative to the location where you started juno rather than juno's installation directory.
             * Made /COMMANDS prettier.
+            * Added 'flag' option to register_command.
+              If the user does not have the specified flag, a "permission denied" numeric error will be displayed.

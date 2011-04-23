@@ -29,7 +29,12 @@ sub handle {
             return
         }
 
-        # they have the required number of parameters
+        # check for required flag
+        if ($commands{$command}{flag} && !$user->can($commands{$command}{flag})) {
+            $user->numeric(481);
+            return
+        }
+
         return $commands{$command}{'code'}($user, $data)
 
     }
@@ -563,7 +568,7 @@ sub DigestImport {
 # do NOT call this from an API module.
 # see API::Command to do that.
 sub register_handler {
-    my ($handler, $code, $source, $desc, $params) = @_;
+    my ($handler, $code, $source, $desc, $params, $flag) = @_;
     $handler = uc $handler;
 
     if (exists $commands{$handler}) {
@@ -579,7 +584,8 @@ sub register_handler {
         code => $code,
         desc => $desc,
         source => $source,
-        params => $params
+        params => $params,
+        flag => $flag
     };
     say $source.' registered handler '.$handler.': '.$desc;
     return 1

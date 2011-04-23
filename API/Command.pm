@@ -42,8 +42,9 @@ sub register_command {
         return
     }
 
-    # grab the minumum number of parameters (optional)
+    # fetch the options
     my $params = delete $opts->{params};
+    my $flag = delete $opts->{flag};
 
     # see if user.pm will accept it
     if (user::register_handler(
@@ -52,7 +53,8 @@ sub register_command {
             $API::Module::MODULE{$package}{'name'}.q[-].
             $API::Module::MODULE{$package}{'version'},
             $desc,
-            $params
+            $params,
+            $flag
         )
     ) {
         # success
@@ -71,7 +73,8 @@ sub register_command {
         'name' => $command,
         'code' => $code,
         'desc' => $desc,
-        'params' => $params
+        'params' => $params,
+        'flag' => $flag
     };
 
     # success

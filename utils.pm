@@ -9,7 +9,7 @@ use base 'Exporter';
 
 use Exporter;
 
-our @EXPORT_OK = qw/col validnick validcloak hostmatch snotice fatal conf oper cut_to_limit/;
+our @EXPORT_OK = qw/col validnick validcloak hostmatch snotice fatal conf oper cut_to_limit add_commas time2seconds/;
 our %GV;
 
 # numeric hash
@@ -152,6 +152,81 @@ sub cut_to_limit {
     print "$string: $limit\n";
     $string = substr $string, 0, -$overflow if length $string > $limit;
     return $string
+}
+
+sub add_commas {
+
+    my $number = reverse shift;
+    my $in_group = 0;
+    my $finished = q..;
+
+    foreach ($number =~ m/.../g) {
+        $in_group += 3;
+        $finished = reverse.",$finished"
+    }
+
+    my $result = $finished;
+
+    if (length($number) % 3) {
+        my $overflow = length($number) - $in_group;
+        $result = reverse(substr $number, -$overflow).",$finished";
+    }
+
+    $result = substr $result, 0, -1 if $result =~ m/,$/;
+
+    return $result
+}
+
+sub time2seconds {
+    my $rtime = shift;
+    my $time = 0;
+    # must be even
+    return if (length $rtime) % 2;
+
+    # split into groups of two
+    foreach my $sec ($rtime =~ m/../g) {
+        my ($num, $type) = split //, $sec;
+
+        #has to start with a digit and end with a non-digit
+        return unless $sec =~ m/^\d.*\D/;
+
+        given ($type) {
+
+            # years 
+            when ('y') {
+                $time += 31556926 * $num
+            }
+ 
+            # weeks
+            when ('w') {
+                $time += 604800 * $num
+            }
+
+            # days
+            when ('d') {
+                $time += 86400 * $num
+            }
+
+            # hours
+            when ('h') {
+                $time += 3600 * $num
+            }
+
+            # minutes
+            when ('m') {
+                $time += 60 * $num
+            }
+
+            # seconds
+            when ('s') {
+                $time += $num
+            }
+
+        }
+
+    }
+
+    return $time
 }
 
 1

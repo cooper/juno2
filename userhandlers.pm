@@ -78,7 +78,8 @@ my %commands = (
     KILL => {
         code => \&handle_kill,
         desc => 'Forcibly remove a user from the server',
-        params => 2
+        params => 2,
+        flag => 'kill'
     },
     JOIN => {
         code => \&handle_join,
@@ -108,17 +109,20 @@ my %commands = (
     REHASH => {
         code => \&handle_rehash,
         desc => 'Reload the server configuration file(s)',
-        params => 0
+        params => 0,
+        flag => 'rehash'
     },
     LOCOPS => {
         code => \&handle_locops,
         desc => 'Send a message to all IRCops with mode S enabled',
-        params => 1
+        params => 1,
+        flag => 'locops'
     },
     GLOBOPS => {
         code => \&handle_locops,
         desc => 'Alias for LOCOPS',
-        params => 1
+        params => 1,
+        flag => 'locops'
     },
     TOPIC => {
         code => \&handle_topic,
@@ -148,7 +152,8 @@ my %commands = (
     CHGHOST => {
         code => \&handle_chghost,
         desc => 'Change a user\'s visible hostname',
-        params => 2
+        params => 2,
+        flag => 'chghost'
     },
     COMMANDS => {
         code => \&handle_commands,
@@ -159,7 +164,13 @@ my %commands = (
 
 # register the handlers
 sub get {
-    user::register_handler($_, $commands{$_}{'code'}, 'core', $commands{$_}{'desc'}, $commands{$_}{'params'}) foreach keys %commands;
+    user::register_handler($_,
+        $commands{$_}{'code'},
+        'core',
+        $commands{$_}{'desc'},
+        $commands{$_}{'params'},
+        $commands{$_}{'flag'}
+    ) foreach keys %commands;
     undef %commands;
 }
 
@@ -541,12 +552,6 @@ sub handle_kill {
     my ($user, $data) = @_;
     my @args = split /\s+/, $data;
 
-    # make sure the user has kill flag
-    if (!$user->can('kill')) {
-        $user->numeric(481);
-        return
-    }
-
     # see if the victim exists
     if (my $target = user::nickexists($args[1])) {
         # it does, so kill it
@@ -691,43 +696,24 @@ sub handle_quit {
 
 # reload server configuration file
 sub handle_rehash {
+
     my $user = shift;
 
-    # needs rehash flag
-    if ($user->can('rehash')) {
-        snotice($user->nick.' is rehashing server configuration file');
+    snotice($user->nick.' is rehashing server configuration file');
 
-        # as of 0.8.*, confparse() automatically clears former values.
-        main::confparse($main::CONFIG);
+    # as of 0.8.*, confparse() automatically clears former values.
+    main::confparse($main::CONFIG);
 
-        return 1
-    }
+    return 1
 
-    # user doesn't have privs to rehash
-    else {
-        $user->numeric(481)
-    }
-
-    return
 }
 
 # send a notice to all operators with mode S enabled
 sub handle_locops {
     my ($user, $data) = @_;
     my @args = split /\s+/, $data, 2;
-
-    # either locops or globops works here; they're the same.
-    if ($user->can('globops') || $user->can('locops')) {
-        snotice('LOCOPS from '.$user->nick.': '.$args[1]);
-        return 1
-    }
-
-    # incorrect privs
-    else {
-        $user->numeric(481);
-    }
-
-    return
+    snotice('LOCOPS from '.$user->nick.': '.$args[1]);
+    return 1
 }
 
 # view or set a channel topic
@@ -900,12 +886,6 @@ sub handle_ison {
 # change a user's displayed host
 sub handle_chghost {
     my ($user, @args) = (shift, (split /\s+/, shift));
-
-    # oper flag check
-    if (!$user->can('chghost')) {
-        $user->numeric(481);
-        return
-    }
 
     # check that the nickname exists
 

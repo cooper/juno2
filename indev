@@ -441,3 +441,4 @@ VERSIONING
             * Fixed a bug in the new params option where the command counted as a parameter.
             * Z-Lines are now D-Lines as to follow STATS numerics in rfc2812. The configuration now accepts either zline or dline.
             * Added time2seconds() and add_commas() utils.
+            * Edited userhandlers.pm to use the new 'flag' extended option.

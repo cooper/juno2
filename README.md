@@ -437,6 +437,7 @@ In actuality, only owners, protected users, and operators are capable of seeing 
 * Parameters: (none)
 
 ### l
+
 The l channel mode prevents users from joining a channel if the limit is reached.
 All users with half-operator status or above may set this mode.
 
@@ -452,16 +453,16 @@ A user who does not have the status being set will receive an error, and the mod
 
 * Parameters: `mode`:`mask`
 
-oper flags
------------------------
+## oper flags
+
 In juno-ircd, oper flags are usually specific to each command. The following are available:
 
-- kill
-- rehash
-- locops
-- globops
-- chghost
-- modules (MODLOAD and MODUNLOAD) for module API
+* kill
+* rehash
+* locops
+* globops
+* chghost
+* modules (MODLOAD and MODUNLOAD) for module API
 
 There are several more provided by different API modules.
 

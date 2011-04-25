@@ -1,0 +1,8 @@
+#!/bin/sh
+echo "Generating self-signed certificate .. "
+openssl req -x509 -nodes -newkey rsa:2048 -keyout ../etc/key.pem -out ../etc/cert.pem
+
+echo "Make sure you have SSL enabled in the configuration. (enabled:ssl)
+Set ssl:key to the path of the key you just generated.
+Set ssl:cert to the path of the certificate you just created.
+Enjoy using ssl."

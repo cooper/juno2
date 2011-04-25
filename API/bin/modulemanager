@@ -1,0 +1,345 @@
+#!/usr/bin/perl
+# Copyright (c) 2011, Mitchell Cooper
+
+use warnings;
+use strict;
+use feature qw[say switch];
+
+use FindBin '$Bin';
+use IO::Socket;
+use IO::Select;
+use LWP::UserAgent;
+use POSIX;
+
+local $| = 1;
+
+open my $vfh, '<', qq($Bin/../etc/version) or die "can't read version file\n";
+my $VERSION = <$vfh>;
+close $vfh;
+$VERSION =~ s/\s+$//;
+
+my $MANAGER = 0.1;
+my $READY = 0;
+my (%SERVER, %MODULES, %INSTALLED);
+
+my $ua = new LWP::UserAgent;
+$ua->show_progress(1);
+$ua->timeout(10);
+
+# load and parse our stored info
+&check_modules;
+
+# create the socket
+my @sel = \*STDIN;
+say 'Connecting to module server...';
+push @sel, my $socket = &create_socket;
+&start;
+my $sel = new IO::Select @sel;
+
+main: for (;;) {
+    foreach my $sock ($sel->can_read(1)) {
+        sysread $sock, my $data, POSIX::BUFSIZ, 0 or die "Connection lost\n";
+        if ($sock == $socket) {
+            handle_incoming($data)
+        }
+        else {
+            handle_stdin($data)
+        }
+    }
+
+    die "Connection lost\n" unless $socket
+}
+
+sub create_socket {
+    my $sock = IO::Socket::INET->new(
+        PeerAddr => 'juno.notroll.net',
+        PeerPort => 9002,
+        Proto => 'tcp'
+    ) or die
+        "Could not connect to module server.\n".
+        ($@ ? $@ : ( $! ? $! : 'unknown error')).
+        "\nThis is most likely due to maintenance.\n";
+    return $sock
+}
+
+sub ready {
+    $READY = 1;
+    print "[ juno $VERSION ] ~> ";
+    return 1
+}
+
+sub start {
+    print 'validating server-client compatibility... ';
+    socksend("begin $VERSION $MANAGER");
+    return 1
+}
+
+sub handle_stdin {
+    return unless $READY;
+    $READY = 0;
+
+    foreach my $line (split /\n/, shift) {
+
+        my @args = split /\s+/, $line;
+        $line =~ s/(\n|\0)//;
+
+        given (shift @args) {
+
+            when ('installed') {
+                &view_installed
+            }
+
+            when ('install') {
+                if (!$args[0]) {
+                    say 'no module specified.';
+                }
+                install(shift @args)
+            }
+
+            when ('remove') {
+            }
+
+            when ('sync') {
+                say 'Syncing to server...';
+                socksend('sync')
+            }
+
+            when (/^(help|\?)/) {
+                &help;
+                socksend('?');
+                return
+            }
+
+            default {
+                socksend('> '.$line)
+            }
+
+        }
+
+    }
+    return 1
+}
+
+sub getinput {
+    $READY = time;
+    print '~> ';
+    return 1
+}
+
+sub handle_incoming {
+    foreach my $line (split /\n/, shift) {
+        $line =~ s/(\n|\0)//;
+        my @args = split /\s+/, $line;
+
+        given (shift @args) {
+
+            when ('ping') {
+                socksend('pong')
+            }
+
+            when ('ready') {
+                $READY = shift @args;
+                next unless defined $READY;
+                &ready;
+                socksend('ready')
+            }
+
+            when ('say') {
+                say((split ' ', $line, 2)[1])
+            }
+
+            # module <module name> <url> <version> <modules required> <required juno version> <description> [...]
+            when ('module') {
+                my $mod = shift @args;
+                $MODULES{$mod} = { name => $mod };
+                $MODULES{$mod}{$_} = shift @args foreach qw[url ver deps req];
+                $MODULES{$mod}{desc} = @args;
+                $MODULES{$mod}{deps} =~ s/&/ /g;
+                $MODULES{$mod}{req} =~ s/&/ /g
+            }
+
+            when ('server') {
+                $SERVER{$_} = shift @args foreach qw[name ver mods cmds usrs time start];
+                say "* your host is $SERVER{name}, running version $SERVER{ver}";
+                say '* this server has been running since '.POSIX::strftime('%A, %B %d, %Y at %H:%M:%S %Z', localtime $SERVER{start});
+                say "* this server hosts $SERVER{mods} modules and provides $SERVER{cmds} commands to $SERVER{usrs} connected users";
+            }
+
+            when ('unsupported') {
+                say 'unsupported :(';
+                exit 1
+            }
+
+            when ('supported') {
+                say 'looks good.'
+            }
+
+            when ('unknown_command') {
+                say 'invalid query. try ? for help.'
+            }
+
+            when ('wait_for_input') {
+                &getinput
+            }
+
+            when ('clear') {
+                say ''
+            }
+
+        }
+    }
+}
+
+sub socksend {
+    syswrite $socket, shift()."\n", POSIX::BUFSIZ, 0 or die "can't write\n"
+}
+
+sub check_modules {
+
+    print 'loading settings... ';
+    if (-e qq[$Bin/../etc/modules.db]) {
+        open my $dbr, '<', qq($Bin/../etc/modules.db) or die "error: $!\n";
+        parsedb($_) while <$dbr>;
+        close $dbr;
+        say 'done'
+    }
+
+    else {
+        print "\ndatabase doesn't exist; creating it... ";
+        open my $dbw, '>', qq($Bin/../etc/modules.db) or die "error: $!\n";
+        close $dbw;
+        say 'done'
+    }
+
+    print 'checking installed modules... ';
+    if (-d qq[$Bin/../modules]) {
+        opendir my $dir, qq($Bin/../modules) or die "can't open mdules directory\n";
+        while (my $module_file = readdir $dir) {
+            next if -d qq($Bin/../modules/$module_file);
+            die "\nunknown module $module_file\n" unless exists $INSTALLED{$module_file}
+        }
+        close $dir;
+        say 'done'
+    }
+
+
+    else {
+        print "\nmodule directory doesn\'t exist; creating it... ";
+        mkdir qq($Bin/../modules) or die "error: $!\n";
+        say 'done'
+    }
+
+    print 'checking that stored modules are installed... ';
+    foreach my $mod (keys %INSTALLED) {
+        die "\nmodule $mod not found.\n" unless -e qq($Bin/../modules/$mod)
+    }
+    say 'done';
+
+    say 'settings loaded.'
+
+}
+
+sub view_installed {
+    print "$$_{name}-$$_{ver} " foreach values %INSTALLED;
+    print "\n";
+    return &ready
+}
+
+
+### DB
+# module <location in modules/> <module name> <time added> <version> 
+
+sub parsedb {
+    my $line = shift;
+    $line =~ s/\s+$//;
+    my @args = split /\s+/, $line;
+    die "broken DB\n" unless defined $args[4];
+    die "broken DB\n" unless shift @args eq 'module';
+    my $file = shift @args;
+    $INSTALLED{$file} = { loc => $file };
+    $INSTALLED{$file}{$_} = shift @args foreach qw[name time ver];
+    $INSTALLED{$file}{pm} = @args;
+    return 1
+}
+
+sub add2db {
+    my $mod = shift;
+    my %m = %{$INSTALLED{$mod}};
+    open my $dbfh, '>>', qq($Bin/../etc/modules.db) or die "Can't write modules db\n";
+    say $dbfh "module $m{loc} $m{name} $m{time} $m{ver}";
+    close $dbfh
+}
+
+sub install {
+    my $mod = shift;
+
+    # is it installed?
+    if (exists $INSTALLED{"$mod.pm"}) {
+        say 'you already have that module.';
+        return &ready
+    }
+
+    # does it even exist?
+    if (!exists $MODULES{$mod}) {
+        say 'no such module';
+        return &ready
+    }
+
+    my @supported = split /\s+/, $MODULES{$mod}{req};
+
+    # is this copy compatible?
+    if ($VERSION ~~ @supported) {
+
+        # download it
+        say "Fetching module $mod...";
+        my $res = $ua->get($MODULES{$mod}{url}, ':content_file' => "$Bin/../modules/$mod.pm");
+
+        # no errors
+        if ($res->is_success) {
+            say 'module fetched.';
+            $INSTALLED{"$mod.pm"} = {
+                loc => "$mod.pm",
+                time => time,
+                name => $MODULES{$mod}{name},
+                ver => $MODULES{$mod}{ver}
+            };
+            add2db("$mod.pm");
+            say 'module installed.';
+
+        }
+
+        # HTTP error
+        else {
+            say 'there was an error fetching the module.'
+        }
+
+    }
+
+    # compatibility error
+    else {
+        say 'this module does not support your version of juno.';
+        say "it supports the following: @supported"
+    }
+
+    return &ready
+
+}
+
+sub help {
+    print <<end
+
+juno module manager for juno $VERSION
+
+    built-in commands:
+
+?             same as 'help'
+help          show this help
+install       install a module
+remove        remove a module
+installed     view the modules you have installed
+sync          sync to the module server
+
+    server-provided commands:
+
+end
+}

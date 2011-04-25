@@ -454,3 +454,5 @@ VERSIONING
             * The module manager now uses both its version and juno's version to validate compatibility.
               In order to use our module server, you must upgrade juno.
             * The module manager no longer allows non-compatible modules to be installed.
+            * K-Line check shouldn't check nick!ident@host. I fail.
+            * chdir() to $DIR.

@@ -504,7 +504,7 @@ sub ison {
 sub checkkline {
     my $user = shift;
     foreach (keys %::kline) {
-        if (hostmatch($user->fullhost, $_)) {
+        if (hostmatch("$$user{nick}@$$user{host}", $_)) {
             # found a match; forcing them to quit
             $user->quit('K-Lined: '.$::kline{$_}{'reason'}, undef, 'K-Lined'.((conf qw/main showkline/) ? ': '.$::kline{$_}{'reason'}:''));
             return 1

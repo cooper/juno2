@@ -16,8 +16,9 @@ local $| = 1;
 open my $vfh, '<', qq($Bin/../etc/version) or die "can't read version file\n";
 my $VERSION = <$vfh>;
 close $vfh;
-
 $VERSION =~ s/\s+$//;
+
+my $MANAGER = 0.1;
 my $READY = 0;
 my (%SERVER, %MODULES, %INSTALLED);
 
@@ -69,7 +70,7 @@ sub ready {
 
 sub start {
     print 'validating server-client compatibility... ';
-    socksend("begin $VERSION");
+    socksend("begin $VERSION $MANAGER");
     return 1
 }
 
@@ -153,7 +154,8 @@ sub handle_incoming {
                 $MODULES{$mod} = { name => $mod };
                 $MODULES{$mod}{$_} = shift @args foreach qw[url ver deps req];
                 $MODULES{$mod}{desc} = @args;
-                $MODULES{$mod}{deps} = s/&/ /g
+                $MODULES{$mod}{deps} =~ s/&/ /g;
+                $MODULES{$mod}{req} =~ s/&/ /g
             }
 
             when ('server') {
@@ -271,15 +273,28 @@ sub add2db {
 sub install {
     my $mod = shift;
 
+    # is it installed?
     if (exists $INSTALLED{"$mod.pm"}) {
         say 'you already have that module.';
         return &ready
     }
 
-    if (exists $MODULES{$mod}) {
+    # does it even exist?
+    if (!exists $MODULES{$mod}) {
+        say 'no such module';
+        return &ready
+    }
+
+    my @supported = split /\s+/, $MODULES{$mod}{req};
+
+    # is this copy compatible?
+    if ($VERSION ~~ @supported) {
+
+        # download it
         say "Fetching module $mod...";
         my $res = $ua->get($MODULES{$mod}{url}, ':content_file' => "$Bin/../modules/$mod.pm");
 
+        # no errors
         if ($res->is_success) {
             say 'module fetched.';
             $INSTALLED{"$mod.pm"} = {
@@ -289,20 +304,25 @@ sub install {
                 ver => $MODULES{$mod}{ver}
             };
             add2db("$mod.pm");
-            say 'module installed.'
+            say 'module installed.';
+
         }
 
+        # HTTP error
         else {
-            say 'there was an error fetching the module.';
-            return &ready
+            say 'there was an error fetching the module.'
         }
 
     }
+
+    # compatibility error
     else {
-        say 'no such module'
+        say 'this module does not support your version of juno.';
+        say "it supports the following: @supported"
     }
 
     return &ready
+
 }
 
 sub help {

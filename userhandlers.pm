@@ -53,7 +53,7 @@ my %commands = (
     MODE => {
         code => \&handle_mode,
         desc => 'Set or view a user or channel mode',
-        params => 2
+        params => 1
     },
     PRIVMSG => {
         code => \&handle_privmsgnotice,

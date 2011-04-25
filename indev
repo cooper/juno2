@@ -447,3 +447,4 @@ VERSIONING
 
             * Made the README prettier.
             * Added a valid_ipv4() util and a disgusting valid_ipv6() one too.
+            * Fixed bug: sometimes MODE takes only one parameter.

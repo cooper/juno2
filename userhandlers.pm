@@ -589,7 +589,7 @@ sub handle_join {
         # create a new channel if it's a valid name
         else {
             if ($channel =~ m/^#/) {
-                channel::new($user, $channel)
+                channel->new($user, $channel)
             }
 
             # invalid channel name

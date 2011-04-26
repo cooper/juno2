@@ -12,7 +12,7 @@ our %channels;
 
 # create a new channel
 sub new {
-    my ($user, $name) = @_;
+    my ($this, $user, $name) = @_;
 
     # create the channel object
     bless my $channel = {
@@ -28,7 +28,7 @@ sub new {
             # they get op on join
             $user->{'id'} => time
         }
-    };
+    }, $this;
     $channels{lc $name} = $channel;
 
     # do the actual user join

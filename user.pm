@@ -70,7 +70,7 @@ sub new {
         return
     }
 
-    # add the user the IO::Select object
+    # add the user to the IO::Select object
     $::select->add($peer);
 
     ::sendpeer($peer, ':'.(conf qw/server name/).' NOTICE * :*** Looking up your hostname...');

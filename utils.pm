@@ -16,6 +16,7 @@ our %GV;
 # numeric hash
 # I don't really have anywhere else to put this, so I'll just throw it in here!
 # these are used by user::numeric()
+
 our %numerics = (
     251 => ':There are %s users and %s invisible on %s servers',
     265 => '%s %s :Current local users %s, max %s',
@@ -87,80 +88,127 @@ our %numerics = (
     729 => '%s :End of channel mute list',
 );
 
+# remove a prefixing colon
+
 sub col {
     my $str = shift;
     return unless defined $str;
+
+    # remove the colon from the front if there is one
     $str =~ s/^://;
+
     return $str
 }
 
+# check if a nickname is valid
 sub validnick {
     my ($str, $limit, $i) = @_;
-    return if length $str < 1 || length $str > $limit;
-    return if $str =~ m/^\d/ && !$i;
-    return if $str =~ m/[^A-Za-z-0-9-\[\]\\\`\^\|\{\}\_]/;
+
+    # valid characters
+    return if (
+        length $str < 1 || length $str > $limit ||
+        ($str =~ m/^\d/ && !$i) ||
+        $str =~ m/[^A-Za-z-0-9-\[\]\\\`\^\|\{\}\_]/
+    );
+
+    # success
     return 1
+
 }
 
+# match a host to a list
 sub hostmatch {
-    my ($mask, @list) = @_;
+    my ($mask, @list) = (lc shift, shift);
     my @aregexps;
+
     foreach my $regexp (@list) {
+
+        # replace wildcards with regex
         $regexp =~ s/\./\\\./g;
         $regexp =~ s/\?/\./g;
         $regexp =~ s/\*/\.\*/g;
         $regexp = '^'.$regexp.'$';
-        push(@aregexps,lc $regexp)
+        push @aregexps, lc $regexp
+
     }
-    return 1 if (grep {lc $mask =~ /$_/} @aregexps);
+
+    # success
+    return 1 if grep { $mask =~ m/$_/ } @aregexps;
+
+    # no matches
     return
+
 }
 
+# send a server notice to users with S enabled
 sub snotice {
     my $msg = shift;
     $msg =~ s/\s+$//;
-    foreach (values %user::connection) {
-        $_->sendserv('NOTICE '.$_->nick.' :*** Server notice: '.$msg) if ($_->ismode('o') && $_->ismode('S'))
+
+    # send to all users with +S enabled
+    foreach my $user (values %user::connection) {
+        $user->snt('Server notice', $msg) if $user->ismode('S')
     }
+
+    return 1
+
 }
 
+# force exit
 sub fatal {
     say 'FATAL: '.shift;
     exit (shift() ? 1 : 0)
 }
 
+# fetch a configuration value
 sub conf {
-    my ($key,$val) = @_;
-    return $::config{$key}{$val} if exists $::config{$key}{$val};
+    my ($key, $val) = @_;
+    return $main::config{$key}{$val} if exists $main::config{$key}{$val};
+
+    # no such key (or block, even)
     return
+
 }
 
+# fetch info from a configuration oper block
 sub oper {
-    my ($key,$val) = @_;
-    return $::oper{$key}{$val} if exists $::oper{$key}{$val};
+    my ($key, $val) = @_;
+    return $main::oper{$key}{$val} if exists $main::oper{$key}{$val};
+
+    # no such key (or block, even)
     return
+
 }
 
+# check if cloak is valid
 sub validcloak {
-    return if $_[0] =~ m/[^A-Za-z-0-9-\.\/\-]/;
+    return if shift() =~ m/[^A-Za-z-0-9-\.\/\-]/;
     return 1
 }
 
+# cut a string to its limit defined by the 'limit' section
 sub cut_to_limit {
     my ($limit, $string) = (conf('limit', shift), shift);
+
+    # if no limit is set, return the supplied string
     return $string unless $limit;
+
     my $overflow = (length $string) - $limit;
-    print "$string: $limit\n";
+
+    # chop to limit
     $string = substr $string, 0, -$overflow if length $string > $limit;
+
     return $string
 }
 
+# add commas to a number where necessary
 sub add_commas {
 
     my $number = reverse shift;
     my $in_group = 0;
     my $finished = q..;
 
+    # find groups of three
     foreach ($number =~ m/.../g) {
         $in_group += 3;
         $finished = reverse.",$finished"
@@ -168,11 +216,13 @@ sub add_commas {
 
     my $result = $finished;
 
+    # if the number is not a multiple of 3
     if (length($number) % 3) {
         my $overflow = length($number) - $in_group;
         $result = reverse(substr $number, -$overflow).",$finished";
     }
 
+    # throw what's left in front of it.
     $result = substr $result, 0, -1 if $result =~ m/,$/;
 
     return $result
@@ -228,35 +278,6 @@ sub time2seconds {
     }
 
     return $time
-}
-
-sub valid_ipv6 {
-    my $ip = shift;
-    return 1 if $ip =~
-        m/^\s*((([0-9A-Fa-f]{1,4}:){7}([0-9A-Fa-f]{1,4}|:))|(([0-9A-Fa-f]{1,4}:){6}(
-        :[0-9A-Fa-f]{1,4}|((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d
-        \d|[1-9]?\d)){3})|:))|(([0-9A-Fa-f]{1,4}:){5}(((:[0-9A-Fa-f]{1,4}){1,2})|:(
-        (25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3})|
-        :))|(([0-9A-Fa-f]{1,4}:){4}(((:[0-9A-Fa-f]{1,4}){1,3})|((:[0-9A-Fa-f]{1,4})
-        ?:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}
-        ))|:))|(([0-9A-Fa-f]{1,4}:){3}(((:[0-9A-Fa-f]{1,4}){1,4})|((:[0-9A-Fa-f]{1,4})
-        {0,2}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)
-        ){3}))|:))|(([0-9A-Fa-f]{1,4}:){2}(((:[0-9A-Fa-f]{1,4}){1,5})|((:[0-9A-Fa-f]
-        {1,4}){0,3}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]
-        ?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){1}(((:[0-9A-Fa-f]{1,4}){1,6})|((:[0-9A-Fa-f]
-        {1,4}){0,4}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]
-        ?\d)){3}))|:))|(:(((:[0-9A-Fa-f]{1,4}){1,7})|((:[0-9A-Fa-f]{1,4}){0,5}:((25[0-5]
-        |2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:)))(%.+)?\s*$/x;
-
-    return
-}
-
-sub valid_ipv4 {
-    my $ip = shift;
-    return 1 if $ip =~
-        m/^([01]?\d\d?|2[0-4]\d|25[0-5])\.([01]?\d\d?|2[0-4]\d|25[0-5])\.([01]?\d\d
-        ?|2[0-4]\d|25[0-5])\.([01]?\d\d?|2[0-4]\d|25[0-5])$/x;
-    return
 }
 
 1

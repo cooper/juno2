@@ -19,8 +19,11 @@ our %GV;
 
 our %numerics = (
     251 => ':There are %s users and %s invisible on %s servers',
-    265 => '%s %s :Current local users %s, max %s',
-    267 => '%s %s :Current global users %s, max %s',
+    252 => '%d :IRC operators online',
+    254 => '%d :channels formed',
+    255 => 'I have %d clients and %d servers',
+    265 => '%d %d :Current local users %s, max %s',
+    267 => '%d %d :Current global users %s, max %s',
     301 => '%s :%s',
     303 => ':%s',
     305 => ':You are no longer marked as being away',

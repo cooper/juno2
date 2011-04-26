@@ -463,3 +463,4 @@ VERSIONING
         9. April 26, 2011
 
             * utils.pm cleanup.
+            * Added numerics 252, 254, and 255 to LUSERS.

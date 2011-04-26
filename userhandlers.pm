@@ -199,6 +199,19 @@ sub handle_lusers {
     $utils::GV{'max'} = $total if $utils::GV{'max'} < $total;
     $user->numeric(251, $visible, $invisible, 1);
 
+    # x IRC operators online
+    my $opers = 0;
+    foreach my $usr (values %user::connection) {
+        $opers++ if $usr->ismode('o')
+    }
+    $user->numeric(252, $opers);
+
+    # x channels formed
+    $user->numeric(254, scalar keys %channel::channels);
+
+    # i have x clients and y servers
+    $user->numeric(255, $total, 0);
+
     # local
     $user->numeric(265, $total, $utils::GV{'max'}, $total, $utils::GV{'max'});
 

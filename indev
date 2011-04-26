@@ -456,3 +456,4 @@ VERSIONING
             * The module manager no longer allows non-compatible modules to be installed.
             * K-Line check shouldn't check nick!ident@host. I fail.
             * Fixed the API::Core "no such file or directory" error every time.
+            * checkkline() was using nick instead of user. I fail.

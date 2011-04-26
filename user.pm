@@ -269,7 +269,7 @@ sub can {
 
 # user quit
 sub quit {
-    my ($user, $reason, $silent, $display) = @_;
+    my ($user, $reason, $silent, $display, $no_notice) = @_;
 
     # relay the quit to all users in a common channel, but only once.
     my %sent;
@@ -287,7 +287,7 @@ sub quit {
         $channel->remove($user)
     }
 
-    snotice('client exiting: '.$user->fullhost.' ['.$user->{'ip'}.'] ('.$reason.')') if $user->{'ready'};
+    snotice('client exiting: '.$user->fullhost.' ['.$user->{'ip'}.'] ('.$reason.')') if $user->{'ready'} && !$no_notice;
 
     # we can't use main::sendpeer here because the outbuffer will be cleared before the main loop gets a chance to send the data
     $user->obj->syswrite('ERROR :Closing Link: ('.(defined $user->{'ident'} ? $user->{'ident'} : q(*)).'@'.$user->host.') ['.$reason.']'."\r\n", POSIX::BUFSIZ) unless $silent;
@@ -401,7 +401,7 @@ sub nick {
 # called by handle.pm after the user registers
 sub start {
     my $user = shift;
-    return if $user->checkkline;
+    return if $user->checkkline(1);
     snotice('client connecting: '.$user->fullhost.' ['.$user->{'ip'}.']');
     $user->sendnum('001', ':Welcome to the '.(conf qw/server network/).' Internet Relay Chat Network '.$user->nick);
     $user->sendnum('002', ':Your host is '.(conf qw/server name/).', running version juno-'.$::VERSION);
@@ -503,10 +503,11 @@ sub ison {
 # if it does, force them to quit
 sub checkkline {
     my $user = shift;
+    my $silent = shift;
     foreach (keys %::kline) {
         if (hostmatch("$$user{ident}\@$$user{host}", $_)) {
             # found a match; forcing them to quit
-            $user->quit('K-Lined: '.$::kline{$_}{'reason'}, undef, 'K-Lined'.((conf qw/main showkline/) ? ': '.$::kline{$_}{'reason'}:''));
+            $user->quit('K-Lined: '.$::kline{$_}{'reason'}, undef, 'K-Lined'.((conf qw/main showkline/) ? ': '.$::kline{$_}{'reason'}:''), $silent);
             return 1
         }
     }

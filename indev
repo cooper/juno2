@@ -457,3 +457,4 @@ VERSIONING
             * K-Line check shouldn't check nick!ident@host. I fail.
             * Fixed the API::Core "no such file or directory" error every time.
             * checkkline() was using nick instead of user. I fail.
+            * Fixed checkkline() so now it doesn't send a quit server notice if a k-lined user attempts to connect.

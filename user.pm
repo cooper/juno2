@@ -407,7 +407,7 @@ sub start {
     $user->sendnum('002', ':Your host is '.(conf qw/server name/).', running version juno-'.$::VERSION);
     $user->sendnum('003', ':This server was created '.POSIX::strftime('%a %b %d %Y at %H:%M:%S %Z',localtime $::TIME));
     $user->sendnum('004', (conf qw/server name/).' juno-'.$::VERSION.' SZiox AIZbelimntz');
-    $user->sendnum('005', 'CHANTYPES=# EXCEPTS INVEX CHANMODES=AeIbZ,,l,imntz PREFIX=(qaohv)~&@%+ NETWORK='.(conf qw/server network/).' MODES='.(conf qw/limit chanmodes/).' NICKLEN='.(conf qw/limit nick/).' TOPICLEN='.(conf qw/limit topic/).' :are supported by this server');
+    $user->sendnum('005', 'CHANTYPES=# EXCEPTS INVEX CHANMODES=AeIbZ,k,l,imntz PREFIX=(qaohv)~&@%+ NETWORK='.(conf qw/server network/).' MODES='.(conf qw/limit chanmodes/).' NICKLEN='.(conf qw/limit nick/).' TOPICLEN='.(conf qw/limit topic/).' :are supported by this server');
 
     # make the server think the user sent these commands
     userhandlers::handle_lusers($user);

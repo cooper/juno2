@@ -586,16 +586,17 @@ sub handle_kill {
 sub handle_join {
     my ($user, $data) = @_;
     my @args = split /\s+/, $data;
+    my @keys = (defined $args[2] ? split q(,), $args[2] : ());
 
     # channels are separated by commas.
     foreach my $channel (split q/,/, col($args[1])) {
 
         # if the channel exists, join
         if (my $target = channel::chanexists($channel)) {
-            $target->dojoin($user)
+            $target->dojoin($user, shift @keys)
 
             # unless they're already there, of course
-            unless $user->ison($target);
+            unless $user->ison($target)
 
         }
 
@@ -612,6 +613,7 @@ sub handle_join {
             }
 
         }
+
     }
 
     # success

@@ -453,6 +453,14 @@ A user who does not have the status being set will receive an error, and the mod
 
 * Parameters: `mode`:`mask`
 
+### k
+
+The k channel mode allows channel operators to restrict users to those who know the channel key.
+The key must be supplied in both set and unset.
+It may not contain commas.
+
+* Parameters: `key`
+
 ## oper flags
 
 In juno-ircd, oper flags are usually specific to each command. The following are available:

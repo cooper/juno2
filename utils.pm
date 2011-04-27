@@ -81,6 +81,7 @@ our %numerics = (
     472 => '%s :No such mode',
     473 => '%s :Cannot join channel (channel is invite only)',
     474 => '%s :Cannot join channel (you\'re banned)',
+    475 => '%s :Cannot join channel (Incorrect channel key)',
     481 => ':Permission denied',
     482 => '%s :You\'re not a channel %s',
     482.1 => '%s :You do not have the proper privileges to kick this user',
@@ -121,7 +122,8 @@ sub validnick {
 
 # match a host to a list
 sub hostmatch {
-    my ($mask, @list) = (lc shift, shift);
+    my ($mask, @list) = @_;
+    $mask = lc $mask;
     my @aregexps;
 
     foreach my $regexp (@list) {

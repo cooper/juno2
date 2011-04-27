@@ -464,3 +464,5 @@ VERSIONING
 
             * utils.pm cleanup.
             * Added numerics 252, 254, and 255 to LUSERS.
+            * Finished channel mode k and fixed join to work properly with it.
+              JOIN channel,channel key,key

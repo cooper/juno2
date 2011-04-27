@@ -6,7 +6,7 @@ use warnings;
 use strict;
 use feature qw/say switch/;
 
-use utils qw/conf hostmatch snotice/;
+use utils qw/conf hostmatch snotice cut_to_limit/;
 
 our %channels;
 
@@ -43,7 +43,7 @@ sub new {
 
 # the actual join of a user
 sub dojoin {
-    my ($channel, $user) = @_;
+    my ($channel, $user, $key) = @_;
     my @users = keys %{$channel->{'users'}};
 
         # check for bans without exceptions
@@ -73,6 +73,14 @@ sub dojoin {
         && $#users+1 >= $channel->{'mode'}->{'l'}->{'params'}) {
             # can't join; channel full
             $user->numeric(471, $channel->name);
+            return
+        }
+
+        # check if the user has the proper key
+        my $letmein = $channel->ismode('k');
+        if (defined $letmein &&
+          (not defined $key or $letmein->{params} ne $key)) {
+            $user->numeric(475, $channel->name);
             return
         }
 
@@ -352,7 +360,7 @@ sub handlemode {
     my @mask_modes = qw/b e I Z A/;
 
     # modes with a parameter
-    my @parameter_modes = qw/l/;
+    my @parameter_modes = qw/l k/;
 
     # some modes such as l do not need a parameter to unset but do to set.
     # these must also be in @parameter_modes.
@@ -948,12 +956,35 @@ sub handleparmode {
 
         }
 
-        # unknown mode ?
-        default {
-            return
+        # channel key
+        when ('k') {
+
+
+            # if setting, go ahead and set it
+            if ($state) {
+                $parameter = cut_to_limit('chankey', $parameter);
+                $parameter =~ s/,//;
+                $channel->setmode('k', $parameter);
+                return $parameter
+            }
+
+            return unless $channel->ismode('k');
+
+            # if they are unsetting it and the parameter is right
+
+            my $m = $channel->ismode('k');
+            if ($parameter eq $m->{params}) {
+                $channel->unsetmode('k');
+                return $parameter
+            }
+           
         }
 
+        # unknown mode ?
+
     }
+
+    return
 }
 
 # apply automatic status (A mode)

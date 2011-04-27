@@ -210,13 +210,18 @@ If the nickname exists, there will be no reply. Otherwise, a numeric error will 
 
 * Parameters: `nickname` `comment`
 
-### JOIN*
+### JOIN
 
 The JOIN command is used to join a channel.
 The server will reply with a numeric if the requested channel is invalid.
 If the channel is nonexistent, it will be created.
+The second parameter is a list of channel keys.
+It is an optional parameter but is required when the channel(s) have a key set.
+The keys and channels must be in order.
+For example, `JOIN #channel,#channel2,#channel3 key,,key2` says to join #channel with the 'key' key,
+join #channel2 without a key, and join #channel3 with the 'key2' key.
 
-* Parameters: `channel`\[,`channel`,...] (currently)
+* Parameters: `channel`\[,`channel`,...] [`key`,`key`,...]
 
 ### WHO*
 

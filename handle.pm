@@ -34,7 +34,7 @@ sub user {
 
         # if the user is registered, throw the data at the user package to handle it.
         if ($user->{'ready'}) {
-            $user->handle($line);
+            $user->handle($args[0], $line);
             next
         }
 

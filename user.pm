@@ -17,24 +17,15 @@ our (%connection, %commands);
 
 # main command handler
 sub handle {
-    my ($user, $data) = @_;
-    my @word = split /\s+/, $data;
-
-    # assume they are sending in the form of
-    # :origin <command>
-    if ($word[0] =~ m/^:/) {
-        $data =~ s/$word[0]\s//;
-        shift @word
-    }
-
-    my $rcommand = $word[0];
+    my ($user, $rcommand, $data) = @_;
     my $command = uc $rcommand;
 
     if (exists $commands{$command}) {
 
         # check for the required number of parameters
+        my @params = split /\s+/, $data;
         if ($commands{$command}{params} && 
-          $commands{$command}{params} > $#word) {
+          $commands{$command}{params} > $#params) {
             $user->numeric(461, $rcommand);
             return
         }

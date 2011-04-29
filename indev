@@ -466,3 +466,7 @@ VERSIONING
             * Added numerics 252, 254, and 255 to LUSERS.
             * Finished channel mode k and fixed join to work properly with it.
               JOIN channel,channel key,key
+
+        10. April 28, 2011
+
+            * Now supports commands in the form of ':source command' (you'd think this would have been done a long time ago.)

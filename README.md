@@ -2,6 +2,20 @@
 
 Make sure you check out the [wiki](https://github.com/cooper879/juno/wiki). It is full of useful information.
 
+# read this.
+
+This is the second version of juno-ircd.
+It was written from scratch rather than based on pIRCd as the [first one](https://github.com/cooper879/juno-ircd) was.
+It's much cleaner, has more features, and is more modern than pIRCd.
+However, it has a major disadvantage. It doesn't support server linking.
+It doesn't even have a linking protocol or the ability to create sockets from server to server.
+It was originally planned to wait until the core component were finished to create a linking protocol,
+and that would have worked; but now that much of juno has been based on the single-serverness of it,
+creating a linking protocol would require so much editing that it may as well be rewritten from scratch again.
+I decided that rather than rewriting the majority of user.pm and channel.pm, I'm going to start over.
+I will, however, follow many of the design concepts that I have already used in this version of juno.
+I will also use the same API structure.
+
 ## about
 
 In July 2010, I found pIRCd, the perl internet relay chat daemon. while

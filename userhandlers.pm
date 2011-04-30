@@ -68,7 +68,7 @@ my %commands = (
     AWAY => {
         code => \&handle_away,
         desc => 'Mark yourself as being away',
-        params => 1
+        params => 0
     },
     OPER => {
         code => \&handle_oper,

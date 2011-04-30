@@ -10,7 +10,7 @@ use base 'Exporter';
 use Exporter;
 
 our @EXPORT_OK = qw/col validnick validcloak hostmatch snotice fatal conf oper cut_to_limit add_commas
-    time2seconds valid_ipv6 valid_ipv4/;
+  time2seconds/;
 our %GV;
 
 # numeric hash

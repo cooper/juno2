@@ -65,6 +65,7 @@ our %numerics = (
     401 => '%s :No such nick/channel',
     402 => '%s :No such server',
     403 => '%s :Invalid channel name',
+    403.1 => '%s :No such channel',
     404 => '%s :Cannot send to channel',
     412 => ':No text to send',
     421 => '%s :Unknown command',

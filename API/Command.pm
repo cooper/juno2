@@ -38,7 +38,13 @@ sub register_command {
 
     # make sure they gave the required arguments
     if ($#_ < 2) {
-        notice('Not enough arguments for command_register given by package '.$package);
+        notice('Not enough arguments for register_command given by package '.$package);
+        return
+    }
+
+    # make sure it's CODE
+    if (ref $code ne 'CODE') {
+        notice('Not a CODE reference in register_command by '.$package.'; aborting.');
         return
     }
 

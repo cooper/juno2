@@ -30,7 +30,7 @@ use IO::Socket;
 use user;
 use handle;
 use channel;
-use utils qw/fatal conf hostmatch snotice/;
+use utils qw/fatal conf hostmatch snotice event/;
 
 local $0 = 'juno';
 $SIG{$_} = \&sigdie foreach qw/INT TERM KILL/;
@@ -41,7 +41,7 @@ $SIG{'HUP'} = \&sighup;
 our $VERSION = &getversion;
 our $TIME = time;
 our $CONFIG = $DIR.'/etc/ircd.conf';
-my $PID = my $API = 0;
+my $PID = our $API = 0;
 our $ACCEPTING = 1;
 our (%config, %oper, %kline, %dline, %listen, %outbuffer, %inbuffer, %timer, %loops);
 my (%listensockets, %SSL, @sel, $ipv6, $loop);
@@ -504,11 +504,6 @@ sub delete_loop {
     say 'Deleting loop '.$loops{$id}{name}.':'.$id;
     delete $loops{$id};
     return 1
-}
-
-sub event {
-    return unless $API;
-    API::Event::event(@_)
 }
 
 1

@@ -10,7 +10,7 @@ use base 'Exporter';
 use Exporter;
 
 our @EXPORT_OK = qw/col validnick validcloak hostmatch snotice fatal conf oper cut_to_limit add_commas
-  time2seconds/;
+  time2seconds event/;
 our %GV;
 
 # numeric hash
@@ -222,13 +222,14 @@ sub add_commas {
 
     my $result = $finished;
 
-    # if the number is not a multiple of 3
+    # if the number is not a multiple of 3,
+    # throw the excess in front of it.
     if (length($number) % 3) {
         my $overflow = length($number) - $in_group;
         $result = reverse(substr $number, -$overflow).",$finished";
     }
 
-    # throw what's left in front of it.
+    # remove the prefixing comma
     $result = substr $result, 0, -1 if $result =~ m/,$/;
 
     return $result
@@ -284,6 +285,11 @@ sub time2seconds {
     }
 
     return $time
+}
+
+sub event {
+    return unless $main::API;
+    API::Event::event(@_)
 }
 
 1
